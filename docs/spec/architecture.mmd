@@ -1,0 +1,104 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#FDF6EC"
+    primaryTextColor: "#45210E"
+    primaryBorderColor: "#45210E"
+    lineColor: "#45210E"
+    secondaryColor: "#F4BA17"
+    tertiaryColor: "#FFFFFF"
+    fontFamily: "Be Vietnam Pro, Arial, sans-serif"
+    fontSize: "15px"
+  flowchart:
+    curve: basis
+    nodeSpacing: 40
+    rankSpacing: 55
+---
+flowchart TB
+
+subgraph ACTORS[" "]
+    direction LR
+    BUYER["👤 Buyer (VI/EN)<br/>sends RFQ: email text,<br/>PDF, scan, Excel"]
+    MANAGER["👤 Sales Manager<br/>reviews & approves<br/>(HITL)"]
+    JUDGE["👤 Judge / API client"]
+end
+
+subgraph FRONTEND["FRONTEND — OSS Static Hosting"]
+    SPA["Review Dashboard (SPA)<br/>queue · quote detail · confidence chips<br/>reasoning trace · approve / reject / revise"]
+end
+
+subgraph BACKEND["BACKEND — Alibaba Cloud Function Compute 3.0 (ap-southeast-1)"]
+    direction TB
+    API["quotemind-api<br/>HTTP trigger · FastAPI-style<br/>REST /api/* · auth · state machine"]
+    INGEST["quotemind-ingest<br/>OSS object-created trigger<br/>(rfq/ prefix)"]
+    subgraph AGENTS["AgentScope 1.0 Multi-Agent Pipeline"]
+        direction TB
+        ORCH["AGT-01 Orchestrator<br/>PlanNotebook · qwen3-max"]
+        INTAKE["AGT-02 IntakeClassifier<br/>qwen-plus"]
+        PARSER["AGT-03 DocumentParser<br/>qwen-vl-ocr / qwen-plus"]
+        MATCHER["AGT-04 CatalogMatcher<br/>hybrid retrieval + qwen3-max"]
+        PRICER["AGT-05 PricingEngine<br/>DETERMINISTIC Python<br/>(no LLM math)"]
+        DRAFTER["AGT-06 QuoteDrafter<br/>bilingual VI/EN · qwen3-max"]
+        CRITIC["AGT-07 CriticValidator<br/>recompute + policy · qwen3-max"]
+        DISPATCH["AGT-08 DispatchAgent<br/>PDF · store · email"]
+    end
+    MCP["MCP tool servers (stdio)<br/>catalog-mcp · email-mcp"]
+    HITL{{"⏸ HITL Approval Gate<br/>durable pause / resume"}}
+end
+
+subgraph QWEN["QWEN CLOUD — Model Studio / DashScope Intl (Singapore)"]
+    direction TB
+    QMAX["qwen3-max<br/>plan · draft · critic"]
+    QPLUS["qwen-plus<br/>classify · text parse"]
+    QVL["qwen-vl-ocr / qwen3-vl-plus<br/>scanned document vision"]
+    QEMB["text-embedding-v4<br/>dim = 1024"]
+end
+
+subgraph DATA["DATABASE & STORAGE — Alibaba Cloud"]
+    direction TB
+    TS[("Tablestore<br/>MemoryStore: sessions / messages<br/>KnowledgeStore: catalog · customers ·<br/>episodic memory · SOP (vector + FTS)<br/>qm_quotes · qm_audit · qm_counters")]
+    OSSB[("OSS Buckets<br/>quotemind-inbox (RFQ drop)<br/>quotemind-artifacts (PDF · pages ·<br/>traces · outbox)")]
+end
+
+MAIL["DirectMail SMTP<br/>bilingual quote email"]
+OTEL["OpenTelemetry GenAI spans<br/>tokens · cost · trace.json"]
+
+BUYER -- "upload / paste RFQ" --> API
+BUYER -- "file drop (email sim)" --> OSSB
+OSSB -- "object-created event" --> INGEST
+MANAGER --> SPA
+JUDGE --> API
+SPA -- "REST + Bearer" --> API
+
+API --> ORCH
+INGEST --> ORCH
+ORCH --> INTAKE --> PARSER --> MATCHER --> PRICER --> DRAFTER --> CRITIC --> HITL
+HITL -- "approve" --> DISPATCH
+HITL -- "revise (max 3)" --> DRAFTER
+MATCHER <--> MCP
+DISPATCH <--> MCP
+
+INTAKE -.-> QPLUS
+PARSER -.-> QVL
+PARSER -.-> QPLUS
+MATCHER -.-> QEMB
+MATCHER -.-> QMAX
+ORCH -.-> QMAX
+DRAFTER -.-> QMAX
+CRITIC -.-> QMAX
+
+AGENTS <--> TS
+HITL <--> TS
+DISPATCH --> OSSB
+DISPATCH --> MAIL
+PARSER <--> OSSB
+AGENTS -.-> OTEL
+
+style QWEN fill:#FFF7E0,stroke:#F4BA17,stroke-width:3px
+style DATA fill:#F5EFE7,stroke:#45210E,stroke-width:2px
+style BACKEND fill:#FDFBF7,stroke:#45210E,stroke-width:2px
+style FRONTEND fill:#FDFBF7,stroke:#45210E,stroke-width:2px
+style HITL fill:#F4BA17,stroke:#45210E,stroke-width:3px,color:#45210E
+style PRICER fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+style ACTORS fill:none,stroke:none

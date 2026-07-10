@@ -1,0 +1,59 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#FDF6EC"
+    primaryTextColor: "#45210E"
+    primaryBorderColor: "#45210E"
+    lineColor: "#45210E"
+    actorBkg: "#F4BA17"
+    actorTextColor: "#45210E"
+    actorBorder: "#45210E"
+    noteBkgColor: "#FFF7E0"
+    noteBorderColor: "#F4BA17"
+    fontFamily: "Be Vietnam Pro, Arial, sans-serif"
+---
+sequenceDiagram
+    autonumber
+    participant B as Buyer
+    participant CH as Channel<br/>(API / OSS drop)
+    participant OR as Orchestrator<br/>(qwen3-max)
+    participant PA as Parser<br/>(qwen-vl-ocr / qwen-plus)
+    participant CM as CatalogMatcher<br/>(embed v4 + qwen3-max)
+    participant PE as PricingEngine<br/>(deterministic)
+    participant DR as Drafter<br/>(qwen3-max)
+    participant CR as Critic<br/>(recompute + qwen3-max)
+    participant TS as Tablestore<br/>(memory + state)
+    participant M as Manager (HITL)
+    participant DP as Dispatch<br/>(PDF · OSS · mail)
+
+    B->>CH: RFQ (VI/EN text · PDF · scan · xlsx)
+    CH->>OR: run_quote(quote_id)
+    OR->>TS: create session · status=parsing
+    OR->>PA: extract line items
+    PA->>PA: rasterize pages · vision/text extract
+    PA-->>OR: RFQExtraction (confidence, spans)
+    OR->>CM: match lines
+    CM->>TS: vector_search + full_text_search (catalog)
+    TS-->>CM: candidates
+    CM-->>OR: MatchResults (needs_confirmation flags)
+    OR->>PE: price_quote(matches, customer)
+    Note over PE: tier price · VAT 8%/10%<br/>margin · Decimal only — no LLM math
+    PE-->>OR: PricedQuote
+    OR->>TS: retrieve episodic memory (importance × decay)
+    TS-->>OR: top-3 memories (≤1200 tokens)
+    OR->>DR: draft bilingual quote (+memories, +SOP)
+    DR-->>OR: Quote (numbers checksum-verified)
+    OR->>CR: validate
+    CR->>PE: recompute all totals
+    PE-->>CR: exact match ✓
+    CR-->>OR: CriticReport (flags)
+    OR->>TS: status=pending_approval · persist state
+    Note over OR,M: ⏸ DURABLE PAUSE — function exits.<br/>Approval may arrive hours later. A new<br/>invocation resumes from Tablestore state.
+    M->>OR: approve (or revise ↩ Drafter, max 3)
+    OR->>TS: status=approved · audit(actor=human)
+    OR->>DP: dispatch
+    DP->>DP: WeasyPrint bilingual PDF (Be Vietnam Pro)
+    DP->>TS: episodic memory write (importance init)
+    DP-->>M: presigned URL · email sent
+    DP-->>B: Báo giá / Quotation QM-2026-NNNN

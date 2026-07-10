@@ -1,0 +1,26 @@
+
+# CyberOS vendored machine + local BRAIN at .cyberos/memory/store (regenerable via init; tenant data). Do not commit.
+.cyberos/
+
+# --- QuoteMind build artifacts (do not commit) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+build/
+dist/
+src_build/
+*.egg-info/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+eval/reports/*.json
+frontend/node_modules/
+frontend/dist/
+docs/openapi.json
+.DS_Store
