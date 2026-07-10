@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # PR-1 imports only the light core; move to .[all,dev] when a heavy import lands
+      # (PR-4 memory / EP-02 agents) so import-linter can build the full graph.
+      - run: pip install -e .[dev]
+      - run: ruff check .
+      - run: lint-imports
+
+  type:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .[dev]
+      - run: mypy -p quotemind
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .[dev]
+      - run: pytest -q --cov=quotemind --cov-report=term-missing
+
+  # TODO(later PRs): smoke-eval (FR-123), golden-pdf (FR-124), diagrams (SUB-03).
