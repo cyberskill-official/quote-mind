@@ -19,3 +19,5 @@ E.1,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified
 E.2,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (live DashScope)
 E.3,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (AgentScope structured output)
 MEM-live,-,PR-4,feat/PR-4-memory,src/quotemind/memory/store.py,live Tablestore init_tables + put/get round-trip,verified
+FR-046,P0,EP-04,feat/EP-04-forgetting,src/quotemind/memory/episodic.py + gc.py,tests/unit/test_episodic_scoring.py + test_gc.py,implemented
+FR-049,P1,EP-04,feat/EP-04-forgetting,src/quotemind/memory/budget.py,tests/unit/test_budget.py,implemented
