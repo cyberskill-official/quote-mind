@@ -83,3 +83,19 @@ Cloud storage plane - BLOCKED on account setup (not code):
   TABLESTORE_INSTANCE / TABLESTORE_ENDPOINT does not resolve to an existing instance (name/region or
   endpoint mismatch, or the instance is not fully created).
 Provision (FR-004) will complete once OSS is activated and the Tablestore instance name/endpoint match.
+
+## 2026-07-11 - PR-4 Tablestore live verification (memory adapter)
+
+Root cause of the earlier "instance not found": .env kept the .env.example default
+TABLESTORE_INSTANCE=quotemind while the real instance is quotemind-demo. Corrected to
+quotemind-demo (the endpoint was already correct).
+
+Live against the real ap-southeast-1 instance:
+- MemoryFacade.from_settings(...).init_tables() created the session, message, and knowledge tables.
+  The session/message search indexes are skipped by the SDK because no search schema is supplied;
+  QuoteMind uses point reads for those and the knowledge vector/FTS index for retrieval.
+- put_customer -> get_customer round-trip returned an equal CustomerProfile. The memory adapter is
+  live-verified: DM models write to and read back from real Tablestore correctly.
+
+Still pending: OSS remains 403 UserDisable (account activation). provision.py creates the OSS buckets
+before Tablestore, so the full FR-004 run completes once OSS is activated.

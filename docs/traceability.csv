@@ -18,3 +18,4 @@ FR-040,P0,PR-4,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_me
 E.1,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified
 E.2,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (live DashScope)
 E.3,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (AgentScope structured output)
+MEM-live,-,PR-4,feat/PR-4-memory,src/quotemind/memory/store.py,live Tablestore init_tables + put/get round-trip,verified

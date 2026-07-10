@@ -162,3 +162,12 @@ provision.py fixed to pass region to oss2 (V4 signing requires an explicit regio
 BLOCKED on operator account setup (not code): OSS returns 403 UserDisable (activate OSS / billing /
 verification) and Tablestore returns "instance not found" (TABLESTORE_INSTANCE / _ENDPOINT must match
 an existing ap-southeast-1 instance). Provisioning and live memory resume once those are resolved.
+
+## 2026-07-11 - PR-4 Tablestore live verification
+
+The earlier OTS "instance not found" was a config typo: .env had the example default
+TABLESTORE_INSTANCE=quotemind vs the real instance quotemind-demo. Fixed on the Mac. Against the live
+ap-southeast-1 instance, init_tables() provisioned the tables and a put_customer/get_customer
+round-trip through MemoryFacade returned an equal model - the memory adapter is live-verified. OSS is
+still 403 UserDisable pending account activation, so the full provision.py run (OSS buckets first)
+completes once OSS is on.
