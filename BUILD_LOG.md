@@ -171,3 +171,31 @@ ap-southeast-1 instance, init_tables() provisioned the tables and a put_customer
 round-trip through MemoryFacade returned an equal model - the memory adapter is live-verified. OSS is
 still 403 UserDisable pending account activation, so the full provision.py run (OSS buckets first)
 completes once OSS is on.
+
+## 2026-07-11 - EP-04 forgetting + budget (branch feat/EP-04-forgetting, stacked on feat/PR-4-memory)
+
+Scope (offline, out of strict PR-1..5 order): the pure memory-decay and budget logic, built while
+OSS activation is pending so no time is lost.
+
+Delivered:
+- memory/episodic.py: initial_importance (FR-046), recency_decay 0.5^(age/90), effective_score
+  (similarity x decay x importance), effective_ceiling, should_prune, rank_by_effective_score.
+- memory/budget.py: estimate_tokens (~4 chars/token heuristic) and budget_trim keeping the highest
+  effective-score items within a token cap, flagging truncation (FR-049; 2500 context / 1200
+  episodic budgets).
+- memory/gc.py: run_gc prunes episodic memories whose effective ceiling is below 0.05 and counts
+  customers past the compaction limit; `python -m quotemind.memory.gc` entry. The live scan/delete
+  path uses the facade; compaction (an LLM profile summary) is flagged for the agent path.
+- Tests: importance/decay/score/ceiling/ranking (including the FR-046 AC that a fresh memory
+  outranks a 200-day-old one of equal similarity), budget trim, and a mocked-facade gc prune.
+
+Fixes and notes:
+- The FR-002 missing-variable test now runs in an isolated cwd so a real .env at the repo root no
+  longer supplies the value (pydantic-settings reads .env; os.environ still wins for the other
+  tests). This surfaced once the live-verification .env was created.
+- Faithfulness note: with the FR-046 importance floor of 0.7 for episodic memories, the prune
+  ceiling (<0.05) is only reached past ~340 days, so the gc demo relies on the seed setting low
+  importances or old ages. The gc functions implement the formula exactly.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (43 files), import-linter 4/4 kept,
+pytest 80 passed.

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from quotemind.config.settings import get_settings, require_settings
@@ -14,7 +16,10 @@ def test_settings_load_with_env() -> None:
     assert settings.mail_transport == "stub"  # FR-093 demo default
 
 
-def test_missing_required_var_exits_naming_it(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_required_var_exits_naming_it(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)  # isolate from any real .env at the repo root
     monkeypatch.delenv("DASHSCOPE_API_KEY", raising=False)
     with pytest.raises(SystemExit) as exc_info:
         require_settings()
