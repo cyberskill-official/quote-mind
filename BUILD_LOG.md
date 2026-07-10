@@ -54,3 +54,33 @@ Verification (2026-07-11, Python 3.10 sandbox, light toolchain, no paid-API call
 Open questions:
 - Whether to wire the CyberOS gate runner (.cyberos/gates.env) to the Makefile is pending an
   operator decision; explanation provided in chat.
+
+## 2026-07-11 - PR-2 (branch feat/PR-2-models)
+
+Scope: the models package (DM-01..14) and the quote state machine, per QM-REPO-001 section 9.
+Frozen field names and the Status enum/transition table match parent section 7, 5.2, and 12.
+
+Delivered:
+- src/quotemind/models/: common.py (BilingualText DM-04, shared enums, new_ulid), quote_record.py
+  (Status + LEGAL_TRANSITIONS + QuoteRecord DM-01 + transition guard), intake.py (DM-02),
+  extraction.py (DM-03), catalog.py (DM-05/06), memory.py (DM-07/08), matching.py (DM-09),
+  quote.py (DM-10), critic.py (DM-11), audit.py (DM-12 + hash chain), eval.py (DM-13),
+  trace.py (DM-14), and __init__.py re-exporting the public surface.
+- Tests: exhaustive legal and illegal Status transitions (FR-080 AC, all pairs), DM schema
+  round-trips (EV-02), and the audit hash chain build/verify/tamper.
+
+Decisions (logged):
+1. Status and LEGAL_TRANSITIONS are verbatim from parent 5.2 (frozen 12.9). Terminal states
+   derive from the table (statuses with no outgoing edges).
+2. Optionality: DM field names match section 7 exactly; fields populated later in the lifecycle
+   (source_uri, totals_json, sha256_payload, embeddings, source_span, and so on) are Optional
+   with None defaults. This sets nullability, not the frozen field set.
+3. Audit hash chain: sha256 over a canonical JSON body (sorted keys, compact separators,
+   ensure_ascii off) excluding the hash field; genesis prev_hash is 64 zeros. The spec fixes
+   "sha256 chain" but not the encoding, so this is the chosen, documented canonicalization.
+4. A few categorical values not fixed by section 7 (Channel, DocType, Urgency, SopTopic,
+   customer match method) use sensible enum values; revisit if a later FR pins them.
+
+Verification (2026-07-11, Python 3.10 sandbox): ruff clean, mypy clean (36 files), import-linter
+4 of 4 kept, pytest 18 passed. UP042 (enum.StrEnum) is ignored alongside UP017 so the code runs
+on the 3.10 gate; (str, Enum) is valid on 3.12.

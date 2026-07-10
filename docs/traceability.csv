@@ -4,3 +4,6 @@ FR-002,P0,PR-1,feat/FR-001-scaffold,src/quotemind/config/settings.py,tests/unit/
 FR-008,P0,PR-1,feat/FR-001-scaffold,src/quotemind/obs/log.py,tests/unit/test_logging.py,implemented
 FR-009,P0,PR-1,feat/FR-001-scaffold,src/quotemind/api/app.py,tests/unit/test_health.py,implemented
 FR-010,P0,PR-1,feat/FR-001-scaffold,src/quotemind/api/auth.py,tests/unit/test_auth.py,implemented
+FR-080,P0,PR-2,feat/PR-2-models,src/quotemind/models/quote_record.py (Status machine),tests/unit/test_state_machine.py,implemented
+DM-01..14,P0,PR-2,feat/PR-2-models,src/quotemind/models/ (all aggregates),tests/unit/test_models_roundtrip.py,implemented
+DM-12,P0,PR-2,feat/PR-2-models,src/quotemind/models/audit.py (hash chain),tests/unit/test_audit_chain.py,implemented
