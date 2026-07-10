@@ -7,3 +7,9 @@ FR-010,P0,PR-1,feat/FR-001-scaffold,src/quotemind/api/auth.py,tests/unit/test_au
 FR-080,P0,PR-2,feat/PR-2-models,src/quotemind/models/quote_record.py (Status machine),tests/unit/test_state_machine.py,implemented
 DM-01..14,P0,PR-2,feat/PR-2-models,src/quotemind/models/ (all aggregates),tests/unit/test_models_roundtrip.py,implemented
 DM-12,P0,PR-2,feat/PR-2-models,src/quotemind/models/audit.py (hash chain),tests/unit/test_audit_chain.py,implemented
+FR-050,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py,tests/unit/test_pricing.py,implemented
+FR-051,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (unit_price),tests/unit/test_pricing.py,implemented
+FR-052,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/vat.py,tests/unit/test_vat.py,implemented
+FR-053,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (margin),tests/unit/test_pricing.py,implemented
+FR-054,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (to_usd/format),tests/unit/test_pricing.py,implemented
+FR-055,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/words_vi.py,tests/unit/test_words_vi.py,implemented

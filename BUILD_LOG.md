@@ -84,3 +84,34 @@ Decisions (logged):
 Verification (2026-07-11, Python 3.10 sandbox): ruff clean, mypy clean (36 files), import-linter
 4 of 4 kept, pytest 18 passed. UP042 (enum.StrEnum) is ignored alongside UP017 so the code runs
 on the 3.10 gate; (str, Enum) is valid on 3.12.
+
+## 2026-07-11 - PR-3 (branch feat/PR-3-pricing, stacked on feat/PR-2-models)
+
+Scope: the deterministic pricing engine (FR-050..055), per QM-REPO-001 section 9. Pure Decimal
+math; pricing imports only models and never the network, agents, or an LLM (D-03).
+
+Delivered:
+- pricing/engine.py: unit_price (FR-051 tiers + dealer fallback), line_total, vat_amount,
+  quote_totals (per-rate VAT breakdown), margin + blended_margin (FR-053), to_usd (FR-054),
+  format_vnd / format_usd (FR-055). All quantized to whole đồng.
+- pricing/vat.py: allowed rates {0,5,8,10}, the 2025-07-01..2026-12-31 reduction window, telecom
+  forced to 10%, and vat_policy_note (Appendix B footer).
+- pricing/words_vi.py: Vietnamese amount-in-words converter.
+- Tests: tiered pricing + fallback, totals grouping, a hypothesis property test (totals equal the
+  sum of parts, VND integers) for FR-050, VAT rules with the date switch, and 28 amount-in-words
+  cases plus the negative guard. Pricing has 100% branch coverage, now enforced in CI.
+
+Decisions and flags:
+1. amount_in_words_vi follows the single worked example in the spec (1234000 ->
+   "Một triệu hai trăm ba mươi bốn nghìn đồng"): 4 -> "bốn", tens+1 -> "mốt", tens+5 -> "lăm",
+   a missing tens digit -> "linh", zero hundreds in a non-leading group -> "không trăm". The
+   FR-055 30-case table is not in the spec pack, so these cases are my own derivation. If the
+   official table prefers "tư" or "lẻ" in some positions, that is a localized wording tweak, not a
+   logic change. FLAGGED for Stephen's review as the native-language authority.
+2. unit_price takes an optional project_discount_pct (default 3) so the frozen two-arg call still
+   works; the missing-dealer-price flag is emitted later at line assembly, not by the pure price
+   function.
+3. The CI unit job now enforces pricing 100% branch coverage (NFR-010, QM-REPO-001 section 8).
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (39 files), import-linter 4/4 kept
+(the pricing-pure contract held), pytest 63 passed, pricing branch coverage 100%.
