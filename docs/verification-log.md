@@ -61,3 +61,25 @@ Signatures the adapter relies on:
 
 E.2 (live model availability probe) and E.3 (AgentScope structured-output smoke) need a
 DASHSCOPE_API_KEY and paid calls; NOT run here, pending operator credentials.
+
+## 2026-07-11 - PR-4 live verification (Appendix E.2/E.3 on real DashScope)
+
+Model plane (DashScope international / Singapore) - PASS:
+- E.2 model availability (openai-compatible base .../compatible-mode/v1): qwen3-max OK, qwen-plus OK,
+  qwen3-vl-plus OK, qwen-max OK, text-embedding-v4 OK (dim=1024 confirmed). qwen-vl-ocr is reachable
+  (it returned a 400 about message role because a text ping is the wrong shape for a vision-OCR model,
+  not an availability error), so no FR-012 fallback is needed.
+- E.3 AgentScope 1.0.9 structured output: ReActAgent(qwen-plus) + DashScopeChatFormatter with
+  structured_model returned metadata={'ok': True}. PASS.
+- Finding: AgentScope's DashScopeChatModel uses the native dashscope API base, which for Singapore is
+  https://dashscope-intl.aliyuncs.com/api/v1 (NOT the openai compatible-mode base). The agent layer
+  must set base_http_api_url to that. A harmless DeprecationWarning notes DashScope converts tool
+  choice 'required' to 'auto'.
+
+Cloud storage plane - BLOCKED on account setup (not code):
+- OSS create_bucket -> 403 UserDisable (EC 0003-00000801). Account-level: OSS not activated, overdue
+  payment, or a security/verification hold. V4 signing and region were correct; the request reached OSS.
+- Tablestore list_table -> OTSAuthFailed "The instance is not found". The AccessKey authenticated; the
+  TABLESTORE_INSTANCE / TABLESTORE_ENDPOINT does not resolve to an existing instance (name/region or
+  endpoint mismatch, or the instance is not fully created).
+Provision (FR-004) will complete once OSS is activated and the Tablestore instance name/endpoint match.

@@ -16,3 +16,5 @@ FR-055,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/words_vi.py,tests/unit/te
 FR-004,P0,PR-4,feat/PR-4-memory,deploy/provision.py,,written (live-run pending creds)
 FR-040,P0,PR-4,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented
 E.1,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified
+E.2,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (live DashScope)
+E.3,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (AgentScope structured output)

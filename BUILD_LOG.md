@@ -148,3 +148,17 @@ pytest 70 passed. UP047 (PEP 695 generics) joins the ignore list for 3.10 compat
 DECISION NEEDED (live cloud): the memory adapter's live behavior, running deploy/provision.py, and
 the Appendix E.2/E.3 model probes all require Alibaba Cloud plus DashScope credentials and consent
 to spend on paid Qwen calls. Deferred until the operator provides them.
+
+## 2026-07-11 - PR-4 live verification
+
+Model plane verified end to end on real DashScope (Singapore): Appendix E.2 (all frozen model
+constants available; text-embedding-v4 dim 1024) and E.3 (AgentScope 1.0.9 structured output,
+metadata={'ok': True}) both PASS. Recorded in docs/verification-log.md, including the finding that
+AgentScope's DashScopeChatModel needs base_http_api_url=https://dashscope-intl.aliyuncs.com/api/v1
+for Singapore (distinct from the openai compatible-mode base).
+
+provision.py fixed to pass region to oss2 (V4 signing requires an explicit region).
+
+BLOCKED on operator account setup (not code): OSS returns 403 UserDisable (activate OSS / billing /
+verification) and Tablestore returns "instance not found" (TABLESTORE_INSTANCE / _ENDPOINT must match
+an existing ap-southeast-1 instance). Provisioning and live memory resume once those are resolved.

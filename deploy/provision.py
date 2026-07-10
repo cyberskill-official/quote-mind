@@ -23,8 +23,8 @@ from quotemind.memory.store import MemoryFacade
 _EXISTS_CODES = {"BucketAlreadyExists", "BucketAlreadyOwnedByYou"}
 
 
-def _ensure_bucket(auth: oss2.ProviderAuthV4, endpoint: str, name: str) -> str:
-    bucket = oss2.Bucket(auth, endpoint, name)
+def _ensure_bucket(auth: oss2.ProviderAuthV4, endpoint: str, name: str, region: str) -> str:
+    bucket = oss2.Bucket(auth, endpoint, name, region=region)
     try:
         bucket.create_bucket(oss2_models.BUCKET_ACL_PRIVATE)
     except oss2_exceptions.ServerError as exc:
@@ -42,8 +42,8 @@ def provision(settings: Settings) -> list[str]:
         )
     )
     report = [
-        _ensure_bucket(auth, settings.oss_endpoint, settings.oss_bucket_inbox),
-        _ensure_bucket(auth, settings.oss_endpoint, settings.oss_bucket_artifacts),
+        _ensure_bucket(auth, settings.oss_endpoint, settings.oss_bucket_inbox, settings.region),
+        _ensure_bucket(auth, settings.oss_endpoint, settings.oss_bucket_artifacts, settings.region),
     ]
     MemoryFacade.from_settings(settings).init_tables()
     report.append("tablestore tables and indexes initialized (vector dim 1024)")
