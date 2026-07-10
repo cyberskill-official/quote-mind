@@ -38,6 +38,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .[dev]
-      - run: pytest -q --cov=quotemind --cov-report=term-missing
+      - run: pytest -q --cov=quotemind --cov-branch --cov-report=term-missing
+      # Money path: 100% branch coverage on the pricing engine (NFR-010, QM-REPO-001 section 8).
+      - run: pytest -q --cov=quotemind.pricing --cov-branch --cov-fail-under=100
 
   # TODO(later PRs): smoke-eval (FR-123), golden-pdf (FR-124), diagrams (SUB-03).

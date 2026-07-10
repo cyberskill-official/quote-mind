@@ -17,7 +17,7 @@ src_build/
 .ruff_cache/
 .mypy_cache/
 .pytest_cache/
-.coverage
+.coverage*
 htmlcov/
 eval/reports/*.json
 frontend/node_modules/
