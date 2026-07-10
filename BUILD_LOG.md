@@ -115,3 +115,59 @@ Decisions and flags:
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (39 files), import-linter 4/4 kept
 (the pricing-pure contract held), pytest 63 passed, pricing branch coverage 100%.
+
+## 2026-07-11 - PR-4 (branch feat/PR-4-memory, stacked on feat/PR-3-pricing)
+
+Scope (offline part): the memory adapter over tablestore-for-agent-memory and the provisioning
+script, per QM-REPO-001 section 9. Appendix E.1 (SDK surface) was verified against the installed
+1.1.3 wheel; E.2/E.3 (live model + AgentScope smoke) need credentials and are deferred.
+
+Delivered:
+- memory/store.py: MemoryFacade translating DM models to and from the SDK Document/Session/Message.
+  Catalog, customers, episodic (per-customer tenant), and SOP go to KnowledgeStore as payload_json
+  plus filterable scalars plus embedding; sessions and messages go to MemoryStore. Frozen tenant
+  names catalog/customers/episodic:{id}/sop (parent 12.5). from_settings builds the OTSClient and
+  stores (vector dim 1024, multi-tenant); init_tables provisions them.
+- deploy/provision.py: FR-004 idempotent OSS bucket and Tablestore table/index creation, using the
+  oss2 ProviderAuthV4 + StaticCredentialsProvider API verified against oss2 2.19.1. Written, not run.
+- Tests: mocked-store unit tests exercise the DM<->SDK translation (Document build, payload round
+  trip, hit mapping, session/message shaping, init_tables). No live calls.
+- CI and make setup now install the .[memory] extra (first heavy dependency to land).
+
+Decisions and findings:
+1. Appendix E.1 confirmed the SDK import paths differ from the spec's assumption; the adapter
+   absorbs the drift (Risk #2). Real paths and signatures are in docs/verification-log.md.
+2. SDK metadata holds only scalar values, so each aggregate is persisted as a payload_json string
+   plus filterable scalars and reconstructed on read.
+3. run_gc (FR-046 forgetting) and episodic importance-decay retrieval (FR-044/045) are EP-04 proper
+   and land in a later PR; PR-4 is the adapter plus provisioning per the blueprint.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (40 files), import-linter 4/4 kept,
+pytest 70 passed. UP047 (PEP 695 generics) joins the ignore list for 3.10 compatibility.
+
+DECISION NEEDED (live cloud): the memory adapter's live behavior, running deploy/provision.py, and
+the Appendix E.2/E.3 model probes all require Alibaba Cloud plus DashScope credentials and consent
+to spend on paid Qwen calls. Deferred until the operator provides them.
+
+## 2026-07-11 - PR-4 live verification
+
+Model plane verified end to end on real DashScope (Singapore): Appendix E.2 (all frozen model
+constants available; text-embedding-v4 dim 1024) and E.3 (AgentScope 1.0.9 structured output,
+metadata={'ok': True}) both PASS. Recorded in docs/verification-log.md, including the finding that
+AgentScope's DashScopeChatModel needs base_http_api_url=https://dashscope-intl.aliyuncs.com/api/v1
+for Singapore (distinct from the openai compatible-mode base).
+
+provision.py fixed to pass region to oss2 (V4 signing requires an explicit region).
+
+BLOCKED on operator account setup (not code): OSS returns 403 UserDisable (activate OSS / billing /
+verification) and Tablestore returns "instance not found" (TABLESTORE_INSTANCE / _ENDPOINT must match
+an existing ap-southeast-1 instance). Provisioning and live memory resume once those are resolved.
+
+## 2026-07-11 - PR-4 Tablestore live verification
+
+The earlier OTS "instance not found" was a config typo: .env had the example default
+TABLESTORE_INSTANCE=quotemind vs the real instance quotemind-demo. Fixed on the Mac. Against the live
+ap-southeast-1 instance, init_tables() provisioned the tables and a put_customer/get_customer
+round-trip through MemoryFacade returned an equal model - the memory adapter is live-verified. OSS is
+still 403 UserDisable pending account activation, so the full provision.py run (OSS buckets first)
+completes once OSS is on.

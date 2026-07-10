@@ -2,7 +2,7 @@
 
 ## setup: install the package + dev toolchain (light core; Python 3.12)
 setup:
-	pip install -e .[dev]
+	pip install -e .[memory,dev]
 
 ## setup-all: install the full runtime stack + dev toolchain
 setup-all:

@@ -70,9 +70,9 @@ extend-exclude = [".cyberos", "docs/spec", ".venv", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "W"]
-# UP017 (datetime.UTC) and UP042 (enum.StrEnum) are skipped so the code also runs on the
-# 3.10 offline gate; (str, Enum) and datetime.timezone.utc are valid on 3.12 as well.
-ignore = ["UP017", "UP042"]
+# UP017 (datetime.UTC), UP042 (enum.StrEnum), and UP047 (PEP 695 generics) are skipped so the
+# code also runs on the 3.10 offline gate; the classic spellings are valid on 3.12 as well.
+ignore = ["UP017", "UP042", "UP047"]
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = [
