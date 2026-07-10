@@ -274,3 +274,40 @@ Decisions / notes (logged, not frozen-registry items):
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (46 files), import-linter 4/4 kept,
 pytest 96 passed.
+
+## 2026-07-11 - EP-06/EP-09 numbering + bilingual HTML render (branch feat/FR-090-render)
+
+Scope (offline): FR-062 quote numbering (pure format) and the FR-090 render's deterministic half -
+the bilingual HTML per the normative Appendix C layout. Jinja2 is a core dependency, so the HTML
+render needs no extra; the WeasyPrint PDF byte-generation is a lazy live path behind the pdf extra.
+
+Delivered:
+- quote/numbering.py (FR-062): format_quote_number / parse_quote_number / is_valid_quote_number for
+  the frozen QM-YYYY-NNNN format (seq zero-padded to 4, widening past 9999). The per-year atomic
+  counter (qm_counters) stays a runtime concern; only the format lives here, tested offline.
+- quote/render/quote.html.j2 (FR-090): A4 bilingual layout following Appendix C section by section -
+  Umber #45210E header band with an Ochre #F4BA17 rule, seller/customer blocks, meta row, the
+  STT|Mô tả/Description|ĐVT/Unit|SL/Qty|Đơn giá/Unit price|Thành tiền/Amount table with zebra rows
+  and indented Ochre-bordered note rows, right-aligned totals with a per-rate "Thuế GTGT n% / VAT n%"
+  line and the Bằng chữ/In words line, a 2x2 terms grid, the bank block, the signature row, and a
+  running footer carrying the VAT policy note, FX note, and short quote-id hash.
+- quote/render/__init__.py: render_html(quote, vat_policy_note=..., ...) builds the context (every
+  money value formatted by the pricing engine - the template never computes) and renders with
+  autoescape on; render_pdf lazily imports WeasyPrint and raises a clear error when the pdf extra is
+  absent. build_context is exposed for testing.
+- quote/__init__.py also exports the numbering helpers.
+- pyproject: package-data ships the .j2 template and fonts/ inside the wheel.
+- Tests (7): numbering format/parse/validate incl. >9999 widening and invalid inputs; HTML render
+  is bilingual and byte-exact on Vietnamese diacritics (BÁO GIÁ, Mô tả, Đơn giá, Bằng chữ, the
+  bằng-chữ total), carries dot-thousands totals and both VAT-rate lines and the USD reference, shows
+  the bank block (ACB / account / ASCBVNVX), the brand palette, and autoescapes an "R&D" ampersand.
+
+Decisions / notes (logged):
+- Be Vietnam Pro is referenced via @font-face url() to fonts/*.ttf; the TTFs are not yet bundled
+  (only fonts/.gitkeep), so the live PDF must add them for correct diacritic rendering. The HTML
+  render and its tests do not need the fonts.
+- The seller identity and bank block are data-driven from quote.seller_block (with a nested "bank"
+  dict), not hardcoded, so the template stays free of the frozen registry.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (47 files), import-linter 4/4 kept,
+pytest 103 passed.

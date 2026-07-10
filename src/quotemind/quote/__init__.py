@@ -17,6 +17,7 @@ from .critic import (
     recompute_diffs,
     run_critic,
 )
+from .numbering import format_quote_number, is_valid_quote_number, parse_quote_number
 
 __all__ = [
     "BILINGUAL_NUMBER_MISMATCH",
@@ -28,7 +29,10 @@ __all__ = [
     "UNKNOWN_CUSTOMER",
     "VALIDITY_OUT_OF_BOUNDS",
     "bilingual_number_mismatches",
+    "format_quote_number",
+    "is_valid_quote_number",
     "mojibake_fields",
+    "parse_quote_number",
     "policy_flags",
     "recompute_diffs",
     "run_critic",
