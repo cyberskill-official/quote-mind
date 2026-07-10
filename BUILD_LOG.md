@@ -234,3 +234,43 @@ Decisions / notes (logged, not frozen-registry items):
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (45 files), import-linter 4/4 kept,
 pytest 86 passed.
+
+## 2026-07-11 - EP-07 critic core (branch feat/FR-070-critic)
+
+Scope (offline, out of strict PR-1..5 order): the deterministic, code-enforced half of the critic -
+FR-070 independent recomputation, the computable subset of FR-071 policy flags, and FR-072 bilingual
+number + mojibake checks. Pure functions over an assembled Quote (DM-10) -> CriticReport (DM-11); no
+network, no LLM. The LLM critic narrative (FR-073) layers on top in AGT-07.
+
+Delivered (src/quotemind/quote/critic.py):
+- FR-070 recompute_diffs(quote): recomputes each line total and VAT, then subtotal / per-rate VAT
+  breakdown / grand total, using the SAME pricing-engine functions (line_total, vat_amount,
+  quote_totals) so the engine stays the single source of numeric truth (D-03, hard rule 2). Any
+  claimed value that differs by > 0 VND becomes a RecomputeDiff (field, expected, actual, line_idx);
+  run_critic then adds the blocking RECOMPUTE_MISMATCH. Meets the FR-070 AC (a tampered line total
+  fails with the offending line id).
+- FR-071 policy_flags(quote, ...): MARGIN_BELOW_FLOOR (blocking; blended or any per-line margin
+  below floor, default 5 from settings) and MISSING_MANDATORY_FIELDS (blocking); UNKNOWN_CUSTOMER,
+  NEEDS_CONFIRMATION (any substituted/no-match line), and VALIDITY_OUT_OF_BOUNDS (non-blocking).
+- FR-072 bilingual_number_mismatches + mojibake_fields: vi/en fields must carry the same numeric
+  tokens (regex/numeric diff after stripping thousands separators, never the LLM); mojibake detected
+  by U+FFFD, a "â€" artifact, or a Latin-1 high letter followed by a U+0080-U+00BF byte - none of
+  which occur in correct NFC Vietnamese. Both raise blocking flags.
+- run_critic(...) -> CriticReport: passed only when nothing blocks; carries a deterministic bilingual
+  summary note (the rich narrative is FR-073, the agent's job).
+- quote/__init__.py exports the critic surface.
+- Tests (10): clean pass; tampered line total (FR-070 AC), subtotal+total, and VAT breakdown; margin
+  floor; the three non-blocking flags together (which do not fail the quote); bilingual number
+  mismatch; mojibake; missing mandatory field.
+
+Decisions / notes (logged, not frozen-registry items):
+- FR-071 VAT_EXCLUDED_CATEGORY mismatch and the SOP validity bounds need data the Quote does not
+  carry (line category; SOP min/max). Category enforcement stays in pricing (FR-052, where category
+  exists); the validity check runs only when the agent passes SOP bounds. Logged as a deliberate
+  subset; the rest lands with the agent path.
+- Mojibake and bilingual-number disagreements are treated as BLOCKING: corrupted governing
+  Vietnamese or numbers that disagree across languages are integrity failures that must not ship.
+  FR-072 does not label blocking-ness, so this is a documented choice.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (46 files), import-linter 4/4 kept,
+pytest 96 passed.
