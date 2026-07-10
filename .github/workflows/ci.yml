@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
       # PR-1 imports only the light core; move to .[all,dev] when a heavy import lands
       # (PR-4 memory / EP-02 agents) so import-linter can build the full graph.
-      - run: pip install -e .[dev]
+      - run: pip install -e .[memory,dev]
       - run: ruff check .
       - run: lint-imports
 
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e .[dev]
+      - run: pip install -e .[memory,dev]
       - run: mypy -p quotemind
 
   unit:
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e .[dev]
+      - run: pip install -e .[memory,dev]
       - run: pytest -q --cov=quotemind --cov-branch --cov-report=term-missing
       # Money path: 100% branch coverage on the pricing engine (NFR-010, QM-REPO-001 section 8).
       - run: pytest -q --cov=quotemind.pricing --cov-branch --cov-fail-under=100

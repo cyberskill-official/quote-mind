@@ -39,3 +39,25 @@ scheduled for PR-4/PR-5 and are NOT run at PR-1.
 Environment note: the PR-1 offline gate ran in a Python 3.10 sandbox with the light
 test toolchain (no paid-API calls). The full `make setup && make test` on Python 3.12
 runs in CI and on the FC runtime.
+
+## 2026-07-11 - PR-4 Appendix E.1 (tablestore-for-agent-memory 1.1.3 surface)
+
+Verified against the installed wheel. The real module layout differs from the spec's assumed
+paths (Appendix E notes "adjust to real paths"):
+- MemoryStore: tablestore_for_agent_memory.memory.memory_store
+- KnowledgeStore: tablestore_for_agent_memory.knowledge.knowledge_store
+- Records: base.base_memory_store (Session, Message); base.base_knowledge_store (Document, DocumentHit)
+- Filters: base.filter (Filters.eq / text_match / logical_and / vector_query, ...)
+- Response[T]: base.common (hits, next_token)
+
+Signatures the adapter relies on:
+- KnowledgeStore(tablestore_client, vector_dimension, enable_multi_tenant=False, ...); put_document,
+  get_document(id, tenant_id), vector_search(query_vector, top_k, tenant_id, ...),
+  full_text_search(query, tenant_id, limit, ...), delete_document(id, tenant_id).
+- MemoryStore(tablestore_client, ...); put_session, get_session(user_id, session_id),
+  list_recent_sessions, put_message, list_messages(session_id, ...).
+- Document(document_id, tenant_id='__default', text, embedding, metadata=scalars only) - each
+  aggregate is stored as payload_json (str) plus filterable scalar fields.
+
+E.2 (live model availability probe) and E.3 (AgentScope structured-output smoke) need a
+DASHSCOPE_API_KEY and paid calls; NOT run here, pending operator credentials.
