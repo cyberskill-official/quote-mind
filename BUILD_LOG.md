@@ -1179,3 +1179,41 @@ would want to argue for out loud rather than quietly ship.
 
 Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **334 passed**, pricing branch coverage
 100%.
+
+### FR-048, take two: the retrieval was printing a payment obligation nobody agreed to
+
+I shipped FR-048, quoted a Dell PowerEdge server against the live site, and read the terms it
+produced. The payment term was **"software licences and implementation services: 100% payment before
+activation."**
+
+That is precisely the sin FR-048 exists to fix, committed by FR-048. Two bugs, one symptom:
+
+**The topic filter was applied after a truncation.** `TOP_K` was 4, the search covers the whole
+tenant, and the topic filter ran on the results. With 11 snippets across 5 topics, a topic could
+contribute a single survivor to the top 4 - and a single survivor wins by default, however badly it
+fits. A filter applied after a truncation is a filter over a lottery.
+
+**And similarity is not a classifier.** Even with every candidate present, the software payment term
+scored **0.657** against the generic 30-day term's **0.617** for a server. Both are about money,
+both say "100%", so they sit close together in the embedding. Similarity had no way to know that a
+server is not a software licence, because that is not a similarity question.
+
+Whether a payment term applies to hardware or to software is not fuzzy. **The business knows
+exactly.** So `SOPSnippet.applies_to` names the categories a term may be printed on, the categories
+of the *matched* lines decide which terms are eligible, and similarity only ranks within that.
+Retrieval proposes; the rule disposes - the same shape as the matcher's LLM proposal and its
+deterministic banding, and the same shape as the whole project.
+
+Live, after the fix - three RFQs, three genuinely different documents:
+
+| goods | payment | delivery | warranty |
+|---|---|---|---|
+| 3x PowerEdge R650 | 30% advance over 500M VND | manufacturer lead time | 36 months, on-site |
+| 10x Latitude 5450 | 30% advance over 500M VND | 7 working days | 12 months |
+| 5x Adobe CC | 100% before activation | free within HCMC/Hanoi | vendor support, no hardware warranty |
+
+One more thing worth recording. The *first* server quote after this deploy still came back with the
+old terms, because it landed on a warm Function Compute instance 14 seconds after the rollout. The
+env-var `git_sha` on `/health` had already flipped - config updates before code does. That is the
+"green deploy shipped the wrong code" failure I built the CD guard for, in miniature, and it means
+the guard needs to check *behaviour*, not a version string. Noted for the next round.
