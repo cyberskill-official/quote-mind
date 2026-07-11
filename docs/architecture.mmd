@@ -12,8 +12,10 @@ graph TB
         INGEST["quotemind-ingest<br/><i>OSS object-created trigger</i>"]
 
         subgraph pipeline["AgentScope pipeline (EP-13)"]
-            PARSE["DocumentParser<br/>qwen-plus · qwen-vl-ocr"]
+            PARSE["DocumentParser<br/>qwen-plus · qwen-vl-ocr<br/>digital · scan · xlsx · image"]
             GATE{{"Validation gate<br/>FR-034"}}
+            PLAN["Planner · PlanNotebook<br/>FR-131<br/><i>trivial quotes skip, and say so</i>"]
+            RECALL["Episodic recall<br/>FR-045 · top-3<br/>similarity x recency x importance"]
             MATCH["CatalogMatcher<br/>vector + full-text -> RRF<br/>qwen3-max · SKU whitelist"]
             PRICE["Pricing engine<br/><b>pure Decimal · no LLM</b><br/>FR-050..055"]
             CRITIC{{"Critic<br/>recompute + policy flags<br/>FR-070/071"}}

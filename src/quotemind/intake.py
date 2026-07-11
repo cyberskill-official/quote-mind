@@ -27,9 +27,7 @@ _EXTENSION_TYPES: dict[str, DocType] = {
     ".jpeg": DocType.IMAGE,
 }
 
-_VN_CHARS = set(
-    "ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ"
-)
+_VN_CHARS = set("ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ")
 _URGENT_PATTERN = re.compile(
     r"\b(gấp|khẩn|khan cap|urgent|asap|as soon as possible|ngay hôm nay|immediately)\b",
     re.IGNORECASE,

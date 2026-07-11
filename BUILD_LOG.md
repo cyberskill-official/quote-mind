@@ -1006,3 +1006,99 @@ An honest gap: I could not get a rendered screenshot in this environment (the br
 wedged and headless Chrome fought the updater), so the layout has been verified structurally and by
 the twelve dashboard tests, but not visually by me. A preview file with mock data ships alongside for
 a human to look at.
+
+## Batch: the live audit (fix/live-audit)
+
+Six bugs. Every one passed the whole test suite and failed the moment it met production - and that is
+the thread worth pulling: each lived in a seam the tests mocked away.
+
+**1. The plan and the memories were written and never read back.** `QuoteStore` keeps *two* column
+allowlists - `put_quote` writes, `get_quote` reads - and I updated one. So `plan_json` and
+`episodic_json` were persisted on every quote and read by nobody: the two dashboard panels I had just
+built an entire UI redesign around were **empty in production**, while 310 tests went green.
+
+The tests could not have caught it. `FakeStore.put_quote` took `**payloads` and stored anything handed
+to it - a test double kinder than the thing it doubles is a double that hides it. There is now one
+`PAYLOAD_COLUMNS`, a test asserting the two lists agree, and a fake that rejects any column the real
+store would silently drop. I caught this exact trap on the write side in the previous PR, wrote a
+comment about it, and then walked into its mirror.
+
+**2. Customer resolution: an unmatched name shadowed an exact email.** The candidate search was an
+`or` chain - hint, else company name, else the email's domain - so the email was consulted only when
+there was no name at all. Live, "Cong ty Thanh Cong" resolved and "Thanh Cong" did not, from the same
+address. The customer was flagged UNKNOWN_CUSTOMER, quoted at **list price instead of their dealer
+tier**, and their history was never recalled, because recall needs a resolved customer. Every signal
+is now searched and unioned.
+
+**3. The PDF button had never worked, for two independent reasons.** FR-091 specifies a 302 to a
+presigned OSS URL. Function Compute's default domain refuses cross-domain redirects
+(`ExternalRedirectForbidden`), so the route returned 400 once deployed - it passed under uvicorn. And
+the dashboard linked to it with a plain `<a href>`, which sends no Authorization header, so it would
+have 401'd anyway. The route now returns the signed URL; the client fetches it with its token and
+opens it. The object stays private and the URL short-lived, which is what FR-091 is *for*.
+
+**4. An approved quote could land in `failed_dispatch`.** An RFQ dropped as a file has no sender.
+Approval auto-dispatched, dispatch found no address, and a good approved quote turned red. Nothing had
+failed; nobody had said where to send it. Dispatch now writes `dispatch.skipped` with its reason and
+the quote stays `approved`. The old test asserted the old behaviour - it had encoded the bug as a
+requirement.
+
+**5. Approving twice returned 500.** An illegal transition is a conflict, not a server error. Now 409.
+
+**6. Nothing deployed on merge, and nothing said what was live.** There was no deploy workflow: every
+release went out because I remembered to run `s deploy` from a laptop, and `/health` said
+`git_sha: dev`. The honest answer to "what code is running?" was "probably main, I think". There is
+now a deploy workflow - which also sidesteps the Serverless Devs RAM timeout, GitHub's network not
+being Vietnam's - `/health` reports the deployed commit, and the workflow **fails if the live SHA is
+not the one it just pushed**. A green deploy that shipped the wrong code is worse than a red one,
+because nobody looks again.
+
+**Docs.** The submission description claimed 491 words, was 506, and quoted eval numbers from a
+25-case run that no longer exists. The demo script walked through a system that predated vision OCR,
+the autopilot loop, memory and the planner. Both rewritten; the architecture diagram gains the planner
+and episodic recall.
+
+Verification: ruff clean, mypy clean (81 files), import-linter 4/4, pytest 319 passed, pricing branch
+coverage 100%. Live after the fixes: a bare-name RFQ from Thanh Cong resolves to `cust_thanhcong` at
+dealer tier, recalls its own history (effective 0.719), the PDF downloads (30 KB via signed URL), an
+approved file-drop quote stays approved with `dispatch.skipped` audited, and a second approve is 409.
+
+### The seventh and eighth bugs, found while fixing the sixth
+
+**7. A revision threw away the lines it was revising.** `revise()` appended the human's instruction
+to `source_text` and re-ran the **text** pipeline. For a quote that arrived as a spreadsheet, a PDF
+or a photo, `source_text` is a *placeholder* - the bytes are the document, and the text is only what
+a human reads on the record. So a reviewer who asked for a 3% discount on a file-sourced quote got
+back a quote with **no line items at all**.
+
+Every test passed, because every test revised a quote that had been pasted as text: the one channel
+where the placeholder happens to be the real document. Same seam as the first six.
+
+The extraction is now persisted and `quote_from_revision` re-drafts from *that*. The document is read
+exactly once, deliberately: re-OCRing a scan on every revision is not only expensive, it is
+non-deterministic - the same page can read differently twice, so an instruction about a *price* could
+silently change a *part number*.
+
+**8. There was a third allowlist, and it was the one that wrote.** The comment I had just written on
+`put_quote` said "there are TWO such lists". There were three: the keyword-only signature, an inline
+tuple in the body that did the actual writing, and `PAYLOAD_COLUMNS` on the read side. `extraction_json`
+went into the signature and into `PAYLOAD_COLUMNS` - and the guard test I wrote *in the same commit*
+compared exactly those two, so it passed while the column was dropped on the way to Tablestore. The
+live revision came back `needs_manual: no stored extraction`.
+
+The same bug, one level deeper, caught by the live site rather than by CI. Again. So the other two
+lists are gone: `put_quote` validates against `PAYLOAD_COLUMNS` and **raises** on an unknown column
+rather than dropping it, and the test drives a fake Tablestore client to assert that every column the
+read side looks for is a column the write side actually sent. A typed signature could not express that
+property, which is why it did not hold.
+
+**Also.** `traceability.csv` was missing ten spec FRs entirely - including FR-133, a P0. A matrix that
+omits its own failures is not a matrix. They are in it now, honestly marked: four not implemented,
+three partial (FR-133 among them: `structured_model=` at the text parser, the matcher and the baseline,
+but the vision reader hand-parses JSON, because `qwen-vl-ocr` is an OCR model, not a tool-calling chat
+model).
+
+Verification: ruff clean, mypy clean (80 files), import-linter 4/4, **316 passed**, pricing branch
+coverage 100%. Live, on a real spreadsheet (QM-2026-0013): "chỉ cần 2 màn hình thôi, không phải 8" ->
+all three lines survive, the monitor drops 8 -> 2, and the total is recomputed deterministically from
+463,104,000 to 356,832,000 VND.

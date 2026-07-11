@@ -1,0 +1,135 @@
+# Continuous deployment to Function Compute (FR-003).
+#
+# This exists because merging a PR did not deploy anything. Every release so far went out because a
+# human remembered to run `s deploy` from a laptop - which means the honest answer to "what code is
+# live?" was "probably main, I think". `/health` now reports the deployed commit, and this workflow
+# is what makes that answer true by construction.
+#
+# It also sidesteps a real problem: Serverless Devs hard-codes a 3-second timeout on the RAM call it
+# makes during deploy, and RAM answers in 3-20 seconds from Vietnam - so `s deploy` is unreliable on
+# the developer's own network and perfectly reliable from GitHub's.
+#
+# REQUIRED SECRETS (repo -> Settings -> Secrets and variables -> Actions). Until they exist this
+# workflow no-ops rather than failing, so it cannot break CI on a fork or a clone:
+#
+#   ALIBABA_CLOUD_ACCESS_KEY_ID       ALIBABA_CLOUD_ACCESS_KEY_SECRET
+#   DASHSCOPE_API_KEY                 DEMO_API_TOKEN
+#   TABLESTORE_ENDPOINT               TABLESTORE_INSTANCE
+#   OSS_ENDPOINT                      OSS_BUCKET_INBOX / OSS_BUCKET_ARTIFACTS
+#   SLS_PROJECT                       MAIL_FROM
+#
+# The OSS trigger on quotemind-ingest is NOT created here - see docs/deploy/oss-trigger.md for why
+# (Serverless Devs cannot create it, and it already exists). This workflow updates code and config.
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # so a redeploy never requires an empty commit
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false  # never interrupt a half-written function config
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Are the deploy secrets configured?
+        id: guard
+        run: |
+          if [ -n "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy secrets are not configured; skipping. See .github/workflows/deploy.yml."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install Serverless Devs
+        if: steps.guard.outputs.ready == 'true'
+        run: npm install -g @serverless-devs/s
+
+      - name: Configure the Alibaba Cloud credential
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          s config add --AccessKeyID "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}" \
+                       --AccessKeySecret "${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}" \
+                       -a default -f
+
+      - name: Deploy
+        if: steps.guard.outputs.ready == 'true'
+        working-directory: deploy
+        env:
+          # Stamped into the function so /health can answer "what is live?" without anyone guessing.
+          GIT_SHA: ${{ github.sha }}
+          ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
+          ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          DASHSCOPE_BASE_URL: ${{ vars.DASHSCOPE_BASE_URL || 'https://dashscope-intl.aliyuncs.com/api/v1' }}
+          TABLESTORE_ENDPOINT: ${{ secrets.TABLESTORE_ENDPOINT }}
+          TABLESTORE_INSTANCE: ${{ secrets.TABLESTORE_INSTANCE }}
+          OSS_ENDPOINT: ${{ secrets.OSS_ENDPOINT }}
+          OSS_BUCKET_INBOX: ${{ secrets.OSS_BUCKET_INBOX }}
+          OSS_BUCKET_ARTIFACTS: ${{ secrets.OSS_BUCKET_ARTIFACTS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TRANSPORT: ${{ vars.MAIL_TRANSPORT || 'stub' }}
+          DIRECTMAIL_SMTP_HOST: ${{ vars.DIRECTMAIL_SMTP_HOST || 'smtpdm-ap-southeast-1.aliyuncs.com' }}
+          DIRECTMAIL_SMTP_PORT: ${{ vars.DIRECTMAIL_SMTP_PORT || '465' }}
+          DEMO_API_TOKEN: ${{ secrets.DEMO_API_TOKEN }}
+          SLS_PROJECT: ${{ secrets.SLS_PROJECT }}
+          FX_USD_VND: ${{ vars.FX_USD_VND || '25400' }}
+          MARGIN_FLOOR_PCT: ${{ vars.MARGIN_FLOOR_PCT || '5' }}
+          QUOTE_VALIDITY_DAYS: ${{ vars.QUOTE_VALIDITY_DAYS || '14' }}
+          OTEL_SEMCONV_STABILITY_OPT_IN: ${{ vars.OTEL_SEMCONV_STABILITY_OPT_IN || 'gen_ai_latest_experimental' }}
+        run: |
+          # The ingest function's OSS trigger cannot be created by Serverless Devs (RAM timeout), and
+          # it already exists. Deploying with the block present would try to re-assert it and fail, so
+          # it is commented out for the duration of this deploy only - the file on disk is unchanged.
+          python - <<'PY'
+          import pathlib
+          p = pathlib.Path("s.yaml"); s = p.read_text()
+          i = s.index("      triggers:\n        - triggerName: oss-rfq-drop")
+          p.write_text(s[:i] + "\n".join("#" + l if l.strip() else l for l in s[i:].splitlines()) + "\n")
+          PY
+          s build
+          s deploy -y
+
+      - name: Verify what actually went live
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          sleep 10
+          URL="${{ vars.QUOTEMIND_URL || 'https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run' }}"
+          health=$(curl -fsS --max-time 120 "$URL/health")
+          echo "$health"
+
+          # The deployed commit must be the one we just pushed. A green deploy that shipped the wrong
+          # code is worse than a red one, because nobody looks again.
+          live=$(echo "$health" | python3 -c "import json,sys; print(json.load(sys.stdin)['git_sha'])")
+          if [ "$live" != "${{ github.sha }}" ]; then
+            echo "::error::/health reports git_sha=$live but we deployed ${{ github.sha }}"
+            exit 1
+          fi
+
+          # And the models it depends on must still be there (FR-012).
+          echo "$health" | python3 -c "
+          import json, sys
+          h = json.load(sys.stdin)
+          assert h['status'] == 'ok', h
+          if h['unverified']:
+              print(f'::warning::model probe reports unverified: {h[\"unverified\"]}')
+          "
+          curl -fsS --max-time 60 -o /dev/null "$URL/"  # the dashboard renders

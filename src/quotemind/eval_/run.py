@@ -145,7 +145,9 @@ async def run_case(
     reason = blocked_on(case)
     if reason:
         return CaseResult(
-            case_id=case.case_id, tags=case.tags, skipped=True,
+            case_id=case.case_id,
+            tags=case.tags,
+            skipped=True,
             skip_reason=f"{reason} not implemented",
         )
 

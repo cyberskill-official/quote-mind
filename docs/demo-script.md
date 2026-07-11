@@ -1,5 +1,12 @@
 # Demo script (SUB-04)
 
+> **Rewritten 2026-07-12** after the live audit. The old script predated vision OCR, the OSS autopilot
+> loop, episodic memory, the planner, and the deployed endpoint - it walked through a system that no
+> longer exists. Shoot from this one.
+>
+> Everything below is verified live at
+> https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run
+
 Target: ~3 minutes, five beats. YouTube, public, "Not made for kids".
 
 The whole video has one job: make the audience believe the numbers are right, and that a human is
@@ -25,6 +32,16 @@ Do not linger. The audience already believes this part.
 
 ## Beat 2 - the autopilot runs (0:25-1:10)
 
+**The strongest single shot in the demo: drop a file, touch nothing, watch a quote appear.**
+
+Drag `vi_scan_001.pdf` (a photographed, skewed purchase order) into `oss://quotemind-inbox/rfq/` -
+in the OSS console, on camera. Say nothing for a beat. Then cut to the dashboard: a new quote is
+already at the approval gate. Nobody clicked anything. No API call was made. A file landed in a
+bucket and a priced, checked quote came out the other side.
+
+Point at the plan panel: the scan was non-trivial, so it was planned, and every subtask closed with
+a real outcome. Point at the trace: `qwen-vl-ocr` read the pages.
+
 *Paste the RFQ into the dashboard. Hit submit. The quote appears in the queue.*
 
 > "QuoteMind reads it, matches the catalog, works out this is a dealer, prices it, and drafts the
@@ -34,7 +51,16 @@ Do not linger. The audience already believes this part.
 
 Say nothing clever here. Let it be boringly correct.
 
-## Beat 3 - show the reasoning (1:10-1:50)
+## Beat 3 - it remembers (1:10-1:35)
+
+Open a quote for Thành Công. The **Prior decisions** panel shows what happened last time - which
+quote, what the human decided, how long ago, ranked by `similarity x recency x importance`.
+
+Say the line that matters: *"Memory informs the reviewer. It never touches the price."* A retrieved
+document that could nudge a number would put a similarity search inside the arithmetic path, which
+is the one thing this system is built never to do.
+
+## Beat 4 - show the reasoning (1:35-2:05)
 
 *Expand the reasoning-trace panel.*
 

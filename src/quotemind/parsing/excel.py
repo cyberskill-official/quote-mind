@@ -32,9 +32,7 @@ _DESCRIPTION_HEADERS = {
 _QUANTITY_HEADERS = {"số lượng", "so luong", "sl", "qty", "quantity"}
 _UNIT_HEADERS = {"đvt", "dvt", "đơn vị", "đơn vị tính", "unit", "uom"}
 _MAX_HEADER_SCAN = 15
-_VN_CHARS = set(
-    "ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ"
-)
+_VN_CHARS = set("ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ")
 
 
 class HeaderNotFoundError(ValueError):

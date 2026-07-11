@@ -182,7 +182,7 @@ const EPICS = [
   { id: "EP-05", name: "Pricing engine (deterministic)", active: false, note: "Complete. Pure Decimal, 100% branch coverage on the money path.",
     frs: [["050","done"],["051","done"],["052","done"],["053","done"],["054","done"],["055","done"],["056","todo"]] },
   { id: "EP-06", name: "Quote drafting (bilingual)", active: true, note: "Assembly done; numbering now uses the live atomic counter. Bilingual NL drafting remains.",
-    frs: [["060","done"],["061","todo"],["062","done","live"],["063","todo"],["064","todo"],["065","todo"]] },
+    frs: [["060","done"],["061","todo"],["062","done","live"],["063","done"],["064","done","live"],["065","partial"]] },
   { id: "EP-07", name: "Critic and validation", active: false, note: "Money recompute, policy flags and bilingual/mojibake checks done. Narrative + auto-fix pending.",
     frs: [["070","done"],["071","partial"],["072","done"],["073","todo"],["074","todo"]] },
   { id: "EP-08", name: "Human-in-the-loop approval", active: false, note: "Durable pause/resume proven: a fresh process loads the quote from Tablestore and approves it. Waivers audited.",
@@ -193,10 +193,10 @@ const EPICS = [
     frs: [["100","done"],["101","done"],["102","done"],["103","done"],["104","partial"],["105","done"],["106","done"]] },
   { id: "EP-11", name: "Observability and reasoning trace", active: false, note: "Every model/tool/memory step is traced with real provider token counts, priced, and persisted to OSS. Prompt bodies excluded unless TRACE_CONTENT=1.",
     frs: [["110","done"],["111","done"],["112","done"],["113","done"]] },
-  { id: "EP-12", name: "Evaluation harness", active: true, note: "30 labelled cases (25 runnable), metrics runner, single-agent baseline, CI cassettes and the golden PDF all live. Headline measured, not asserted.",
+  { id: "EP-12", name: "Evaluation harness", active: true, note: "30 labelled cases (all 30 runnable since vision OCR landed), metrics runner, single-agent baseline, CI cassettes and the golden PDF all live. Headline measured, not asserted.",
     frs: [["120","done","live"],["121","done","live"],["122","done","live"],["123","done"],["124","done"]] },
-  { id: "EP-13", name: "Orchestration", active: true, note: "Orchestrator live: one RFQ text runs the whole path end to end. Planner/handoff (FR-131) pending.",
-    frs: [["130","done","live"],["131","todo"]] },
+  { id: "EP-13", name: "Orchestration", active: true, note: "Orchestrator live end to end, from every channel. AgentScope PlanNotebook plans the non-trivial quotes and says why it skipped the trivial ones.",
+    frs: [["130","done","live"],["131","done","live"]] },
 ];
 
 const PHASES = [
@@ -209,6 +209,8 @@ const PHASES = [
   { s: "done", t: "Dashboard and observability", d: "Review UI (queue, detail, actions, trace panel), OTel GenAI spans, persisted trace document, cost accounting from real provider token counts." },
   { s: "done", t: "Evaluation harness", d: "30 labelled cases against a 61-SKU catalog, metrics runner, single-agent baseline, CI cassettes, golden PDF. The multi-agent gain is now measured." },
   { s: "done", t: "Deployment proof and submission artifacts", d: "s.yaml (FC 3.0, two functions), the Alibaba proof module (8/8 live), the FR-012 cold-start model check, architecture diagram, demo script, submission text." },
+  { s: "done", t: "Memory, the planner and the design system", d: "Episodic recall (FR-044/045/046) - what the human decided last time, re-ranked by similarity x recency x importance, informing the reviewer and never the price. AgentScope PlanNotebook (FR-131). The dashboard rebuilt on the CyberSkill design system, with a precise AI disclosure: generated regions named, deterministic regions named." },
+  { s: "done", t: "The live audit", d: "Eight bugs found by auditing the deployed site, every one of which passed the whole test suite. The plan and the memories written and never read back; an unmatched name shadowing an exact email (list price instead of dealer tier); a PDF button that had never worked; an approved quote turning red because a file drop has no sender; a 500 where a 409 belonged; nothing deploying on merge and /health unable to say what was live; a revision that threw away every line item on a file-sourced quote; and - twice - a payload column silently dropped between three lists that had to agree. There is one list now, and it raises. CD ships on merge and fails if the live SHA is not the one it pushed." },
   { s: "done", t: "Vision OCR and the live endpoint", d: "FR-031/032 (200 DPI raster + qwen-vl-ocr, 5/5 scanned cases quoted); the eval complete at 30/30 - 97% vs 40% task success against the baseline; the API deployed and verified on FC 3.0, dashboard served same-origin, /health reporting 0 unverified models." },
   { s: "done", t: "The file channels read files", d: "FR-021/022/024/033: parser routing moved into QuoteService and both intake channels call it. The OSS drop loop is proven live end to end. Idempotency now hashes the file bytes, not the filename." },
   { s: "done", t: "The last two P0s", d: "FR-044/045/046 episodic memory - written on every human decision, recalled and re-ranked by effective score before the next quote, proven live. FR-131 the PlanNotebook planner, whose subtasks are closed by the pipeline that actually ran." },

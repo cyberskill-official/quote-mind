@@ -31,6 +31,7 @@ from .models import (
     Outcome,
     Quote,
     QuoteRecord,
+    RFQExtraction,
     Status,
     assert_transition,
     new_ulid,
@@ -42,6 +43,7 @@ from .orchestrator import (
     quote_from_excel,
     quote_from_image,
     quote_from_pdf,
+    quote_from_revision,
     quote_from_text,
 )
 from .pricing import vat_policy_note
@@ -81,7 +83,10 @@ def _context_columns(result: PipelineResult) -> dict[str, str]:
     decision, not in a debugging artifact afterwards. A memory that only a developer can find is a
     memory the business never gets to use.
     """
-    columns: dict[str, str] = {}
+    # FR-064: what a revision re-drafts from. A quote's document is read exactly once - the bytes
+    # are not kept, and for a file drop `source_text` is only a placeholder - so if the extraction
+    # is not written down here, there is nothing left to amend later.
+    columns: dict[str, str] = {"extraction_json": result.extraction.model_dump_json()}
     if result.plan is not None:
         columns["plan_json"] = result.plan.model_dump_json()
     if result.episodic:
@@ -108,6 +113,7 @@ class QuoteService:
         excel_pipeline: Pipeline = quote_from_excel,
         pdf_pipeline: Pipeline = quote_from_pdf,
         image_pipeline: Pipeline = quote_from_image,
+        revision_pipeline: Pipeline = quote_from_revision,
         artifacts: ArtifactStore | None = None,
     ) -> None:
         self.store = store
@@ -115,6 +121,7 @@ class QuoteService:
         self.settings = settings
         self.seller_block = seller_block
         self.pipeline = pipeline
+        self.revision_pipeline = revision_pipeline
         self._artifacts = artifacts
 
         # FR-021/022/033: which parser runs is decided *here*, once, and both intake channels - the
@@ -493,21 +500,45 @@ class QuoteService:
         note = vat_policy_note(date_type.fromisoformat(quote.date))
         return render_pdf(quote, vat_policy_note=note)
 
+    def recipient_of(self, quote_id: str) -> str | None:
+        """Who this quote would be sent to, if anyone.
+
+        An RFQ dropped as a file into OSS carries no sender - there is no email on it, because
+        nobody attached one. That is a perfectly ordinary state, and the caller needs to know it
+        *before* approving rather than discovering it as a failure afterwards.
+        """
+        email = self.quote_of(quote_id).customer_block.get("email")
+        return email if isinstance(email, str) and email else None
+
     def dispatch(self, quote_id: str, *, recipient: str | None = None) -> QuoteRecord:
-        """FR-090..093: render, store privately, presign, and send. Every step is audited."""
+        """FR-090..093: render, store privately, presign, and send. Every step is audited.
+
+        A quote with no recipient is NOT dispatched and is NOT a failure. It used to be: approval
+        scheduled a dispatch, the dispatch found no address, and an approved quote landed in
+        `failed_dispatch` - which reads, to a human, as though the system broke. It had not:
+        nobody had told it where to send the thing. The approval stands, the quote stays `approved`,
+        and the skip goes on the audit trail with its reason, so a person can supply an address.
+        """
         stored = self._load(quote_id)
         record: QuoteRecord = stored["record"]
         quote = self.quote_of(quote_id)
+
+        to = recipient or quote.customer_block.get("email")
+        if not isinstance(to, str) or not to:
+            self.store.append_audit(
+                record.quote_id,
+                actor=SYSTEM,
+                event="dispatch.skipped",
+                payload_json={"reason": "no recipient on the quote; approval stands"},
+            )
+            return record
+
         record = self._transition(record, Status.DISPATCHING, SYSTEM, "dispatch.started")
 
         try:
             pdf = self._render(quote)
             key = self.artifacts.put_pdf(quote.quote_number, pdf)  # FR-091: private object
             link = self.artifacts.presigned_get(key)
-
-            to = recipient or quote.customer_block.get("email")
-            if not isinstance(to, str) or not to:
-                raise ValueError("no recipient email on the quote")
 
             result = send_quote(  # FR-092 / FR-093
                 quote,
@@ -558,7 +589,17 @@ class QuoteService:
     async def revise(
         self, quote_id: str, *, instruction: str, on_date: date_type | None = None
     ) -> QuoteRecord:
-        """FR-084: re-run honouring the instruction. After MAX_REVISIONS it goes to a human."""
+        """FR-064/FR-084: re-draft honouring the instruction. After MAX_REVISIONS a human takes it.
+
+        The re-draft starts from the stored *extraction*, not from the source document, because for
+        every channel except a pasted email there is no source document to start from: the bytes
+        were never kept, and `source_text` is a placeholder a human can read.
+
+        This used to concatenate the instruction onto that placeholder and re-run the text pipeline.
+        For a quote that arrived as a spreadsheet, a PDF or a photo, that fed the parser a string
+        with no line items in it - so asking for a 3% discount handed back a quote with nothing on
+        it. Every test passed, because every test revised a quote that had been pasted as text.
+        """
         stored = self._load(quote_id)
         record: QuoteRecord = stored["record"]
         record = self._transition(
@@ -575,11 +616,22 @@ class QuoteService:
                 {"revision": record.revision},
             )
 
-        source_text = stored.get("source_text", "")
-        revised_text = f"{source_text}\n\n[Yêu cầu chỉnh sửa / Revision instruction]\n{instruction}"
+        raw_extraction = stored.get("extraction_json")
+        if not raw_extraction:
+            # A quote stored before extraction_json existed, or one that never got past parsing.
+            # There is nothing to amend, and guessing from a placeholder is what caused the bug.
+            return self._transition(
+                record,
+                Status.NEEDS_MANUAL,
+                SYSTEM,
+                "revision.no_extraction",
+                {"reason": "the quote has no stored extraction to re-draft from"},
+            )
+
         _, sequence = parse_quote_number(record.quote_number)
-        result = await self.pipeline(
-            revised_text,
+        result = await self.revision_pipeline(
+            RFQExtraction.model_validate_json(raw_extraction),
+            instruction,
             settings=self.settings,
             facade=self.facade,
             seller_block=self.seller_block,
@@ -608,4 +660,7 @@ class QuoteService:
             quote_json=result.quote.model_dump_json(),
             critic_json=result.critic.model_dump_json(),
             html=result.html,
+            # The amended extraction replaces the original, so a *second* revision builds on the
+            # first rather than silently reverting it.
+            **_context_columns(result),
         )

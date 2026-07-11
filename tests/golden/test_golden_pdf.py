@@ -73,15 +73,21 @@ def build_golden_quote() -> object:
         validity_days=14,
         lines=[
             AssemblyLine(
-                product=BY_SKU["DELL-LAT-5450"], qty=Decimal(10), tier=Tier.DEALER,
+                product=BY_SKU["DELL-LAT-5450"],
+                qty=Decimal(10),
+                tier=Tier.DEALER,
                 source=LineSource.MATCHED,
             ),
             AssemblyLine(
-                product=BY_SKU["DELL-P2723DE"], qty=Decimal(10), tier=Tier.DEALER,
+                product=BY_SKU["DELL-P2723DE"],
+                qty=Decimal(10),
+                tier=Tier.DEALER,
                 source=LineSource.MATCHED,
             ),
             AssemblyLine(
-                product=BY_SKU["VIET-SIM-DATA"], qty=Decimal(10), tier=Tier.DEALER,
+                product=BY_SKU["VIET-SIM-DATA"],
+                qty=Decimal(10),
+                tier=Tier.DEALER,
                 source=LineSource.MATCHED,
             ),
         ],

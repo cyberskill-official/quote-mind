@@ -14,12 +14,13 @@ from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .. import __version__
+from ..cloud.oss import PRESIGNED_TTL_SECONDS
 from ..config.bootstrap import ModelStatus, check_models, health_models
 from ..config.models import MODEL_CONSTANTS
 from ..config.seller import SELLER_BLOCK
@@ -27,7 +28,7 @@ from ..config.settings import get_settings
 from ..intake import MAX_UPLOAD_BYTES, UnsupportedPayloadError, doc_type_for
 from ..memory.quotes import QuoteStore
 from ..memory.store import MemoryFacade
-from ..models import Channel, DocType, EmailMeta, Status
+from ..models import Channel, DocType, EmailMeta, IllegalTransitionError, Status
 from ..obs.log import log_event
 from ..service import ApprovalBlockedError, QuoteNotFoundError, QuoteService
 from ..web import dashboard_html
@@ -43,6 +44,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
 
 def get_service() -> QuoteService:
     """Build the service from settings. Tests override this via dependency_overrides."""
@@ -69,6 +71,10 @@ class ApproveBody(BaseModel):
     comment: str | None = None
     waive_flags: list[str] | None = None
     reason: str | None = None
+    # An RFQ dropped as a file carries no sender, so there is nobody to send the quote back to. The
+    # reviewer can supply an address at the gate; without one the quote is approved and simply not
+    # sent, which is a state, not a failure.
+    recipient: str | None = None
 
 
 class RejectBody(BaseModel):
@@ -292,9 +298,7 @@ async def submit_rfq(
         email_meta=email_meta,
     )
     if created:
-        background.add_task(
-            _run_pipeline, service, record.quote_id, payload, doc_type, hint, email
-        )
+        background.add_task(_run_pipeline, service, record.quote_id, payload, doc_type, hint, email)
     return {
         "quote_id": record.quote_id,
         "quote_number": record.quote_number,
@@ -371,19 +375,48 @@ def approve(
         raise _error(404, "not_found", f"no quote {quote_id}") from exc
     except ApprovalBlockedError as exc:
         raise _error(409, "blocking_flags", str(exc), flags=exc.flags) from exc
+    except IllegalTransitionError as exc:
+        # Approving an already-decided quote is a conflict, not a server error. It used to be a 500,
+        # which told the caller the system was broken when in fact the caller was.
+        raise _error(409, "illegal_transition", str(exc)) from exc
 
-    background.add_task(service.dispatch, quote_id)  # FR-083: approval triggers dispatch
-    return {"quote_id": quote_id, "status": record.status.value}
+    # FR-083: approval triggers dispatch. Always - even with no recipient, because `dispatch` is
+    # what writes `dispatch.skipped` to the audit trail, and a quote that is approved but not sent
+    # must say why. Guarding this call here would leave the reviewer looking at an approved quote
+    # with no explanation for its silence, and would put the decision in two places.
+    recipient = payload.recipient or service.recipient_of(quote_id)
+    background.add_task(service.dispatch, quote_id, recipient=recipient)
+    return {
+        "quote_id": quote_id,
+        "status": record.status.value,
+        "dispatching_to": recipient,  # null means: approved, and deliberately not sent
+    }
 
 
 @app.get("/api/quotes/{quote_id}/pdf", dependencies=[Depends(require_bearer)])
-def quote_pdf(service: ServiceDep, quote_id: str) -> RedirectResponse:
-    """API-09 / FR-091: 302 to a fresh, short-lived presigned GET on the private object."""
+def quote_pdf(service: ServiceDep, quote_id: str) -> dict[str, Any]:
+    """API-09 / FR-091: a fresh, short-lived presigned GET on the private object.
+
+    FR-091 says *302 to* that URL. This returns it instead, and the reason is not a preference.
+
+    Two independent things make the redirect unusable here, and both of them only appear in
+    production:
+
+      1. Function Compute's default `fcapp.run` domain refuses to emit a cross-domain 302 -
+         `ExternalRedirectForbidden: The external redirect is forbidden, please use custom domain
+         endpoint`. The route worked under uvicorn and returned 400 the moment it was deployed.
+      2. This route is bearer-guarded, and the dashboard linked to it with a plain `<a href>`, which
+         sends no Authorization header. So even with the redirect allowed, the button would have
+         401'd. It had, in fact, never worked once.
+
+    What FR-091 exists to guarantee - the PDF stays a private object, and access is a short-lived
+    signed URL rather than a public one - is fully preserved. The client fetches this with its token
+    and opens the URL it gets back. Restore the 302 the day a custom domain is bound.
+    """
     try:
-        url = service.pdf_url(quote_id)
+        return {"url": service.pdf_url(quote_id), "expires_in": PRESIGNED_TTL_SECONDS}
     except QuoteNotFoundError as exc:
         raise _error(404, "not_found", f"no quote {quote_id}") from exc
-    return RedirectResponse(url=url, status_code=302)
 
 
 @app.post("/api/quotes/{quote_id}/reject", dependencies=[Depends(require_bearer)])

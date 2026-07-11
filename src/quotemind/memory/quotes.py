@@ -51,6 +51,21 @@ class CounterContentionError(RuntimeError):
     """The quote counter could not be advanced within the retry budget."""
 
 
+# Every payload column on a quote row. `put_quote` writes these and `get_quote` reads them; the
+# two must not drift apart, and a test asserts they do not. A column written but not listed here
+# is a column that exists in Tablestore and reaches nobody.
+PAYLOAD_COLUMNS = (
+    "source_text",
+    "extraction_json",  # FR-064: what a revision re-drafts from
+    "quote_json",
+    "critic_json",
+    "trace_json",
+    "html",
+    "plan_json",  # FR-131
+    "episodic_json",  # FR-045
+)
+
+
 def _columns(row: Any) -> dict[str, Any]:
     return {name: value for name, value, *_ in (row.attribute_columns or [])}
 
@@ -133,37 +148,37 @@ class QuoteStore:
         raise CounterContentionError(f"could not advance counter {counter_id}")
 
     # --- quotes (DM-01) ---
-    def put_quote(
-        self,
-        record: QuoteRecord,
-        *,
-        source_text: str | None = None,
-        quote_json: str | None = None,
-        critic_json: str | None = None,
-        trace_json: str | None = None,
-        html: str | None = None,
-        plan_json: str | None = None,  # FR-131
-        episodic_json: str | None = None,  # FR-045
-    ) -> None:
-        """Merge-write the row. update_row (not put_row) so a status change cannot wipe payloads."""
+    def put_quote(self, record: QuoteRecord, **payloads: str | None) -> None:
+        """Merge-write the row. update_row (not put_row) so a status change cannot wipe payloads.
+
+        There is exactly ONE list of payload columns - PAYLOAD_COLUMNS - and this reads from it.
+
+        There used to be three: a keyword-only signature here, an inline tuple in the body that
+        actually did the writing, and PAYLOAD_COLUMNS on the read side. `plan_json` and
+        `episodic_json` were added to two of the three, and so were written to Tablestore and read
+        back by nobody. The fix added the missing name to the signature and to PAYLOAD_COLUMNS, plus
+        a test asserting *those two* agreed - and the very next column, `extraction_json`, was
+        dropped by the third list the test did not know about. Live, twice, from the same shape.
+
+        A typed signature did not prevent that, so it is gone. An unknown column now RAISES rather
+        than being silently dropped, which is the failure mode that kept getting through: a write
+        that vanishes leaves a green test suite and an empty panel in production.
+        """
+        unknown = set(payloads) - set(PAYLOAD_COLUMNS)
+        if unknown:
+            raise ValueError(
+                f"{sorted(unknown)} is not a persisted quote column. Add it to PAYLOAD_COLUMNS - "
+                "there is one list, and this is it."
+            )
+
         columns: list[tuple[str, Any]] = [
             ("record_json", record.model_dump_json()),
             ("status", record.status.value),
         ]
         if record.sha256_payload:
             columns.append(("sha256", record.sha256_payload))
-        # An allowlist, not **kwargs. A column named here is a column that reaches Tablestore; a
-        # payload the service invented but this list forgot would be silently dropped, and the
-        # reviewer would simply never see it - which is exactly what nearly happened to the plan.
-        for name, value in (
-            ("source_text", source_text),
-            ("quote_json", quote_json),
-            ("critic_json", critic_json),
-            ("trace_json", trace_json),
-            ("html", html),
-            ("plan_json", plan_json),
-            ("episodic_json", episodic_json),
-        ):
+        for name in PAYLOAD_COLUMNS:
+            value = payloads.get(name)
             if value is not None:
                 columns.append((name, value))
         self.client.update_row(
@@ -182,7 +197,7 @@ class QuoteStore:
         if not isinstance(raw_record, str):
             return None
         stored: dict[str, Any] = {"record": QuoteRecord.model_validate_json(raw_record)}
-        for key in ("source_text", "quote_json", "critic_json", "trace_json", "html"):
+        for key in PAYLOAD_COLUMNS:
             if key in columns:
                 stored[key] = columns[key]
         return stored
