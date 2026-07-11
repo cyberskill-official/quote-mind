@@ -24,6 +24,7 @@ from .models import (
     Actor,
     Channel,
     CriticReport,
+    DocType,
     EmailMeta,
     Quote,
     QuoteRecord,
@@ -32,7 +33,13 @@ from .models import (
     new_ulid,
 )
 from .obs.trace import Tracer
-from .orchestrator import PipelineResult, quote_from_text
+from .orchestrator import (
+    PipelineResult,
+    quote_from_excel,
+    quote_from_image,
+    quote_from_pdf,
+    quote_from_text,
+)
 from .pricing import vat_policy_note
 from .quote import format_quote_number, parse_quote_number
 from .quote.render import render_pdf
@@ -74,6 +81,9 @@ class QuoteService:
         settings: Settings,
         seller_block: dict[str, Any],
         pipeline: Pipeline = quote_from_text,
+        excel_pipeline: Pipeline = quote_from_excel,
+        pdf_pipeline: Pipeline = quote_from_pdf,
+        image_pipeline: Pipeline = quote_from_image,
         artifacts: ArtifactStore | None = None,
     ) -> None:
         self.store = store
@@ -82,6 +92,23 @@ class QuoteService:
         self.seller_block = seller_block
         self.pipeline = pipeline
         self._artifacts = artifacts
+
+        # FR-021/022/033: which parser runs is decided *here*, once, and both intake channels - the
+        # API upload and the OSS drop - go through it.
+        #
+        # They did not, and why the bug survived is worth recording. Both channels used to do
+        # `raw.decode("utf-8", errors="replace")` behind a comment saying PDF and Excel parsing
+        # would "land with FR-031/032". Those FRs landed. The comments did not. So a spreadsheet
+        # dropped into the inbox was decoded as mojibake, parsed as prose, and parked - while the
+        # eval reported 97% on that very file, because the eval calls `quote_from_excel` directly.
+        # The harness proved the parsers and never once touched the seam that was broken.
+        self._pipelines: dict[DocType, Pipeline] = {
+            DocType.EMAIL_TEXT: pipeline,
+            DocType.EXCEL: excel_pipeline,
+            DocType.PDF_DIGITAL: pdf_pipeline,
+            DocType.PDF_SCAN: pdf_pipeline,  # quote_from_pdf decides scan vs digital for itself
+            DocType.IMAGE: image_pipeline,
+        }
 
     @property
     def artifacts(self) -> ArtifactStore:
@@ -119,6 +146,7 @@ class QuoteService:
         self,
         *,
         text: str,
+        digest_payload: bytes | str | None = None,
         channel: Channel = Channel.PASTE,
         filename: str | None = None,
         customer_hint: str | None = None,
@@ -126,8 +154,14 @@ class QuoteService:
         source_uri: str | None = None,
         on_date: date_type | None = None,
     ) -> tuple[QuoteRecord, bool]:
-        """Register an RFQ -> (record, created). A re-post of the same bytes is not a new quote."""
-        digest = payload_hash(text)
+        """Register an RFQ -> (record, created). A re-post of the same bytes is not a new quote.
+
+        `digest_payload` is what FR-024 deduplicates on, and for a file it must be the file's own
+        bytes. `text` is only what a human sees on the record: for a binary drop it is a
+        placeholder, and hashing *that* would mean two different spreadsheets sharing a filename
+        collapsed into one quote, while the same spreadsheet renamed became two.
+        """
+        digest = payload_hash(text if digest_payload is None else digest_payload)
         existing_id = self.store.get_idempotency(digest)
         if existing_id is not None:  # FR-024
             return self._load(existing_id)["record"], False
@@ -166,20 +200,26 @@ class QuoteService:
     async def process(
         self,
         record: QuoteRecord,
-        text: str,
+        payload: str | bytes,
         *,
+        doc_type: DocType = DocType.EMAIL_TEXT,
         customer_hint: str | None = None,
         customer_email: str | None = None,
         on_date: date_type | None = None,
     ) -> QuoteRecord:
-        """Run the pipeline, persisting each stage. Ends at pending_approval or a failure state."""
+        """Run the pipeline for this document type, persisting each stage.
+
+        `payload` is text for an email or paste, and raw bytes for a spreadsheet, PDF or image.
+        Ends at pending_approval or a durable failure state.
+        """
         record = self._transition(record, Status.PARSING, PIPELINE, "pipeline.parsing")
         _, sequence = parse_quote_number(record.quote_number)
         tracer = Tracer(record.quote_id, include_content=self.settings.trace_content)
+        pipeline = self._pipelines[doc_type]
 
         try:
-            result = await self.pipeline(
-                text,
+            result = await pipeline(
+                payload,
                 settings=self.settings,
                 facade=self.facade,
                 seller_block=self.seller_block,

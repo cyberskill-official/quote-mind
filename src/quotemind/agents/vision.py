@@ -32,7 +32,7 @@ from openai import OpenAI
 from ..config.models import MODEL_PARSER_VISION
 from ..config.settings import Settings
 from ..models import Buyer, Language, RFQExtraction, RFQLine
-from ..parsing.raster import rasterize_pdf, to_data_url
+from ..parsing.raster import image_to_png, rasterize_pdf, to_data_url
 from .model import UsageSink
 
 VISION_SYS = """Bạn đọc một trang yêu cầu báo giá (RFQ) đã được scan.
@@ -142,15 +142,18 @@ def merge_pages(pages: list[tuple[Buyer, list[RFQLine]]]) -> RFQExtraction:
     )
 
 
-async def extract_scanned_rfq(
-    data: bytes,
+async def _read_pages(
+    pages: list[bytes],
     settings: Settings,
     *,
     usage: UsageSink | None = None,
     client: Any | None = None,
 ) -> RFQExtraction:
-    """FR-031 + FR-032: rasterize a scan and read every page with the vision model."""
-    pages = rasterize_pdf(data)
+    """Read already-rendered PNG pages with the vision model.
+
+    Factored out so a scanned PDF and a photographed RFQ go through the *same* reader. Two copies of
+    this loop would be two places for the two channels to disagree about what an RFQ says.
+    """
     vision = client or OpenAI(
         api_key=settings.dashscope_api_key, base_url=settings.dashscope_base_url
     )
@@ -178,3 +181,25 @@ async def extract_scanned_rfq(
         results.append(parse_page(response.choices[0].message.content or "", page=index))
 
     return merge_pages(results)
+
+
+async def extract_scanned_rfq(
+    data: bytes,
+    settings: Settings,
+    *,
+    usage: UsageSink | None = None,
+    client: Any | None = None,
+) -> RFQExtraction:
+    """FR-031 + FR-032: rasterise a scanned PDF and read every page with the vision model."""
+    return await _read_pages(rasterize_pdf(data), settings, usage=usage, client=client)
+
+
+async def extract_image_rfq(
+    data: bytes,
+    settings: Settings,
+    *,
+    usage: UsageSink | None = None,
+    client: Any | None = None,
+) -> RFQExtraction:
+    """FR-033: a photographed or screenshotted RFQ. One page, same reader."""
+    return await _read_pages([image_to_png(data)], settings, usage=usage, client=client)

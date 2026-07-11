@@ -836,3 +836,54 @@ dashboard out of the deployed bundle, and the page would have 500'd in productio
 Verification: ruff clean, mypy clean (77 files), import-linter 4/4 kept, pytest 263 passed, pricing
 branch coverage 100%. Live: `/` serves the dashboard, `/health` 200 with 0 unverified models,
 `/api/quotes` 401 without a token and returns real Tablestore rows with one.
+
+## Batch: the file channels actually read files (feat/file-intake)
+
+FR-021/022/024/033. This batch exists because the autopilot loop did not work, and finding out why
+was worse than the bug.
+
+**The bug.** Both intake channels - `POST /api/rfq` with a file, and the OSS drop - did this:
+
+```python
+# Only text-bearing uploads run today; PDF and image parsing land with FR-031/032.
+text = raw.decode("utf-8", errors="replace")
+```
+
+FR-031/032/033 landed. The comments did not. So a spreadsheet dropped into `quotemind-inbox/rfq/`
+was decoded as mojibake, parsed as prose, and parked at `received` - a numbered quote, forever
+stuck, with nothing in it. The one intake channel that exists *specifically for files* was the only
+one that could not read a file.
+
+**Why the eval did not catch it, which is the part worth keeping.** The eval scores 97% on exactly
+these files. It scores them by calling `quote_from_excel` and `quote_from_pdf` **directly**. It
+proved the parsers and never once touched the seam that joins them to the product. A harness that
+bypasses the broken join will report health forever. So `tests/unit/test_file_intake.py` asserts on
+the *seam* - which pipeline each channel selects, and what it hands it - and not on "a quote came
+out", which was true of the broken code too.
+
+**The fix.** Parser routing now lives in one place, `QuoteService._pipelines`, keyed by `DocType`,
+and both channels call it. A `DocType` with no route is a `KeyError`, and a test asserts the map is
+total. `quote_from_image` (FR-033) was added: a photographed RFQ is a one-page scan, so it goes
+through the same vision reader as a scanned PDF rather than a second copy of that loop.
+
+**FR-024 was wrong for files, too.** `submit()` hashed the *placeholder text*, so two different
+spreadsheets that happened to share a filename collided into one quote - the second customer would
+have silently received the first customer's prices - while the same spreadsheet renamed became two
+quotes. It now hashes the bytes that actually arrived.
+
+**The OSS trigger, and why it is not in `s deploy`.** Serverless Devs hard-codes a 3 s timeout on the
+RAM call that resolves `AliyunOSSEventNotificationRole`; from Vietnam that endpoint answers in 3-20 s.
+The deploy aborts *before creating the function*, so we had neither trigger nor function - which is
+why `quotemind-ingest` did not exist at all. The trigger is declared in `s.yaml` because that is the
+truth about the system, and created once by hand per `docs/deploy/oss-trigger.md`. `logConfig` was
+also missing from that function: an event-driven function has no caller to return an error to, so
+without logs a failed ingest is just a file that silently never becomes a quote.
+
+**Proven live.** `vi_xlsx_001.xlsx` dropped into `oss://quotemind-inbox/rfq/` produced
+**QM-2026-0006**: parsed, matched, priced at 869,400,000 VND, critic-checked, and parked at the human
+approval gate flagged `UNKNOWN_CUSTOMER`. That flag is correct - a bare file drop carries no sender,
+so the system refuses to guess a pricing tier and asks a human instead.
+
+Verification: ruff clean, mypy clean (77 files), import-linter 4/4 kept, pytest 280 passed, pricing
+branch coverage 100%. Traceability backfilled: 84 rows, up from 65 - several FRs were built but had
+no evidence row, which is its own kind of untruth.
