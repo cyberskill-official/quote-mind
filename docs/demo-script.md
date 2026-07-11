@@ -5,7 +5,7 @@
 > longer exists. Shoot from this one.
 >
 > Everything below is verified live at
-> https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run
+> https://quotemind.cyberskill.world
 
 Target: ~3 minutes, five beats. YouTube, public, "Not made for kids".
 

@@ -30,7 +30,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from acme import challenges, client, crypto_util, messages
+from acme import challenges, client, messages
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
@@ -139,8 +139,11 @@ def main() -> None:
     key_path.chmod(0o600)
     print(f"  certificate: {cert_path}")
 
-    parsed = crypto_util.parse_pem_chain(finalized.fullchain_pem)[0]
-    print(f"  valid until: {parsed.not_valid_after_utc:%d %b %Y}")
+    import cryptography.x509 as x509  # noqa: PLC0415
+
+    leaf = x509.load_pem_x509_certificate(finalized.fullchain_pem.encode())
+    print(f"  issued by  : {leaf.issuer.rfc4514_string()}")
+    print(f"  valid until: {leaf.not_valid_after_utc:%d %b %Y}")
 
     print("\nbinding it to Function Compute")
     subprocess.run(  # noqa: S603

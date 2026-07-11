@@ -443,19 +443,26 @@ def quote_pdf(service: ServiceDep, quote_id: str) -> dict[str, Any]:
 
     FR-091 says *302 to* that URL. This returns it instead, and the reason is not a preference.
 
-    Two independent things make the redirect unusable here, and both of them only appear in
-    production:
+    Two independent things made the redirect unusable, and only one of them was about the platform:
 
       1. Function Compute's default `fcapp.run` domain refuses to emit a cross-domain 302 -
          `ExternalRedirectForbidden: The external redirect is forbidden, please use custom domain
          endpoint`. The route worked under uvicorn and returned 400 the moment it was deployed.
-      2. This route is bearer-guarded, and the dashboard linked to it with a plain `<a href>`, which
-         sends no Authorization header. So even with the redirect allowed, the button would have
-         401'd. It had, in fact, never worked once.
+         **This one is gone.** The custom domain is bound (quotemind.cyberskill.world), which is
+         exactly the endpoint that error was asking for.
+      2. This route is bearer-guarded, and a 302 is only useful to a client that can *follow a
+         link*. A plain `<a href>` carries no Authorization header, so it would 401 - which is
+         why the PDF button had never worked once, on any domain. A custom domain changes
+         nothing about that.
 
-    What FR-091 exists to guarantee - the PDF stays a private object, and access is a short-lived
-    signed URL rather than a public one - is fully preserved. The client fetches this with its token
-    and opens the URL it gets back. Restore the 302 the day a custom domain is bound.
+    So the note that used to sit here - "restore the 302 the day a custom domain is bound" - was
+    wrong, and it is worth saying why rather than quietly deleting it. It treated the platform
+    objection as the whole reason, when the *client* objection is the one that decides. The redirect
+    is now merely possible; it was never the better shape.
+
+    What FR-091 exists to guarantee - the PDF stays a private object, reached by a short-lived
+    signed URL rather than a public one - is fully preserved, and preserved more usably: the
+    client fetches this with its token and opens the URL it gets back.
     """
     try:
         return {"url": service.pdf_url(quote_id), "expires_in": PRESIGNED_TTL_SECONDS}

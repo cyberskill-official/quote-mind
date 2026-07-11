@@ -32,3 +32,7 @@ python/
 # The demo clip and its frames: real screenshots of the deployed UI, rebuilt by
 # `python deploy/demo_shots.py && python deploy/demo_clip.py`. Binary, and reproducible.
 .demo/
+
+# TLS material for the custom domain. The certificate is public, the key is not, and a repo is
+# not a key store - re-issue with `python deploy/issue_cert.py` instead of committing either.
+deploy/certs/

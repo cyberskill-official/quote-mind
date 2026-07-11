@@ -3,7 +3,7 @@
 **Submission description (SUB-05).** 455 words of prose (532 by `wc -w` if you count the headings,
 the table and the URL). The previous version claimed 491 and was actually 506 - and it quoted eval
 numbers from a 25-case run that no longer exists. Both are fixed.
-**Live:** https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run
+**Live:** https://quotemind.cyberskill.world
 
 ---
 
