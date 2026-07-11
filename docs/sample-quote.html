@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>QM-2026-0001</title>
+<style>
+  @page { size: A4; margin: 18mm; @bottom-center { content: element(pagefooter); } }
+  @font-face { font-family: "Be Vietnam Pro"; font-weight: 400;
+    src: url("fonts/BeVietnamPro-Regular.ttf"); }
+  @font-face { font-family: "Be Vietnam Pro"; font-weight: 600;
+    src: url("fonts/BeVietnamPro-SemiBold.ttf"); }
+  @font-face { font-family: "Be Vietnam Pro"; font-weight: 700;
+    src: url("fonts/BeVietnamPro-Bold.ttf"); }
+  :root { --umber: #45210E; --ochre: #F4BA17; --umber-tint: rgba(69, 33, 14, 0.04); }
+  * { box-sizing: border-box; }
+  body { font-family: "Be Vietnam Pro", sans-serif; font-size: 10.5pt; color: #1c140d; margin: 0; }
+  .en { font-style: italic; color: #6b5a4a; }
+  .band { background: var(--umber); color: #fff; padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2pt solid var(--ochre); }
+  .band .seller-name { font-weight: 700; font-size: 15pt; }
+  .band .doc { text-align: right; }
+  .band .doc .title { font-weight: 700; font-size: 14pt; letter-spacing: 0.5px; }
+  .parties { display: flex; gap: 16px; margin-top: 14px; }
+  .party { flex: 1; border: 0.5pt solid #d8ccc0; border-radius: 4px; padding: 10px 12px; }
+  .party .label { font-weight: 600; color: var(--umber); }
+  .meta { margin: 12px 0; padding: 8px 12px; background: var(--umber-tint); border-radius: 4px; }
+  table.lines { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.lines thead th { background: var(--umber); color: #fff; font-weight: 600;
+    padding: 6px 8px; text-align: left; font-size: 9.5pt; }
+  table.lines tbody td { padding: 6px 8px; border-bottom: 0.5pt solid #e7ddd3;
+    vertical-align: top; }
+  table.lines tbody tr:nth-child(odd) td { background: var(--umber-tint); }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  tr.note td { border-left: 2pt solid var(--ochre); font-size: 9pt; color: #6b5a4a;
+    background: #fff !important; padding-left: 18px; }
+  tr.line td { page-break-inside: avoid; }
+  .totals { width: 46%; margin-left: auto; margin-top: 10px; }
+  .totals .row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .totals .grand { font-weight: 700; background: rgba(244, 186, 23, 0.28);
+    padding: 6px 8px; border-radius: 3px; }
+  .in-words { font-style: italic; margin: 8px 0; }
+  .terms { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .terms .cell { border: 0.5pt solid #d8ccc0; border-radius: 4px; padding: 8px 10px; }
+  .bank { margin-top: 12px; padding: 8px 12px; border: 0.5pt solid var(--ochre); border-radius: 4px; }
+  .sign { display: flex; justify-content: space-between; margin-top: 22px; }
+  .sign .box { width: 45%; text-align: center; }
+  .sign .space { height: 46px; }
+  #pagefooter { position: running(pagefooter); font-size: 8pt; color: #8a7968;
+    border-top: 0.5pt solid #e7ddd3; padding-top: 4px; }
+  .label { font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="band">
+    <div>
+      <div class="seller-name">CyberSkill JSC</div>
+      <div class="en"></div>
+    </div>
+    <div class="doc">
+      <div class="title">BÁO GIÁ / QUOTATION</div>
+      <div><span class="label">Số / No.:</span> QM-2026-0001</div>
+      <div><span class="label">Ngày / Date:</span> 2026-07-11</div>
+    </div>
+  </div>
+
+  <div class="parties">
+    <div class="party">
+      <div class="label">Bên bán / Seller</div>
+      <div>CyberSkill JSC</div>
+      <div>1st Floor, 207A Nguyen Van Thu, Tan Dinh Ward, Ho Chi Minh City</div>
+      <div>MST: 0312345678</div>
+      <div>(+84)906 878 091 · info@cyberskill.world</div>
+    </div>
+    <div class="party">
+      <div class="label">Bên mua / Customer</div>
+      <div>Công ty TNHH Thành Công</div>
+      <div>12 Nguyễn Huệ, Quận 1, TP.HCM</div>
+<div>MST: 0301234567</div>      <div>Chị Lan </div>
+    </div>
+  </div>
+
+  <div class="meta">
+    <span class="label">Hiệu lực / Validity:</span> 14 ngày / days
+    &nbsp;·&nbsp; <span class="label">Tiền tệ / Currency:</span> VND  </div>
+
+  <table class="lines">
+    <thead>
+      <tr>
+        <th class="num">STT<br><span class="en">No.</span></th>
+        <th>Mô tả hàng hóa, dịch vụ<br><span class="en">Description</span></th>
+        <th>ĐVT<br><span class="en">Unit</span></th>
+        <th class="num">SL<br><span class="en">Qty</span></th>
+        <th class="num">Đơn giá (VNĐ)<br><span class="en">Unit price</span></th>
+        <th class="num">Thành tiền (VNĐ)<br><span class="en">Amount</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="line">
+        <td class="num">1</td>
+        <td>Laptop Dell Latitude 5450<br><span class="en">Dell Latitude 5450 laptop</span>
+<div class="en">SKU: DELL-LAT-5450</div></td>
+        <td>cái<br><span class="en">cái</span></td>
+        <td class="num">10</td>
+        <td class="num">19.800.000 đ</td>
+        <td class="num">198.000.000 đ</td>
+      </tr>
+      <tr class="line">
+        <td class="num">2</td>
+        <td>Màn hình Dell P2723DE 27 inch 2K<br><span class="en">Dell P2723DE 27 inch 2K monitor</span>
+<div class="en">SKU: DELL-P2723DE</div></td>
+        <td>cái<br><span class="en">cái</span></td>
+        <td class="num">5</td>
+        <td class="num">6.400.000 đ</td>
+        <td class="num">32.000.000 đ</td>
+      </tr>
+      <tr class="line">
+        <td class="num">3</td>
+        <td>Bản quyền Microsoft 365 Business Premium (1 năm)<br><span class="en">Microsoft 365 Business Premium licence (1 year)</span>
+<div class="en">SKU: MS-M365-BP</div></td>
+        <td>license<br><span class="en">license</span></td>
+        <td class="num">10</td>
+        <td class="num">6.100.000 đ</td>
+        <td class="num">61.000.000 đ</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="row"><span>Cộng tiền hàng / Subtotal</span><span>291.000.000 đ</span></div>
+    <div class="row"><span>Thuế GTGT 8% / VAT 8%</span><span>23.280.000 đ</span></div>
+    <div class="row grand"><span>TỔNG CỘNG / TOTAL</span><span>314.280.000 đ</span></div>
+  </div>
+  <div class="in-words"><span class="label">Bằng chữ / In words:</span> Ba trăm mười bốn triệu hai trăm tám mươi nghìn đồng</div>
+
+  <div class="terms">
+    <div class="cell"><span class="label">Thanh toán / Payment</span><div>Thanh toán 100% trong vòng 30 ngày kể từ ngày nhận hàng.</div><div class="en">100% payment within 30 days of delivery.</div></div>
+    <div class="cell"><span class="label">Giao hàng / Delivery</span><div>Giao hàng trong vòng 7 ngày làm việc.</div><div class="en">Delivery within 7 working days.</div></div>
+    <div class="cell"><span class="label">Bảo hành / Warranty</span><div>Bảo hành chính hãng 12 tháng.</div><div class="en">12 months manufacturer warranty.</div></div>
+    <div class="cell"><span class="label">Ghi chú / Notes</span><div>Báo giá do QuoteMind lập, đã được kiểm tra số học tự động.</div><div class="en">Quotation prepared by QuoteMind and automatically arithmetic-checked.</div></div>
+  </div>
+
+  <div class="bank">
+    <span class="label">Ngân hàng / Bank:</span> Asia Commercial Joint Stock Bank (ACB)
+    &nbsp;·&nbsp; <span class="label">Chủ TK / Beneficiary:</span> CTY CP TV VA PT GIAI PHAP PHAN MEM CYBERSKILL<br>
+    <span class="label">Số TK / Account:</span> 878196868
+    &nbsp;·&nbsp; <span class="label">SWIFT:</span> ASCBVNVX
+  </div>
+
+  <div class="sign">
+    <div class="box"><div class="label">Người lập / Prepared by</div><div class="space"></div>
+      <div>QuoteMind</div></div>
+    <div class="box"><div class="label">Đại diện bên bán / For the Seller</div><div class="space"></div>
+      <div class="en">(Ký, ghi rõ họ tên / Sign, full name)</div></div>
+  </div>
+
+  <div id="pagefooter">
+    Thuế GTGT áp dụng theo Nghị định 174/2025/NĐ-CP (thuế suất ưu đãi 8% đến 31/12/2026, trừ nhóm loại trừ). / <span class="en">VAT applied per Decree 174/2025/ND-CP (reduced 8% rate through 31 Dec 2026, excluded groups at 10%).</span>
+    &nbsp;·&nbsp; 01KX7N7B
+  </div>
+</body>
+</html>

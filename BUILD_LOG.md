@@ -383,3 +383,51 @@ catch. No unit test asserts call kwargs, so the fix is transparent to the suite.
 Verification (Python 3.10 sandbox, rebuilt after session reset): ruff clean, mypy clean (47 files),
 import-linter 4/4 kept, pytest 103 passed. Live: catalog vector + text search now return
 reconstructed models.
+
+## 2026-07-11 - Agent layer: the pipeline runs end to end, live (branch feat/agent-layer)
+
+Single batch branch, as requested. The model now appears at exactly two points on the quote path -
+extraction and catalog selection - and nothing else about the money changed: every number is still
+produced by the deterministic engine and independently re-checked by the critic.
+
+Delivered:
+- prompts/: normative system prompts as versioned constants. Each states the rules the code also
+  enforces (never do arithmetic, never invent a SKU, preserve diacritics byte-exact).
+- agents/model.py: AgentScope factory. Model names come from the frozen registry; the native
+  DashScope base (/api/v1) that AgentScope needs is derived from the OpenAI-compatible base already
+  in .env, so there is no second endpoint env var to drift.
+- memory/embedding.py (FR-041): embed_texts at the frozen model + dimension (text-embedding-v4,
+  1024), batched at 10 per call, input order restored from the response index.
+- agents/parser.py (FR-030): text RFQ -> RFQExtraction via structured output.
+- agents/matcher.py (FR-042 select): the LLM picks one SKU from the fused candidate list, and the
+  code then *enforces* the whitelist - a SKU the model invents is discarded, never trusted.
+- memory/store.py: added search_customers_text (FR-043 candidates) and made catalog_text public so
+  seeding embeds exactly the text the store indexes; put_customer now indexes name + domains +
+  emails so a buyer can be found by any of them.
+- orchestrator.py (FR-130): parse -> FR-034 gate -> resolve customer -> per line (embed, vector +
+  full-text search, RRF fuse, LLM select, band) -> assemble -> critic -> render.
+- deploy/seed.py (FR-011): 8 demo catalog products + 2 customers, embedded and written.
+- Tests (+11): base-URL derivation, the SKU-whitelist guardrail (a hallucinated SKU is rejected),
+  embedding batching/order/dimension, and the whole orchestrator end to end with the model AND the
+  cloud mocked - plus the FR-034 clarification path and the no-match path.
+
+Live end-to-end run (real DashScope + real ap-southeast-1, 34s):
+  Vietnamese RFQ email -> qwen-plus extracted 3 lines with exact quantities and intact diacritics ->
+  customer resolved from the email domain to "Công ty TNHH Thành Công", tier dealer ->
+  all 3 lines matched (DELL-LAT-5450, DELL-P2723DE, MS-M365-BP) -> priced at dealer prices ->
+  subtotal 291,000,000, total 314,280,000 VND, bang chu "Ba trăm mười bốn triệu hai trăm tám mươi
+  nghìn đồng" -> critic passed with 0 recompute diffs and no blocking flags -> bilingual HTML.
+  Rendered output committed at docs/sample-quote.html.
+
+Notes / deferred:
+- AgentScope prints agent turns to stdout; that noise should be silenced before the serverless
+  deploy (FR-008 structured logging owns the log surface).
+- Terms and quote notes still use documented defaults; SOP memory (FR-048) and the bilingual drafter
+  (FR-061) will replace them. The quote is already bilingual because catalog names are BilingualText.
+- Vision/PDF parsers (FR-031/032), episodic memory (FR-044/045), and the planner handoff (FR-131)
+  remain.
+
+Also added docs/roadmap.html - a self-contained view of all 13 epics / 82 FRs with live status.
+
+Verification: ruff clean, mypy clean (54 files), import-linter 4/4 kept, pytest 128 passed,
+pricing branch coverage 100%.

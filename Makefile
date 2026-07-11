@@ -1,8 +1,8 @@
 .PHONY: setup setup-all dev test lint type verify eval eval-smoke eval-baseline seed demo gc diagrams deploy deploy-frontend proof
 
-## setup: install the package + offline-gate deps (memory + parse; Python 3.12)
+## setup: install the package + offline-gate deps (agents + memory + parse; Python 3.12)
 setup:
-	pip install -e .[memory,parse,dev]
+	pip install -e .[agents,memory,parse,dev]
 
 ## setup-all: install the full runtime stack + dev toolchain
 setup-all:
@@ -29,8 +29,9 @@ type:
 verify:
 	@echo 'Appendix E verification snippets land in PR-4 (memory) / PR-5 (proof).'
 
+## seed: load the demo catalog + customers into Tablestore (FR-011; needs live env)
 seed:
-	@echo 'seed: implemented in FR-011 (EP-01/EP-04).'
+	python deploy/seed.py
 eval-smoke:
 	@echo 'eval-smoke: implemented in FR-123 (EP-12).'
 eval:

@@ -40,7 +40,8 @@ def episodic_tenant(customer_id: str) -> str:
     return f"episodic:{customer_id}"
 
 
-def _catalog_text(product: CatalogProduct) -> str:
+def catalog_text(product: CatalogProduct) -> str:
+    """The text indexed and embedded for a catalog product. Seeding must use exactly this."""
     specs = " ".join(f"{key}={value}" for key, value in sorted(product.specs.items()))
     return f"{product.name.vi} {product.name.en} {specs}".strip()
 
@@ -101,7 +102,7 @@ class MemoryFacade:
             Document(
                 document_id=product.sku,
                 tenant_id=TENANT_CATALOG,
-                text=_catalog_text(product),
+                text=catalog_text(product),
                 embedding=embedding,
                 metadata={
                     _PAYLOAD: product.model_dump_json(),
@@ -139,11 +140,13 @@ class MemoryFacade:
 
     # --- customers ---
     def put_customer(self, profile: CustomerProfile) -> None:
+        # Index name + domains + emails so FR-043 can retrieve candidates by any of those signals.
+        searchable = " ".join([profile.name, *profile.domains, *profile.emails]).strip()
         self.knowledge.put_document(
             Document(
                 document_id=profile.customer_id,
                 tenant_id=TENANT_CUSTOMERS,
-                text=profile.name,
+                text=searchable,
                 metadata={_PAYLOAD: profile.model_dump_json(), "tier": profile.tier.value},
             )
         )
@@ -151,6 +154,15 @@ class MemoryFacade:
     def get_customer(self, customer_id: str) -> CustomerProfile | None:
         document = self.knowledge.get_document(customer_id, tenant_id=TENANT_CUSTOMERS)
         return _parse(document, CustomerProfile)
+
+    def search_customers_text(
+        self, query: str, limit: int = 10
+    ) -> list[tuple[CustomerProfile, float]]:
+        """Candidate profiles for FR-043; tools.resolve_customer makes the precise pick."""
+        response = self.knowledge.full_text_search(
+            query=query, tenant_id=TENANT_CUSTOMERS, limit=limit, meta_data_to_get=[_PAYLOAD]
+        )
+        return _hits(response, CustomerProfile)
 
     # --- episodic memory (per customer) ---
     def put_episodic(
