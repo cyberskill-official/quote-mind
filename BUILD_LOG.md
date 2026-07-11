@@ -1278,3 +1278,69 @@ one is embedded.
 
 Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **345 passed**, pricing branch coverage
 100%.
+
+## Batch: the number was stale, and the refusal was mute (fix/live-url-and-eval)
+
+**Two things needed doing after #23 merged.** The first was the P0 from the last round - the live URL
+is a download, not a page. The second I went looking for: the eval snapshot was recorded on 11 July,
+*before* FR-048, FR-056 and FR-073 shipped. FR-073 alone adds a whole model call per quote. A
+headline claim that predates the code it describes is not a measurement, it is a memory.
+
+So I re-ran it. **The number moved, and not in our favour.**
+
+| | 11 Jul | now |
+|---|---|---|
+| task success | 96.7% | **93.3%** |
+| price exact | 96.7% | **93.3%** |
+| caught its own problem | 6.7% | **10.0%** |
+| cost / quote | $0.0103 | $0.0126 |
+| p50 latency | 23 s | 31 s |
+
+The baseline did not move: 40%, exactly as before. So the gap is **+53 points**, not +57, and every
+place that said 97% - the roadmap, the eval page, the dashboard's own tooltip, the README, the
+submission text, a docstring in `api/app.py` - said it because a human typed it. Eight files, all
+wrong by three points, all silently. A number you copy by hand is a number that goes stale without
+telling you. They are corrected; the snapshot itself is generated.
+
+### One case, and the decision not to buy the point back
+
+The whole delta is `adv_002`, which asks for a **Dell Latitude 5450 with 64GB RAM and a 2TB SSD** - a
+configuration the catalogue does not sell. On 11 July the matcher substituted the closest thing (an
+i7 with 32GB and 1TB) and priced it. Today it looks at that same candidate and refuses:
+
+> *"None of the candidate SKUs meet the requested 64GB RAM and 2TB SSD specifications."*
+
+Five runs out of five. It is not a coin flip and it is not a retrieval bug - I checked, and
+`DELL-LAT-5450-I7` is candidate number one. The model simply declines to sell a 32GB machine to
+someone who asked for 64GB.
+
+**That is the right call**, and it is the exact behaviour this entire project argues for. The label
+disagrees with it. I could have moved the label - it is a synthetic case, and nobody would have
+noticed. I did not, and the README now says so out loud: a system whose premise is *stop rather than
+guess* should not be quietly re-graded for stopping.
+
+Nothing in this repo changed the matcher. `qwen3-max` is a moving target - the spec froze the model
+*id*, not its weights - and this is what that looks like from the inside. It is also the argument for
+committing the eval and dating it.
+
+### The bug underneath: a refusal that would not say why
+
+Here is the part that was actually broken. The matcher worked all that out - which SKUs it
+considered, that they were 32GB, that 32GB is not 64GB - wrote it down in both languages, handed it
+to the pipeline, and the pipeline **threw it away**. On the refusal path the service persisted the
+trace and nothing else. What the reviewer saw was:
+
+> *"No quote was produced. The system stopped rather than guess."*
+
+True, and completely useless. To find out what had happened they had to re-read the customer's email
+and go through the catalogue by hand - which is the entire job the autopilot exists to do. The system
+made a good decision and then declined to explain it, which in practice is barely better than making
+a bad one.
+
+A refusal is a decision. It now gets persisted like one: `matches_json` joins the payload columns,
+the extraction is kept (so the reviewer can amend and re-run), the clarification reasons land on the
+record so the *queue* shows them, and the detail pane renders a table - **what they asked for, what
+we nearly matched it to, and why that was not good enough.**
+
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **349 passed**, pricing branch coverage
+100%.

@@ -192,7 +192,7 @@ def eval_report() -> HTMLResponse:
     """FR-104: the measured claim, on the deployed site, without a credential.
 
     Public on purpose, for the same reason /health is: the headline of this whole project is a
-    comparison - 97% against 40% - and a benchmark a judge has to take our word for is not a
+    comparison - 93% against 40% - and a benchmark a judge has to take our word for is not a
     benchmark. The page carries no customer data; it is aggregate metrics over a labelled synthetic
     dataset that ships in the repo, plus one square per case.
     """

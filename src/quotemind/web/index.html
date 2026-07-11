@@ -245,7 +245,7 @@ kbd { font-family: var(--cs-font-family-mono); font-size: 11px; border: 1px soli
 
   <a class="chip info" href="/eval" target="_blank" rel="noopener"
      style="text-decoration:none;margin-right:10px"
-     title="97% vs 40% price-exact against a single-agent baseline. Measured, not asserted.">
+     title="93% vs 40% price-exact against a single-agent baseline. Measured, not asserted.">
     Đo lường / Evaluation ↗</a>
 
   <span class="cs-ai-disclosure">
@@ -576,13 +576,69 @@ function quoteBody(quote) {
 
 // A record with no quote used to render as an empty pane, which looked like a broken page rather
 // than what it actually is: a document the system refused to guess at.
+// A refusal is a decision, and the reviewer has to act on it. This screen used to say only "no quote
+// was produced - the system stopped rather than guess", which is true and completely useless: the
+// matcher had already worked out that the customer asked for a 64GB laptop we do not sell, had
+// decided not to substitute a 32GB one, and had written down exactly why, in both languages. All of
+// it was thrown away, and the human had to re-read the email and the catalogue by hand - which is
+// the whole job the autopilot exists to do.
+//
+// So: what they asked for, what we nearly matched it to, and why that was not good enough.
 function stalled(review) {
   const reasons = (review.record.flags || []).join(", ");
-  return `<div class="state">
-    <h3>Chưa có báo giá cho hồ sơ này</h3>
-    <p>Hệ thống dừng lại thay vì đoán.${reasons ? " Lý do: " + esc(reasons) : ""}</p>
-    <p>No quote was produced. The system stopped rather than guess.${reasons ? " Reason: " + esc(reasons) : ""}</p>
-  </div>`;
+  const lines = review.extraction?.lines || [];
+  const matches = review.matches || [];
+
+  const rows = lines.map((line, i) => {
+    const m = matches.find((x) => x.line_ref === i + 1);
+    const alts = (m?.alternatives || []).slice(0, 3);
+    return `
+      <tr>
+        <td>
+          <b>${esc(line.description_normalized || line.raw_text)}</b>
+          <div class="en">SL/Qty: ${esc(String(line.quantity ?? "?"))} ${esc(line.unit || "")}</div>
+        </td>
+        <td>
+          ${m?.sku
+            ? `<span class="chip">${esc(m.sku)}</span>`
+            : `<span class="chip bad">không khớp / no match</span>`}
+          ${alts.length ? `<div class="en" style="margin-top:5px">Gần nhất / closest:
+              ${alts.map((a) => esc(a.sku)).join(", ")}</div>` : ""}
+        </td>
+        <td>
+          ${m?.reason
+            ? `${esc(m.reason.vi)}<div class="en">${esc(m.reason.en)}</div>`
+            : `<span class="en">—</span>`}
+        </td>
+      </tr>`;
+  }).join("");
+
+  return `
+    <div class="cs-review-gate" style="margin:0 0 var(--cs-space-4)">
+      <div class="cs-review-gate__risk">
+        <b>Hệ thống dừng lại thay vì đoán.</b> Không có báo giá nào được lập.
+        ${reasons ? `<br>Lý do / reason: <b>${esc(reasons)}</b>` : ""}
+        <br><b>The system stopped rather than guess.</b> No quote was produced.
+      </div>
+      <p style="margin:0;font-size:13px;color:var(--cs-color-text-muted)">
+        Đây là điều khách hàng yêu cầu, và đây là lý do chúng tôi không khớp được.<br>
+        This is what the customer asked for, and why we could not match it.
+      </p>
+    </div>
+
+    ${lines.length ? `
+    <div class="cs-table-wrap">
+      <table class="cs-table">
+        <caption>Do AI đọc và đối chiếu; hệ thống từ chối đoán / Read and matched by AI;
+                 the system declined to guess</caption>
+        <thead><tr>
+          <th>Khách yêu cầu / Requested</th>
+          <th>Khớp / Match</th>
+          <th>Vì sao / Why</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>` : `<div class="state"><p>Không đọc được dòng hàng nào / no line items could be read.</p></div>`}`;
 }
 
 function reviewGate(review, canAct) {

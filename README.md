@@ -67,7 +67,7 @@ retrieval silently.
 | Check | What it proves |
 |---|---|
 | `curl -s .../health` | version, the deployed git SHA, and the model ids actually in use — probed live from inside FC (FR-012) |
-| `curl -s .../eval` | the 97%-vs-40% benchmark page, rendered from a committed snapshot (FR-104). Public, deliberately: a claim you cannot check is a claim you have to take on faith |
+| `curl -s .../eval` | the 93%-vs-40% benchmark page, rendered from a committed snapshot (FR-104). Public, deliberately: a claim you cannot check is a claim you have to take on faith |
 | `curl -s .../api/quotes` | `401` — every `/api/*` route requires `Authorization: Bearer $DEMO_API_TOKEN` (FR-010) |
 | `curl -s .../` | the operator dashboard: approval queue, quote detail, the critic's verdict beside the model's note, reasoning trace, waiver modal (FR-100..106). Save it and open the file, or bind the domain |
 
@@ -94,18 +94,34 @@ back. Every wrong guess about that produces the same symptom — a 502 with no s
 ## The measured result
 
 QuoteMind was evaluated against a **single monolithic agent** given the same Qwen models, the same
-catalog and the same prompts, on 25 labelled RFQs:
+catalog and the same prompts, on **30 labelled RFQs** — five of them real scans:
 
 | | task success | line F1 | SKU top-1 | price exact | flagged the problem | $/quote |
 |---|---|---|---|---|---|---|
-| **QuoteMind** | **96%** | 0.992 | 100% | **96%** | — | $0.011 |
-| single agent | 48% | 0.992 | 98% | 48% | **0%** | $0.013 |
+| **QuoteMind** | **93%** | 0.985 | 100% | **93%** | **10%** | $0.013 |
+| single agent | 40% | 0.980 | 98% | 40% | **0%** | $0.011 |
 
-The single agent reads and matches almost as well. It gets **the money wrong on 52% of quotes** — and
-never once notices. Every one of its failures is arithmetic.
+The single agent reads and matches almost as well — its SKU accuracy is within two points of ours. It
+gets **the money wrong on 60% of quotes**, and never once notices. Every one of its failures is
+arithmetic.
 
 That is the argument for the architecture: the model reads, deterministic code prices, and a critic
-recomputes. Reports: [`eval/reports/`](eval/reports/) · reproduce with `make eval`.
+recomputes.
+
+**The two points we lose are worth naming, because we chose not to buy them back.** One adversarial
+case asks for a laptop configuration the catalog does not sell — 64GB RAM, 2TB SSD. The matcher is
+shown the closest thing we *do* sell, a 32GB machine, and refuses to substitute it:
+
+> *"None of the candidate SKUs meet the requested 64GB RAM and 2TB SSD specifications."*
+
+The label expects the substitution. The system asks a human instead. We could have relabelled the
+case and taken the point; quietly selling someone a 32GB laptop when they asked for 64GB is not a
+rounding error, and a system whose entire premise is *stop rather than guess* should not be penalised
+for stopping. It is now shown at the gate with the reason, the near-misses, and what the customer
+actually asked for — a refusal is a decision, and the reviewer has to be able to act on it.
+
+Reports: [`eval/reports/`](eval/reports/) · live at [`/eval`](docs/deploy/custom-domain.md) ·
+reproduce with `make eval && make eval-snapshot`.
 
 ## Documentation
 
