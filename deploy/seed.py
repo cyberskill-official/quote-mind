@@ -16,6 +16,7 @@ from quotemind.config.settings import require_settings
 from quotemind.memory.embedding import embed_texts
 from quotemind.memory.store import MemoryFacade, catalog_text
 from quotemind.seed.data import CATALOG, CUSTOMERS
+from quotemind.seed.sop import SOPS
 
 
 def main() -> None:
@@ -31,6 +32,13 @@ def main() -> None:
     for customer in CUSTOMERS:
         facade.put_customer(customer)
     print(f"seed: {len(CUSTOMERS)} customers written")
+
+    # FR-048: the SOPs are indexed on the same text search reads, exactly as the catalog is - the
+    # embedding and the indexed string must be the same string, or retrieval and seeding drift.
+    sop_vectors = embed_texts([f"{sop.text.vi} {sop.text.en}" for sop in SOPS], settings)
+    for sop, vector in zip(SOPS, sop_vectors, strict=True):
+        facade.put_sop(sop, vector)
+    print(f"seed: {len(SOPS)} SOP snippets written")
 
 
 if __name__ == "__main__":

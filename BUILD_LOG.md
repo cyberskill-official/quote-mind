@@ -1102,3 +1102,80 @@ Verification: ruff clean, mypy clean (80 files), import-linter 4/4, **316 passed
 coverage 100%. Live, on a real spreadsheet (QM-2026-0013): "chỉ cần 2 màn hình thôi, không phải 8" ->
 all three lines survive, the monitor drops 8 -> 2, and the total is recomputed deterministically from
 463,104,000 to 356,832,000 VND.
+
+## Batch: the roadmap, finished (feat/roadmap-finish)
+
+Seven FRs. One of them changed how the product reads, and it is worth saying which and why.
+
+**FR-048 - the terms on a quote are retrieved, not hardcoded.** `DEFAULT_TERMS` was a module-level
+constant, so every quote said "giao hàng trong vòng 7 ngày làm việc / delivery within 7 working
+days" - *including* a quote for a made-to-order server with a six-week manufacturer lead time. That
+is not a formatting problem. It is a promise the business cannot keep, printed on a document the
+customer is invoiced from.
+
+The sentences live in the `sop` KnowledgeStore tenant now, and the drafter retrieves them per topic,
+seeded with the goods being quoted. Retrieval is *per topic* rather than one global top-k, because a
+single search would happily return three payment snippets and no warranty. A topic that retrieves
+nothing falls back to the seeded default, because a quote with no payment terms is worse than a
+quote with generic ones.
+
+This gives the system its third kind of memory, and they are worth naming together: **procedural**
+(what the business always does - `memory/sop.py`), **episodic** (what happened last time with this
+customer - `memory/recall.py`), and **semantic** (what the products are - the catalog). All three
+inform the draft. None of them is allowed near the arithmetic.
+
+**FR-073 - the critic explains itself, and cannot argue with itself.** The order is load-bearing:
+`run_critic` reaches the verdict, in code; *then* `agents/reviewer.py` is handed the finished report
+and asked to explain it. The model cannot set `passed`, cannot add or drop a flag, and never sees a
+number it could recompute. If the call fails the quote is unaffected. The 80-word cap is enforced
+after generation, not merely requested in the prompt, because "concise" is not something a prompt
+can promise.
+
+The dashboard renders the two halves side by side and labels them: **KHÔNG DO AI / NOT AI** on the
+deterministic verdict, **AI** on the narrative, with a line saying the narrative was written after
+the verdict and cannot change it. Collapsing them into one block of prose would hide exactly the
+distinction the whole architecture is built on, at the one moment a human is deciding whether to
+trust it.
+
+**FR-056** - an out-of-stock line carries its lead time, in both languages, *appended* to whatever
+note it already had (a substitution note, typically) rather than replacing it. Two things can be
+true about one line. `LEAD_TIME` is non-blocking: it is news, not an error.
+
+**FR-085** - a quote nobody has answered in four hours is badged in the queue and logged. This is
+the failure mode an approval gate *creates*: the system did its job, stopped, and asked - and the
+asking went unheard.
+
+**FR-104** - `/eval` is public, like `/health`, and for the same reason: the headline of this whole
+project is 97% against 40%, and a benchmark a judge has to take on faith is not a benchmark. It
+renders a *committed snapshot* rather than running the eval, so the number on the site and the
+number in the submission cannot drift apart without a commit saying so. 17 of the 30 cases are ones
+we price exactly and the single agent does not.
+
+**FR-124** - Be Vietnam Pro is bundled (Regular / SemiBold / Bold + `OFL.txt`). It was left out on
+the reasoning that the repo stays source-only, which was the wrong call for this asset: WeasyPrint's
+fallback keeps the diacritics byte-exact, so nothing was broken, but a quotation rendered in whatever
+sans-serif the host happens to have is the difference between a document that looks like it came
+from a company and one that looks like it came from a script.
+
+**FR-134 - cancel, and the half of it that cannot be built honestly.** A quote at the gate is
+cancellable: it ends as `rejected` (the frozen enum's word for "ended, not sent"), but the audit
+event is `human.cancel`, so "the operator dropped this" and "the reviewer judged the price wrong"
+stay two different facts forever. Only one of them is evidence about the pricing, so a cancel is
+**not** written to episodic memory - somebody closing a browser tab must not teach the system to
+distrust its own prices.
+
+An *in-flight* run returns **409**, and that is the honest answer rather than a missing feature. The
+pipeline runs in a FastAPI BackgroundTask inside the same Function Compute invocation; no second
+process holds a handle to it. And the status enum is frozen (section 12.5) with no `cancelled`:
+landing an interrupted run in `failed_parse` would put a lie on a hash-chained audit trail, and
+`needs_manual` is not reachable from `parsing` under LEGAL_TRANSITIONS. Widening the state machine to
+make one P1 fit is exactly the change section 12 says to stop and ask about. **This is a decision for
+Stephen, not for me.**
+
+**FR-036 and FR-074 remain unbuilt, on purpose.** Both are P2. FR-074 is the auto-fix loop - a critic
+that sends work back to the drafter before a human sees it. Given that this project's entire argument
+is that the model does not get to talk its way past the guardrail, an auto-fix loop is a feature I
+would want to argue for out loud rather than quietly ship.
+
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **334 passed**, pricing branch coverage
+100%.

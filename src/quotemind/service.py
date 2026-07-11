@@ -398,13 +398,33 @@ class QuoteService:
         return self.store.list_quotes(status=status, limit=limit)
 
     def stale_pending(self, hours: int = PENDING_REMINDER_HOURS) -> list[QuoteRecord]:
-        """FR-085: quotes that have been waiting on a human for too long."""
+        """FR-085: quotes that have been waiting on a human for too long.
+
+        Logged as well as returned. A quote nobody has looked at in four hours is the failure mode
+        an approval gate *creates*: the system did its job, stopped, and asked - and the asking went
+        unheard. It is worth an event in the log even when nobody calls this endpoint, because the
+        whole point of a gate is that somebody walks through it.
+        """
         cutoff = _now() - timedelta(hours=hours)
-        return [
+        stale = [
             record
             for record in self.store.list_quotes(status=Status.PENDING_APPROVAL, limit=200)
             if record.updated_at < cutoff
         ]
+        if stale:
+            log_event(
+                "quote.stale_pending",
+                count=len(stale),
+                hours=hours,
+                quote_numbers=[record.quote_number for record in stale[:20]],
+            )
+        return stale
+
+    def is_stale(self, record: QuoteRecord, hours: int = PENDING_REMINDER_HOURS) -> bool:
+        """FR-085: has this one been sitting at the gate too long? Drives the queue badge."""
+        return record.status is Status.PENDING_APPROVAL and record.updated_at < _now() - timedelta(
+            hours=hours
+        )
 
     # --- the human gate (FR-083, FR-084) ---
     def approve(
@@ -585,6 +605,27 @@ class QuoteService:
         # the only signal that says this quote, for this customer, was wrong.
         self._remember(record, stored, Outcome.REJECTED, human_edits=comment)
         return record
+
+    def cancel(self, quote_id: str, *, comment: str | None = None) -> QuoteRecord:
+        """FR-134: the operator stops this quote. Ends it, and says on the record that they did.
+
+        A cancel lands in `rejected` because that is what the frozen status enum calls "ended by a
+        human without sending" - but the audit event is `human.cancel`, not `human.rejected`, so a
+        quote the operator abandoned and a quote the reviewer judged wrong remain two different
+        things a year from now, when only the audit trail is left to say which happened.
+
+        The same distinction reaches memory: a cancel is not evidence that the *price* was wrong, so
+        it is not remembered as a rejection. Teaching the system to distrust its own pricing because
+        somebody closed a browser tab is exactly the kind of quiet corruption episodic memory has to
+        be protected from.
+
+        Raises IllegalTransitionError if the run has not yet reached the gate - see api/app.py.
+        """
+        stored = self._load(quote_id)
+        record: QuoteRecord = stored["record"]
+        return self._transition(
+            record, Status.REJECTED, HUMAN, "human.cancel", {"comment": comment, "cancelled": True}
+        )
 
     async def revise(
         self, quote_id: str, *, instruction: str, on_date: date_type | None = None

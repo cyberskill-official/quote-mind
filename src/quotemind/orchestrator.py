@@ -15,11 +15,19 @@ from pydantic import BaseModel, Field
 from .agents.matcher import select_sku
 from .agents.parser import extract_text_rfq
 from .agents.planner import QuotePlan
+from .agents.reviewer import WORD_CAP, review_note
 from .agents.vision import extract_image_rfq, extract_scanned_rfq
-from .config.models import MODEL_EMBED, MODEL_PARSER_TEXT, MODEL_PARSER_VISION, MODEL_PLANNER
+from .config.models import (
+    MODEL_CRITIC,
+    MODEL_EMBED,
+    MODEL_PARSER_TEXT,
+    MODEL_PARSER_VISION,
+    MODEL_PLANNER,
+)
 from .config.settings import Settings
 from .memory.embedding import embed_text
 from .memory.recall import recall_episodes
+from .memory.sop import retrieve_terms
 from .memory.store import MemoryFacade
 from .models import (
     BilingualText,
@@ -42,14 +50,23 @@ from .obs.trace import TraceDocument, Tracer
 from .parsing import parse_excel, validation_reasons
 from .parsing.pdf import extract_pdf_text, is_scanned
 from .pricing import vat_policy_note
-from .quote import AssemblyLine, assemble_quote, format_quote_number, run_critic
+from .quote import (
+    AssemblyLine,
+    assemble_quote,
+    format_quote_number,
+    lead_time_lines,
+    run_critic,
+)
 from .quote.render import render_html
 from .tools import build_match_result, fuse_candidates, resolve_customer
 from .tools.customer import CustomerResolution
 
 TOP_K = 8  # FR-042: vector_search top_k=8
 
-# SOP-backed terms and notes land with FR-048/FR-061; these are the documented defaults until then.
+# FR-048 landed, so the *pipeline* no longer uses these: the terms on a real quote are retrieved
+# from the `sop` tenant by what is being quoted (memory/sop.py). These remain as the offline default
+# for the eval harness and the unit tests, which run without a memory store - and as the sentences
+# memory/sop.py falls back to when the tenant is empty.
 DEFAULT_TERMS = QuoteTerms(
     payment=BilingualText(
         vi="Thanh toán 100% trong vòng 30 ngày kể từ ngày nhận hàng.",
@@ -546,6 +563,13 @@ async def quote_from_extraction(
             episodic_truncated=truncated,
         )
 
+    # FR-048: the terms this quote carries are *retrieved*, not hardcoded. They used to be a module
+    # constant, which meant a made-to-order server was quoted with "delivery within 7 working days"
+    # - a promise the business cannot keep, printed on a document a customer is invoiced from.
+    with trace.step("Drafter", "sop", model=MODEL_EMBED, operation=OP_EMBEDDINGS) as step:
+        terms, applied = retrieve_terms(facade=facade, settings=settings, extraction=extraction)
+        step.note("SOP applied: " + ", ".join(applied))
+
     profile = resolution.profile
     quote = assemble_quote(
         quote_id=new_ulid(),
@@ -555,7 +579,7 @@ async def quote_from_extraction(
         date=today.isoformat(),
         validity_days=settings.quote_validity_days,
         lines=assembly,
-        terms=DEFAULT_TERMS,
+        terms=terms,
         notes=DEFAULT_NOTES,
         on_date=today,
         fx_usd_vnd=settings.fx_usd_vnd if with_usd else None,
@@ -567,7 +591,21 @@ async def quote_from_extraction(
         quote,
         margin_floor_pct=float(settings.margin_floor_pct),
         customer_known=not resolution.unknown_customer,
+        lead_time_lines=lead_time_lines(assembly),  # FR-056
     )
+
+    # FR-073: the verdict above is final before this line runs. The model is handed the finished
+    # report and asked to *explain* it, in the two languages the quote is written in. It cannot set
+    # `passed`, cannot add or drop a flag, and if it fails the quote is unaffected - the gate still
+    # shows the flags and the diffs, which are the parts that carry authority.
+    with trace.step("Reviewer", "narrate", model=MODEL_CRITIC, operation=OP_CHAT) as step:
+        try:
+            report.narrative = await review_note(quote, report, settings, usage=step)
+        except Exception as exc:  # noqa: BLE001 - a narrative is an aid, never a dependency
+            step.note(f"narrative unavailable: {type(exc).__name__}")
+        else:
+            step.note(f"{len(report.narrative.en.split())} words (cap {WORD_CAP})")
+
     await plan.done(
         "re-check with the critic",
         f"{len(report.recompute_diffs)} recompute diff(s), {len(report.blocking)} blocking flag(s)",

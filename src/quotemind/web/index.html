@@ -243,6 +243,11 @@ kbd { font-family: var(--cs-font-family-mono); font-size: 11px; border: 1px soli
 
   <span class="spacer"></span>
 
+  <a class="chip info" href="/eval" target="_blank" rel="noopener"
+     style="text-decoration:none;margin-right:10px"
+     title="97% vs 40% price-exact against a single-agent baseline. Measured, not asserted.">
+    Đo lường / Evaluation ↗</a>
+
   <span class="cs-ai-disclosure">
     <button class="cs-ai-disclosure__badge" id="aiBadge" aria-expanded="false" aria-controls="aiPanel">
       Có dùng AI / AI in use
@@ -416,7 +421,7 @@ async function loadQueue() {
   // Re-render only when something actually changed. Rebuilding the list on every 5-second poll threw
   // away the reviewer's scroll position and keyboard focus mid-read - a small bug that made the
   // dashboard unusable for exactly the task it exists to do.
-  const next = JSON.stringify(queue.map((q) => [q.quote_id, q.status, q.totals?.total_vnd, q.flags]));
+  const next = JSON.stringify(queue.map((q) => [q.quote_id, q.status, q.totals?.total_vnd, q.flags, q.stale]));
   if (next === signature) return;
   signature = next;
 
@@ -433,6 +438,9 @@ async function loadQueue() {
       <div class="num">${esc(q.quote_number)}</div>
       <div class="meta">
         <span class="chip ${STATUS_CHIP[q.status] || ""}">${esc(q.status)}</span>
+        ${/* FR-085. The failure mode an approval gate *creates*: the system did its job, stopped,
+              and asked - and nobody heard it. A quote waiting hours is not idle, it is unanswered. */
+          q.stale ? `<span class="chip warn" title="Đang chờ người duyệt quá lâu / waiting on a human for hours">⏳ quá hạn / waiting</span>` : ""}
         <span>${esc(q.customer_id || "khách mới / new customer")}</span>
         <span>${vnd(q.totals?.total_vnd)}</span>
         ${(q.flags || []).map((f) => `<span class="chip bad">${esc(f)}</span>`).join("")}
@@ -507,6 +515,7 @@ async function loadDetail() {
     $("bApprove").onclick = () => openDialog("approve");
     $("bReject").onclick = () => openDialog("reject");
     $("bRevise").onclick = () => openDialog("revise");
+    $("bCancel").onclick = () => openDialog("cancel");
   }
 }
 
@@ -588,19 +597,51 @@ function reviewGate(review, canAct) {
         <button class="cs-button" id="bApprove">Duyệt / Approve</button>
         <button class="cs-button cs-button--danger" id="bReject">Từ chối / Reject</button>
         <button class="cs-button cs-button--secondary" id="bRevise">Yêu cầu sửa / Revise</button>
+        <span style="flex:1"></span>
+        <!-- FR-134. Not the same act as a rejection, and the audit trail keeps them apart forever:
+             "the operator dropped this" and "the reviewer judged the price wrong" are different
+             facts, and only one of them is evidence about the pricing. -->
+        <button class="cs-button cs-button--ghost" id="bCancel"
+                title="Dừng báo giá này. Khác với Từ chối: không phải phán xét về giá.">
+          Huỷ / Cancel</button>
       </div>
     </div>`;
 }
 
+// The two halves of this panel are deliberately labelled differently, and the labels are the point.
+//
+//   `note`      - the deterministic verdict. Code wrote it. It is what the system *decided*.
+//   `narrative` - FR-073. A model wrote it, AFTER the verdict existed, from the verdict. It is what
+//                 the system *says about* the decision, and it carries no authority whatsoever.
+//
+// Collapsing them into one block of prose would hide exactly the distinction the whole architecture
+// is built on, at the one moment a human is deciding whether to trust it.
 function criticNote(critic) {
+  const narrative = critic.narrative;
   return `<details class="section" open>
     <summary>Bộ kiểm tra / Critic
       <span class="chip ${blocking.length ? "bad" : "ok"}">${blocking.length ? "chặn / blocked" : "đạt / passed"}</span>
-      <span class="cs-ai-disclosure__badge" style="font-size:11px;padding:1px 7px">AI</span>
     </summary>
     <div class="body">
-      <p style="margin:0;font-size:13px">${esc(critic.note.vi)}</p>
-      <p style="margin:4px 0 0;font-size:12.5px;color:var(--cs-color-text-muted);font-style:italic">${esc(critic.note.en)}</p>
+      <div style="display:flex;gap:8px;align-items:baseline">
+        <span class="chip ok" style="font-size:10px">KHÔNG DO AI / NOT AI</span>
+        <div>
+          <p style="margin:0;font-size:13px">${esc(critic.note.vi)}</p>
+          <p style="margin:4px 0 0;font-size:12.5px;color:var(--cs-color-text-muted);font-style:italic">${esc(critic.note.en)}</p>
+        </div>
+      </div>
+      ${narrative ? `
+      <div style="display:flex;gap:8px;align-items:baseline;margin-top:14px;
+                  padding-top:12px;border-top:1px solid var(--cs-color-border-subtle)">
+        <span class="cs-ai-disclosure__badge" style="font-size:10px;padding:1px 7px">AI</span>
+        <div>
+          <p style="margin:0;font-size:13px">${esc(narrative.vi)}</p>
+          <p style="margin:4px 0 0;font-size:12.5px;color:var(--cs-color-text-muted);font-style:italic">${esc(narrative.en)}</p>
+          <p style="margin:6px 0 0;font-size:11.5px;color:var(--cs-color-text-muted)">
+            Nhận xét do AI viết <b>sau khi</b> hệ thống đã kết luận. Nó không thể thay đổi kết luận đó.<br>
+            Written by a model <b>after</b> the verdict above, from it. It cannot change it.</p>
+        </div>
+      </div>` : ""}
     </div>
   </details>`;
 }
@@ -707,11 +748,17 @@ function traceSection(trace) {
 
 // ---- the decision ----
 function openDialog(kind) {
-  const titles = { approve: "Duyệt báo giá / Approve", reject: "Từ chối / Reject", revise: "Yêu cầu sửa / Revise" };
+  const titles = {
+    approve: "Duyệt báo giá / Approve", reject: "Từ chối / Reject",
+    revise: "Yêu cầu sửa / Revise", cancel: "Huỷ báo giá / Cancel",
+  };
   const labels = {
     approve: "Ghi chú (tuỳ chọn) / comment (optional)",
     reject: "Lý do / reason",
     revise: "Hướng dẫn sửa / instruction",
+    // FR-134. Deliberately asks *why*, because "cancelled" without a reason is a hole in the record
+    // - and this is the one action whose whole purpose is to be distinguishable from a rejection.
+    cancel: "Vì sao huỷ? (khách rút yêu cầu, trùng lặp, gửi nhầm...) / why? (customer withdrew, duplicate, sent in error...)",
   };
   $("dlgTitle").textContent = titles[kind];
   $("dlgLabel").textContent = labels[kind];
@@ -758,6 +805,9 @@ async function submitAction(kind) {
     } else if (kind === "reject") {
       await api(`/api/quotes/${selected}/reject`, { method: "POST", body: JSON.stringify({ comment: text || null }) });
       toast("Đã từ chối / rejected");
+    } else if (kind === "cancel") {
+      await api(`/api/quotes/${selected}/cancel`, { method: "POST", body: JSON.stringify({ comment: text || null }) });
+      toast("Đã huỷ / cancelled — ghi là huỷ, không phải từ chối");
     } else {
       if (!text) { toast("Cần hướng dẫn sửa / an instruction is required"); return; }
       await api(`/api/quotes/${selected}/revise`, { method: "POST", body: JSON.stringify({ instruction: text }) });

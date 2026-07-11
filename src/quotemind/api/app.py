@@ -25,6 +25,7 @@ from ..config.bootstrap import ModelStatus, check_models, health_models
 from ..config.models import MODEL_CONSTANTS
 from ..config.seller import SELLER_BLOCK
 from ..config.settings import get_settings
+from ..eval_.report import render_report_html
 from ..intake import MAX_UPLOAD_BYTES, UnsupportedPayloadError, doc_type_for
 from ..memory.quotes import QuoteStore
 from ..memory.store import MemoryFacade
@@ -186,6 +187,18 @@ def dashboard() -> HTMLResponse:
     return HTMLResponse(page)
 
 
+@app.get("/eval", response_class=HTMLResponse, include_in_schema=False)
+def eval_report() -> HTMLResponse:
+    """FR-104: the measured claim, on the deployed site, without a credential.
+
+    Public on purpose, for the same reason /health is: the headline of this whole project is a
+    comparison - 97% against 40% - and a benchmark a judge has to take our word for is not a
+    benchmark. The page carries no customer data; it is aggregate metrics over a labelled synthetic
+    dataset that ships in the repo, plus one square per case.
+    """
+    return HTMLResponse(render_report_html())
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
     """API-11 / FR-009 + FR-012: liveness, version, git SHA, and the models actually in use."""
@@ -323,6 +336,7 @@ def list_quotes(
                 "flags": record.flags,
                 "totals": record.totals_json,
                 "updated_at": record.updated_at.isoformat(),
+                "stale": service.is_stale(record),  # FR-085
             }
             for record in records
         ],
@@ -437,3 +451,44 @@ async def revise(service: ServiceDep, quote_id: str, body: ReviseBody) -> dict[s
     except QuoteNotFoundError as exc:
         raise _error(404, "not_found", f"no quote {quote_id}") from exc
     return {"quote_id": quote_id, "status": record.status.value, "revision": record.revision}
+
+
+@app.post("/api/quotes/{quote_id}/cancel", dependencies=[Depends(require_bearer)])
+def cancel(service: ServiceDep, quote_id: str, body: RejectBody | None = None) -> dict[str, Any]:
+    """FR-134: cancel a quote, with the HITL gate's own semantics.
+
+    FR-134 asks for an interrupt hook that can cancel an *in-flight* run. This implements the half
+    of it that can be implemented honestly, and refuses the other half rather than faking it.
+
+    A quote waiting at the gate is cancelled by ending it - which is what `rejected` already means,
+    so cancel is a reject carrying its reason. The audit trail says `human.cancel`, so "the operator
+    stopped this" and "the reviewer turned it down" stay distinguishable forever, which is the part
+    that matters.
+
+    A quote still *running* is a different question, and the answer is 409. Two reasons, both real:
+
+      * The pipeline runs inside a FastAPI BackgroundTask, in the same Function Compute invocation
+        that accepted the RFQ. There is no second process holding a handle to it. Cancelling would
+        mean adding a flag in Tablestore and polling it between stages - which is a real design, and
+        a bigger one than this FR is worth.
+      * The status enum is frozen (section 12.5) and has no `cancelled`. Landing an interrupted run
+        in `failed_parse` would put a lie on a hash-chained audit trail: nothing failed. Landing it
+        in `needs_manual` is not reachable from `parsing` or `matching` under LEGAL_TRANSITIONS, and
+        widening that table to make one FR fit is exactly the change section 12 says to stop and ask
+        about.
+
+    So: cancellable at the gate, 409 while running, and the reason is on the record rather than in
+    someone's head.
+    """
+    try:
+        record = service.cancel(quote_id, comment=(body or RejectBody()).comment)
+    except QuoteNotFoundError as exc:
+        raise _error(404, "not_found", f"no quote {quote_id}") from exc
+    except IllegalTransitionError as exc:
+        raise _error(
+            409,
+            "illegal_transition",
+            f"a quote in {exc.current.value} cannot be cancelled: the run is already under way "
+            "and Function Compute cannot interrupt it. Wait for the approval gate.",
+        ) from exc
+    return {"quote_id": quote_id, "status": record.status.value, "cancelled": True}
