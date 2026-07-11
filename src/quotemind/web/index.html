@@ -213,6 +213,8 @@ async function loadDetail() {
 
   const quote = review.quote;
   const critic = review.critic;
+  const plan = review.plan;            // FR-131
+  const memories = review.episodic;    // FR-045
   const blocking = critic?.blocking || [];
 
   const lines = (quote?.lines || []).map((l) => `
@@ -274,6 +276,51 @@ async function loadDetail() {
 
     ${critic?.note ? `<div style="margin-top:12px" class="chip ${blocking.length ? "bad" : "ok"}">
       ${esc(critic.note.vi)}</div>` : ""}
+
+    ${plan ? `
+    <details class="trace">
+      <summary>Kế hoạch / Plan ${plan.skipped
+        ? '<span class="chip">bỏ qua / skipped</span>'
+        : `<span class="chip info">${(plan.subtasks || []).length} bước</span>`}</summary>
+      ${plan.skipped
+        ? `<div class="sub" style="color:#6f6055;font-size:12.5px;padding:8px 0">${esc(plan.reason)}</div>`
+        : (plan.subtasks || []).map((t) => `
+          <div class="step">
+            <div class="seq"><span class="chip ${
+              t.state === "done" ? "ok" : t.state === "in_progress" ? "info" : "warn"
+            }">${esc(t.state)}</span></div>
+            <div>
+              <div class="what"><b>${esc(t.name)}</b></div>
+              <div class="sub">${esc(t.outcome || t.expected_outcome)}</div>
+            </div>
+            <div class="nums"></div>
+          </div>`).join("")}
+    </details>` : ""}
+
+    ${memories && (memories.recalls || []).length ? `
+    <details class="trace">
+      <summary>Lần trước với khách này / Prior context
+        <span class="chip info">${memories.recalls.length}</span>
+        ${memories.truncated ? '<span class="chip warn">cắt bớt / budget truncated</span>' : ""}</summary>
+      <div class="sub" style="color:#6f6055;font-size:12.5px;padding:6px 0">
+        Chỉ để tham khảo - không ảnh hưởng tới giá / for the reviewer only; memory never touches the price.
+      </div>
+      ${memories.recalls.map((m) => `
+        <div class="step">
+          <div class="seq"><span class="chip ${
+            m.outcome === "rejected" ? "bad" : m.outcome === "edited" ? "warn" : "ok"
+          }">${esc(m.outcome)}</span></div>
+          <div>
+            <div class="what"><b>${esc(m.quote_number)}</b></div>
+            <div class="sub">${esc(m.summary?.vi)}</div>
+          </div>
+          <div class="nums">
+            score ${Number(m.effective_score).toFixed(3)}<br>
+            sim ${Number(m.similarity).toFixed(2)} &middot; imp ${Number(m.importance).toFixed(2)}<br>
+            ${Math.round(m.age_days)} ngày / days
+          </div>
+        </div>`).join("")}
+    </details>` : ""}
 
     <details class="trace" open>
       <summary>Dấu vết suy luận / Reasoning trace (${(trace.steps || []).length} bước)</summary>

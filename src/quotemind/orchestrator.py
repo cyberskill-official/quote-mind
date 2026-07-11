@@ -14,18 +14,23 @@ from pydantic import BaseModel, Field
 
 from .agents.matcher import select_sku
 from .agents.parser import extract_text_rfq
+from .agents.planner import QuotePlan
 from .agents.vision import extract_image_rfq, extract_scanned_rfq
 from .config.models import MODEL_EMBED, MODEL_PARSER_TEXT, MODEL_PARSER_VISION, MODEL_PLANNER
 from .config.settings import Settings
 from .memory.embedding import embed_text
+from .memory.recall import recall_episodes
 from .memory.store import MemoryFacade
 from .models import (
     BilingualText,
     CatalogProduct,
     CriticReport,
+    DocType,
+    EpisodicRecall,
     LineSource,
     MatchResult,
     MatchStatus,
+    PlanRecord,
     Quote,
     QuoteTerms,
     RFQExtraction,
@@ -78,6 +83,16 @@ class PipelineResult(BaseModel):
     html: str | None = None
     clarification_reasons: list[str] = Field(default_factory=list)
     trace: TraceDocument | None = None
+    plan: PlanRecord | None = None  # FR-131
+    episodic: list[EpisodicRecall] = Field(default_factory=list)  # FR-045
+    episodic_truncated: bool = False  # FR-049: the budget dropped something
+
+
+def _recall_query(extraction: RFQExtraction) -> str:
+    """What this RFQ is *about*, as one string, for the episodic vector search (FR-045)."""
+    parts = [extraction.buyer.company or ""]
+    parts.extend(line.description_normalized for line in extraction.lines)
+    return " ".join(part for part in parts if part).strip()
 
 
 def _customer_block(resolution: CustomerResolution, extraction: RFQExtraction) -> dict[str, object]:
@@ -217,6 +232,7 @@ async def quote_from_excel(
         customer_email=customer_email,
         customer_hint=customer_hint,
         with_usd=with_usd,
+        doc_type=DocType.EXCEL,
         tracer=trace,
     )
 
@@ -261,6 +277,7 @@ async def quote_from_pdf(
             customer_email=customer_email,
             customer_hint=customer_hint,
             with_usd=with_usd,
+            doc_type=DocType.PDF_SCAN,
             tracer=trace,
         )
 
@@ -314,6 +331,7 @@ async def quote_from_image(
         customer_email=customer_email,
         customer_hint=customer_hint,
         with_usd=with_usd,
+        doc_type=DocType.IMAGE,
         tracer=trace,
     )
 
@@ -329,7 +347,9 @@ async def quote_from_extraction(
     customer_email: str | None = None,
     customer_hint: str | None = None,
     with_usd: bool = False,
+    doc_type: DocType = DocType.EMAIL_TEXT,
     tracer: Tracer | None = None,
+    plan: QuotePlan | None = None,
 ) -> PipelineResult:
     """The shared path after extraction: gate -> customer -> match -> assemble -> critic -> render.
 
@@ -344,6 +364,16 @@ async def quote_from_extraction(
             extraction=extraction, clarification_reasons=reasons, trace=trace.document()
         )
 
+    # FR-131: plan the non-trivial ones, and say why when we do not.
+    plan = plan or QuotePlan()
+    plan_record = await plan.open(extraction, doc_type)
+    with trace.step("Orchestrator", "plan") as step:
+        step.note(
+            plan_record.reason
+            if plan_record.skipped
+            else f"planned {len(plan_record.subtasks) or len(extraction.lines)} subtask(s)"
+        )
+
     # FR-043: candidates from the customers tenant, then the deterministic pick.
     email = customer_email or extraction.buyer.email
     lookup = customer_hint or extraction.buyer.company or (email.split("@")[-1] if email else "")
@@ -351,6 +381,34 @@ async def quote_from_extraction(
     resolution = resolve_customer(
         candidates, email=email, name=extraction.buyer.company, hint=customer_hint
     )
+    await plan.done(
+        "resolve the customer",
+        "UNKNOWN_CUSTOMER" if resolution.unknown_customer else f"tier {resolution.tier.value}",
+    )
+
+    # FR-045: what happened last time we quoted this customer. It informs the reviewer; it never
+    # touches the price - see memory/recall.py for why that line is drawn where it is.
+    episodic: list[EpisodicRecall] = []
+    truncated = False
+    if resolution.profile is not None:
+        with trace.step(
+            "Orchestrator", "recall", model=MODEL_EMBED, operation=OP_EMBEDDINGS
+        ) as step:
+            try:
+                episodic, truncated = recall_episodes(
+                    facade=facade,
+                    settings=settings,
+                    customer_id=resolution.profile.customer_id,
+                    query_text=_recall_query(extraction),
+                )
+            except Exception as exc:  # noqa: BLE001 - recall is an aid, never a dependency
+                step.note(f"recall unavailable: {type(exc).__name__}")
+            else:
+                step.memory([recall.memory_id for recall in episodic])
+                step.note(
+                    f"recalled {len(episodic)} episode(s)"
+                    + (" (budget truncated)" if truncated else "")
+                )
 
     matches: list[MatchResult] = []
     assembly: list[AssemblyLine] = []
@@ -373,13 +431,19 @@ async def quote_from_extraction(
             )
         )
 
+    await plan.done("match the catalog", f"{len(assembly)}/{len(extraction.lines)} line(s) matched")
+
     if not assembly:
+        plan_record = await plan.close("abandoned", "no line item could be matched")
         return PipelineResult(
             extraction=extraction,
             matches=matches,
             resolution=resolution,
             clarification_reasons=["NO_LINE_ITEMS"],
             trace=trace.document(),
+            plan=plan_record,
+            episodic=episodic,
+            episodic_truncated=truncated,
         )
 
     profile = resolution.profile
@@ -397,12 +461,22 @@ async def quote_from_extraction(
         fx_usd_vnd=settings.fx_usd_vnd if with_usd else None,
         project_discount_pct=profile.project_discount_pct if profile is not None else 3.0,
     )
+    await plan.done("price deterministically", f"total {quote.total_vnd} VND")
+
     report = run_critic(
         quote,
         margin_floor_pct=float(settings.margin_floor_pct),
         customer_known=not resolution.unknown_customer,
     )
+    await plan.done(
+        "re-check with the critic",
+        f"{len(report.recompute_diffs)} recompute diff(s), "
+        f"{len(report.blocking)} blocking flag(s)",
+    )
     html = render_html(quote, vat_policy_note=vat_policy_note(today))
+
+    await plan.done("stop at the human gate", "quote parked for a human decision")
+    plan_record = await plan.close("done", f"{quote.quote_number} at the approval gate")
 
     return PipelineResult(
         extraction=extraction,
@@ -412,4 +486,7 @@ async def quote_from_extraction(
         critic=report,
         html=html,
         trace=trace.document(),
+        plan=plan_record,
+        episodic=episodic,
+        episodic_truncated=truncated,
     )

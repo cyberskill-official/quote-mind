@@ -32,7 +32,8 @@ from .eval import EvalCase, EvalInput, EvalLabelLine, EvalLabels
 from .extraction import Buyer, RFQExtraction, RFQLine, SourceSpan
 from .intake import CustomerMatch, EmailMeta, IntakeResult
 from .matching import MatchAlternative, MatchResult
-from .memory import EpisodicQuoteMemory, ItemBrief, SOPSnippet
+from .memory import EpisodicQuoteMemory, EpisodicRecall, ItemBrief, SOPSnippet
+from .plan import PlanRecord, PlanSubtask
 from .quote import (
     MarginInfo,
     Quote,
@@ -70,6 +71,7 @@ __all__ = [
     "DocType",
     "EmailMeta",
     "EpisodicQuoteMemory",
+    "EpisodicRecall",
     "EvalCase",
     "EvalInput",
     "EvalLabelLine",
@@ -82,6 +84,8 @@ __all__ = [
     "MarginInfo",
     "MatchAlternative",
     "MatchResult",
+    "PlanRecord",
+    "PlanSubtask",
     "MatchStatus",
     "Outcome",
     "Quote",

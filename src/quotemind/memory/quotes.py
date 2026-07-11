@@ -142,6 +142,8 @@ class QuoteStore:
         critic_json: str | None = None,
         trace_json: str | None = None,
         html: str | None = None,
+        plan_json: str | None = None,  # FR-131
+        episodic_json: str | None = None,  # FR-045
     ) -> None:
         """Merge-write the row. update_row (not put_row) so a status change cannot wipe payloads."""
         columns: list[tuple[str, Any]] = [
@@ -150,12 +152,17 @@ class QuoteStore:
         ]
         if record.sha256_payload:
             columns.append(("sha256", record.sha256_payload))
+        # An allowlist, not **kwargs. A column named here is a column that reaches Tablestore; a
+        # payload the service invented but this list forgot would be silently dropped, and the
+        # reviewer would simply never see it - which is exactly what nearly happened to the plan.
         for name, value in (
             ("source_text", source_text),
             ("quote_json", quote_json),
             ("critic_json", critic_json),
             ("trace_json", trace_json),
             ("html", html),
+            ("plan_json", plan_json),
+            ("episodic_json", episodic_json),
         ):
             if value is not None:
                 columns.append((name, value))

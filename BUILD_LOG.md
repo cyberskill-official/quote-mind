@@ -887,3 +887,67 @@ so the system refuses to guess a pricing tier and asks a human instead.
 Verification: ruff clean, mypy clean (77 files), import-linter 4/4 kept, pytest 280 passed, pricing
 branch coverage 100%. Traceability backfilled: 84 rows, up from 65 - several FRs were built but had
 no evidence row, which is its own kind of untruth.
+
+## Batch: the last two P0s (feat/memory-planner)
+
+FR-044/045/046 (episodic memory) and FR-131 (the planner). Both were "built" in the sense that the
+hard parts existed and nothing called them.
+
+**Episodic memory was dead code.** `memory/episodic.py` has had correct, unit-tested importance
+scoring, recency decay and effective-score ranking since PR-4. `MemoryFacade` has had `put_episodic`
+and `search_episodic` for just as long. Nothing invoked any of it. The system could not remember a
+single decision a human had ever made.
+
+Now: on approve or reject, `QuoteService` writes an episode - a bilingual LLM summary (<=120 words),
+the items, the outcome, the human's own words, and an importance from FR-046 (approved 0.7, edited
+0.8, rejected 0.9, +0.1 over 100M VND). An approval that needed a waiver, or that followed a
+revision, is recorded as *edited* rather than *approved*: a quote a human had to argue with is a more
+interesting memory than one they nodded through. The write never raises - the decision is already on
+the audit chain, and losing the memory of it must not lose the decision.
+
+Before quoting a known customer, the orchestrator recalls the top 3. The vector store ranks on
+similarity alone, so it is over-fetched and re-ranked by the FR-046 effective score
+(similarity x recency_decay x importance) - without that, a perfectly-matched year-old episode
+outranks last week's rejection, which is exactly backwards. The 1200-token budget (FR-049) drops the
+weakest, and says so. Every recalled memory id lands in the trace.
+
+**Where memory is not allowed to go.** A recalled episode never touches the money. FR-045 says to
+inject the memories into "the drafter context"; there is no LLM drafter to inject into, because the
+quote is assembled deterministically, and inventing one so that a retrieved document could nudge a
+price would put a similarity search inside the arithmetic path - the one thing this architecture
+exists to prevent. The retrieval, the ranking, the budget and the trace record are exactly as
+specified. What the memories inform is the human, not the total. That divergence is argued for in
+`memory/recall.py` rather than hidden.
+
+**The planner, and how it nearly became theatre.** FR-131 asks for AgentScope's PlanNotebook. The
+easy version generates a plan, never consults it, and always reports itself complete - a confident
+lie in the one artifact a reviewer opens to find out what happened. So: the plan's subtasks are
+closed by the pipeline that actually ran, and a subtask nobody closed still says `todo`. Two things
+fell out of building it honestly:
+
+- The plan is created *after* extraction, so it must not list "read the scan" as a subtask. Claiming
+  credit for work that finished before the plan existed would be the plan lying on its first line.
+- `PlanNotebook.finish_subtask(i)` also advances subtask `i+1` to `in_progress`. The subtask list is
+  therefore in *execution* order, not reading order. It was not, and the plan reported the customer
+  resolution as still running after it had finished. A test now pins the order.
+
+Trivial quotes skip the plan with a logged reason (FR-131 allows the fast path). The flags that can
+gate a plan are the ones that exist at *intake* - line count, a scanned source, an unreadable
+quantity, a parser that was unsure. A NO_MATCH line cannot gate it, because NO_MATCH comes from the
+matcher, and the plan exists to organise the matcher: planning cannot wait on the result of the thing
+it is planning. A test pins that boundary too, so nobody "fixes" it later.
+
+**A trap the store nearly ate.** `QuoteStore.put_quote` takes an explicit column allowlist, not
+`**kwargs`. `plan_json` and `episodic_json` would have been silently dropped on the way to
+Tablestore, and the reviewer would simply never have seen them - a feature that works in every test
+and does nothing in production.
+
+**Proven live.** A scanned Vietnamese RFQ from Thanh Cong: the plan fired (5 subtasks, all closed
+with real outcomes - `total 565920000 VND`, `0 recompute diff(s)`), and the episode written from
+QM-2026-0001 was recalled at effective score 0.72 (similarity 0.904 x decay 1.000 x importance 0.80),
+with its memory id in the trace. Note for operators: Tablestore's vector index is eventually
+consistent, so a memory written at approval takes a few seconds to become recallable. In practice the
+next RFQ is minutes or days later; it matters only if you test it in a tight loop, as we did.
+
+Verification: ruff clean, mypy clean (80 files), import-linter 4/4 kept, pytest 301 passed, pricing
+branch coverage 100%.

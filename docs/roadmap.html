@@ -143,8 +143,15 @@
        file channels had been decoding every upload as UTF-8, so a spreadsheet became mojibake and a
        scanned PDF became noise. The eval never caught it because the eval calls the parsers
        directly - it proved the parsers and never touched the seam joining them to the product.</p>
-    <p><b>Next:</b> the last two P0s - episodic memory (FR-044/045) and the PlanNotebook planner
-       (FR-131) - then rehearse and shoot the demo video.</p>
+    <p><b>It remembers, and it plans.</b> On approve or reject the system writes an episodic memory -
+       a bilingual summary, the outcome, the human's own words, and an importance that ranks a
+       rejection above an approval. Before quoting a known customer it recalls the top three, re-ranked
+       by similarity x recency x importance, inside a 1200-token budget, with every memory id in the
+       trace. Memory informs the reviewer and never the price: a retrieved document that could nudge a
+       number would put a similarity search inside the arithmetic path. Non-trivial quotes are planned
+       in AgentScope's PlanNotebook, and the plan is real - its subtasks are closed by the pipeline
+       that actually ran, and one nobody closed still says todo.</p>
+    <p><b>Next:</b> rehearse and shoot the demo video. Every P0 is now built.</p>
   </div>
 
   <div class="legend">
@@ -204,8 +211,9 @@ const PHASES = [
   { s: "done", t: "Deployment proof and submission artifacts", d: "s.yaml (FC 3.0, two functions), the Alibaba proof module (8/8 live), the FR-012 cold-start model check, architecture diagram, demo script, submission text." },
   { s: "done", t: "Vision OCR and the live endpoint", d: "FR-031/032 (200 DPI raster + qwen-vl-ocr, 5/5 scanned cases quoted); the eval complete at 30/30 - 97% vs 40% task success against the baseline; the API deployed and verified on FC 3.0, dashboard served same-origin, /health reporting 0 unverified models." },
   { s: "done", t: "The file channels read files", d: "FR-021/022/024/033: parser routing moved into QuoteService and both intake channels call it. The OSS drop loop is proven live end to end. Idempotency now hashes the file bytes, not the filename." },
-  { s: "now",  t: "The last two P0s", d: "Episodic memory write + retrieval (FR-044/045) - the primitives exist but nothing calls them - and the PlanNotebook planner (FR-131)." },
-  { s: "next", t: "Rehearse and shoot the demo", d: "Run the EV-08 rehearsal against the live endpoint and record the video (docs/demo-script.md). Remaining P1: critic narrative (FR-073), revision re-draft (FR-064), eval report page (FR-104)." },
+  { s: "done", t: "The last two P0s", d: "FR-044/045/046 episodic memory - written on every human decision, recalled and re-ranked by effective score before the next quote, proven live. FR-131 the PlanNotebook planner, whose subtasks are closed by the pipeline that actually ran." },
+  { s: "now",  t: "Rehearse and shoot the demo", d: "Run the EV-08 rehearsal against the live endpoint and record the video (docs/demo-script.md). Every P0 is built." },
+  { s: "next", t: "Remaining P1 polish", d: "Critic narrative (FR-073), revision re-draft (FR-064), eval report page (FR-104), realtime push (FR-104)." },
 ];
 
 const LABEL = { done: "Done", partial: "Partial", todo: "To do" };
