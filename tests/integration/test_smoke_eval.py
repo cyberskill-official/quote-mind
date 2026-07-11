@@ -33,8 +33,7 @@ from quotemind.seed.data import BY_SKU, CUSTOMERS
 
 BY_CUSTOMER = {customer.customer_id: customer for customer in CUSTOMERS}
 _EMAIL = {
-    customer.customer_id: (customer.emails[0] if customer.emails else "")
-    for customer in CUSTOMERS
+    customer.customer_id: (customer.emails[0] if customer.emails else "") for customer in CUSTOMERS
 }
 
 pytestmark = pytest.mark.skipif(not available(), reason="no cassettes recorded")

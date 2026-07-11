@@ -88,16 +88,26 @@ def test_assemble_then_critic_passes_end_to_end() -> None:
     lines = [
         AssemblyLine(
             product=_product(
-                "DL-LAT", Category.LAPTOP, "Laptop Dell Latitude", "Dell Latitude laptop",
-                20_000_000, 18_000_000, 15_000_000,
+                "DL-LAT",
+                Category.LAPTOP,
+                "Laptop Dell Latitude",
+                "Dell Latitude laptop",
+                20_000_000,
+                18_000_000,
+                15_000_000,
             ),
             qty=Decimal(10),
             tier=Tier.DEALER,
         ),
         AssemblyLine(
             product=_product(
-                "DL-MON", Category.MONITOR, "Màn hình Dell 27 inch", "Dell 27 inch monitor",
-                6_500_000, 5_800_000, 4_800_000,
+                "DL-MON",
+                Category.MONITOR,
+                "Màn hình Dell 27 inch",
+                "Dell 27 inch monitor",
+                6_500_000,
+                5_800_000,
+                4_800_000,
             ),
             qty=Decimal(5),
             tier=Tier.PROJECT,
@@ -130,16 +140,27 @@ def test_flags_vat_excluded_and_lead_time() -> None:
     lines = [
         AssemblyLine(
             product=_product(
-                "TEL-1", Category.TELECOM_SERVICE, "Dịch vụ viễn thông", "Telecom service",
-                1_000_000, 1_000_000, 500_000,
+                "TEL-1",
+                Category.TELECOM_SERVICE,
+                "Dịch vụ viễn thông",
+                "Telecom service",
+                1_000_000,
+                1_000_000,
+                500_000,
             ),
             qty=Decimal(1),
             tier=Tier.END_CUSTOMER,
         ),
         AssemblyLine(
             product=_product(
-                "OOS-1", Category.LAPTOP, "Laptop hết hàng", "Out-of-stock laptop",
-                10_000_000, 9_000_000, 7_000_000, stock=StockStatus.OUT_OF_STOCK,
+                "OOS-1",
+                Category.LAPTOP,
+                "Laptop hết hàng",
+                "Out-of-stock laptop",
+                10_000_000,
+                9_000_000,
+                7_000_000,
+                stock=StockStatus.OUT_OF_STOCK,
             ),
             qty=Decimal(1),
             tier=Tier.DEALER,

@@ -89,9 +89,7 @@ def test_a_right_product_with_the_wrong_quantity_is_a_miss_not_a_hit() -> None:
 
 
 def test_scoring_counts_duplicates_once() -> None:
-    tp, fp, fn = score_lines(
-        [("A", "1"), ("A", "1")], [("A", "1")]
-    )
+    tp, fp, fn = score_lines([("A", "1"), ("A", "1")], [("A", "1")])
     assert (tp, fp, fn) == (1, 1, 0)  # the second copy is a false positive, not a second hit
 
 

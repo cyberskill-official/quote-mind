@@ -27,9 +27,7 @@ _NO_MATCH_REASON = BilingualText(
 _ALT_REASON = BilingualText(vi="Ứng viên thay thế", en="Alternative candidate")
 
 
-def reciprocal_rank_fusion(
-    rankings: list[list[str]], k: int = _RRF_K
-) -> list[tuple[str, float]]:
+def reciprocal_rank_fusion(rankings: list[list[str]], k: int = _RRF_K) -> list[tuple[str, float]]:
     """Fuse ranked SKU lists by reciprocal rank: score = sum 1/(k + rank). Ties break by SKU."""
     scores: dict[str, float] = {}
     for ranking in rankings:
@@ -38,9 +36,7 @@ def reciprocal_rank_fusion(
     return sorted(scores.items(), key=lambda item: (-item[1], item[0]))
 
 
-def fuse_candidates(
-    vector_skus: list[str], text_skus: list[str], k: int = _RRF_K
-) -> list[str]:
+def fuse_candidates(vector_skus: list[str], text_skus: list[str], k: int = _RRF_K) -> list[str]:
     """RRF-fuse the vector and full-text SKU rankings into a single ranked SKU list."""
     return [sku for sku, _ in reciprocal_rank_fusion([vector_skus, text_skus], k)]
 
@@ -51,11 +47,9 @@ def top_candidate(fused_skus: list[str]) -> str | None:
 
 
 def _alternatives(fused_skus: list[str], exclude: str | None) -> list[MatchAlternative]:
-    return [
-        MatchAlternative(sku=sku, reason=_ALT_REASON)
-        for sku in fused_skus
-        if sku != exclude
-    ][:_MAX_ALTERNATIVES]
+    return [MatchAlternative(sku=sku, reason=_ALT_REASON) for sku in fused_skus if sku != exclude][
+        :_MAX_ALTERNATIVES
+    ]
 
 
 def build_match_result(

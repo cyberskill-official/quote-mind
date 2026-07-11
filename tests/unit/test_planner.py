@@ -14,9 +14,7 @@ from quotemind.agents.planner import LOW_CONFIDENCE, MANY_LINES, QuotePlan, triv
 from quotemind.models import Buyer, DocType, Language, RFQExtraction, RFQLine
 
 
-def _extraction(
-    lines: int = 2, *, unreadable: int = 0, confidence: float = 0.9
-) -> RFQExtraction:
+def _extraction(lines: int = 2, *, unreadable: int = 0, confidence: float = 0.9) -> RFQExtraction:
     items = [
         RFQLine(
             idx=index,

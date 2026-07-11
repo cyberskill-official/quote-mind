@@ -56,6 +56,7 @@ class CounterContentionError(RuntimeError):
 # is a column that exists in Tablestore and reaches nobody.
 PAYLOAD_COLUMNS = (
     "source_text",
+    "extraction_json",  # FR-064: what a revision re-drafts from
     "quote_json",
     "critic_json",
     "trace_json",
@@ -152,6 +153,7 @@ class QuoteStore:
         record: QuoteRecord,
         *,
         source_text: str | None = None,
+        extraction_json: str | None = None,  # FR-064
         quote_json: str | None = None,
         critic_json: str | None = None,
         trace_json: str | None = None,

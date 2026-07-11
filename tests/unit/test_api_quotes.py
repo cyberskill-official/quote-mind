@@ -126,7 +126,8 @@ def test_unsupported_upload_is_rejected() -> None:
     client = _client(store)
     try:
         response = client.post(
-            "/api/rfq", files={"file": ("virus.exe", b"nope", "application/octet-stream")},
+            "/api/rfq",
+            files={"file": ("virus.exe", b"nope", "application/octet-stream")},
             headers=_AUTH,
         )
         assert response.status_code == 422  # FR-025

@@ -124,9 +124,7 @@ async def _match_line(
     tracer: Tracer,
 ) -> tuple[MatchResult, dict[str, CatalogProduct]]:
     """Retrieve (vector + full text), fuse deterministically, let the model pick, then band it."""
-    with tracer.step(
-        "CatalogMatcher", "embed", model=MODEL_EMBED, operation=OP_EMBEDDINGS
-    ) as step:
+    with tracer.step("CatalogMatcher", "embed", model=MODEL_EMBED, operation=OP_EMBEDDINGS) as step:
         query_vector = embed_text(description, settings, usage=step)
         step.note(f"embedded line {line_ref}")
 
@@ -337,6 +335,88 @@ async def quote_from_image(
     )
 
 
+def restate(extraction: RFQExtraction) -> str:
+    """Write out what we already read from the document, as plain text.
+
+    A quote's source document is read exactly once. Everything after that works from the
+    `RFQExtraction`, and this turns that extraction back into something the parser can read - so a
+    revision never has to re-open a file that may no longer exist.
+    """
+    buyer = extraction.buyer
+    header = [
+        f"Khách hàng / Customer: {buyer.company}" if buyer.company else "",
+        f"MST: {buyer.mst}" if buyer.mst else "",
+        f"Email: {buyer.email}" if buyer.email else "",
+        f"Liên hệ / Contact: {buyer.contact}" if buyer.contact else "",
+    ]
+    lines = [
+        f"{n}. {line.raw_text or line.description_normalized}"
+        f" — SL/Qty: {line.quantity if line.quantity is not None else '?'} {line.unit}".rstrip()
+        for n, line in enumerate(extraction.lines, start=1)
+    ]
+    return "\n".join(
+        [*(part for part in header if part), "", "Các dòng hàng / Line items:", *lines]
+    ).strip()
+
+
+async def quote_from_revision(
+    extraction: RFQExtraction,
+    instruction: str,
+    *,
+    settings: Settings,
+    facade: MemoryFacade,
+    seller_block: dict[str, object],
+    sequence: int,
+    on_date: date_type | None = None,
+    customer_email: str | None = None,
+    customer_hint: str | None = None,
+    with_usd: bool = False,
+    doc_type: DocType = DocType.EMAIL_TEXT,
+    tracer: Tracer | None = None,
+) -> PipelineResult:
+    """FR-064: re-draft honouring a human instruction, starting from what we already read.
+
+    The revision amends the *extraction*. It does not re-read the source document, for two reasons.
+
+    The first is a bug this replaces. `revise()` used to concatenate the instruction onto the
+    stored `source_text` and re-run the text pipeline - and for a quote that arrived as a
+    spreadsheet, a PDF or a photo, `source_text` is a *placeholder* ("[Excel: bao-gia.xlsx]"),
+    because the bytes are the document and the text is only what a human sees on the record. So a
+    reviewer who asked for "chiết khấu thêm 3%" on a file-sourced quote got back a quote with no
+    line items at all. The revision path was the last place still reaching for a source document
+    that was never there.
+
+    The second is that re-OCRing a scan on every revision is both expensive and non-deterministic:
+    the same page can read differently twice, which means an instruction about a *discount* could
+    silently change a *part number*. Reading once is the safer contract.
+
+    The model still only reads. Quantities and discounts move because the parser saw the human say
+    so, exactly as at intake; the money is recomputed deterministically afterwards, and the critic
+    recomputes it again from the same source data.
+    """
+    trace = tracer or Tracer(quote_id="")
+    amended = f"{restate(extraction)}\n\n[Yêu cầu chỉnh sửa / Revision instruction]\n{instruction}"
+
+    with trace.step("DocumentParser", "revise", model=MODEL_PARSER_TEXT) as step:
+        revised = await extract_text_rfq(amended, settings, usage=step)
+        step.note(f"{len(extraction.lines)} line(s) in, {len(revised.lines)} out")
+        step.content(prompt=amended, response=revised.model_dump_json())
+
+    return await quote_from_extraction(
+        revised,
+        settings=settings,
+        facade=facade,
+        seller_block=seller_block,
+        sequence=sequence,
+        on_date=on_date,
+        customer_email=customer_email,
+        customer_hint=customer_hint,
+        with_usd=with_usd,
+        doc_type=doc_type,
+        tracer=trace,
+    )
+
+
 async def quote_from_extraction(
     extraction: RFQExtraction,
     *,
@@ -490,8 +570,7 @@ async def quote_from_extraction(
     )
     await plan.done(
         "re-check with the critic",
-        f"{len(report.recompute_diffs)} recompute diff(s), "
-        f"{len(report.blocking)} blocking flag(s)",
+        f"{len(report.recompute_diffs)} recompute diff(s), {len(report.blocking)} blocking flag(s)",
     )
     html = render_html(quote, vat_policy_note=vat_policy_note(today))
 

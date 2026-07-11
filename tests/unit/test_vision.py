@@ -199,10 +199,12 @@ class _Sink:
 
 def test_the_scan_is_sent_as_an_image_and_the_tokens_are_reported() -> None:
     client = _FakeVision(
-        ['```json\n{"buyer": {"company": "Công ty TNHH Thành Công"},'
-         ' "lines": [{"raw_text": "Laptop Dell Latitude 5450",'
-         '            "description_normalized": "Laptop Dell Latitude 5450",'
-         '            "quantity": 20, "unit": "cái", "confidence": 0.92}]}\n```']
+        [
+            '```json\n{"buyer": {"company": "Công ty TNHH Thành Công"},'
+            ' "lines": [{"raw_text": "Laptop Dell Latitude 5450",'
+            '            "description_normalized": "Laptop Dell Latitude 5450",'
+            '            "quantity": 20, "unit": "cái", "confidence": 0.92}]}\n```'
+        ]
     )
     sink = _Sink()
     extraction = asyncio.run(

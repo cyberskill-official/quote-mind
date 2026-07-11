@@ -46,9 +46,7 @@ class Cassette(BaseModel):
 
     @classmethod
     def load(cls, case_id: str) -> Cassette:
-        return cls.model_validate_json(
-            (CASSETTES / f"{case_id}.json").read_text(encoding="utf-8")
-        )
+        return cls.model_validate_json((CASSETTES / f"{case_id}.json").read_text(encoding="utf-8"))
 
     def save(self) -> Path:
         CASSETTES.mkdir(parents=True, exist_ok=True)

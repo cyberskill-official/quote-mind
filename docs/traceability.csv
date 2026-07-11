@@ -66,7 +66,7 @@ FR-110,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/otel.py,tests/uni
 FR-111,P0,EP-11,feat/observability-dashboard,src/quotemind/obs/trace.py + service.py (_persist_trace) + api (API-05),tests/unit/test_obs.py + tests/unit/test_service.py,implemented
 FR-112,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/cost.py + config/model_prices.yaml,tests/unit/test_obs.py,implemented (real provider token counts; list prices)
 FR-113,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/errors.py,tests/unit/test_obs.py,implemented (model/tool calls only; 1s/4s backoff)
-FR-120,P0,EP-12,feat/eval-harness,src/quotemind/seed/generate.py + eval/dataset/,tests/unit/test_eval.py,implemented (30 cases; 25 runnable, 5 blocked on FR-032)
+FR-120,P0,EP-12,feat/eval-harness,src/quotemind/seed/generate.py + eval/dataset/,tests/unit/test_eval.py,implemented (30 cases; all 30 runnable since FR-032 landed, 5 blocked on FR-032)
 FR-121,P0,EP-12,feat/eval-harness,src/quotemind/eval_/run.py + metrics.py,tests/unit/test_eval.py,implemented (live: eval/reports/)
 FR-122,P0,EP-12,feat/eval-harness,src/quotemind/eval_/baseline.py,tests/unit/test_eval.py,implemented (live: pipeline vs single-agent delta)
 FR-123,P0,EP-12,feat/eval-harness,src/quotemind/eval_/cassette.py + deploy/record_cassettes.py,tests/integration/test_smoke_eval.py,implemented (5 recorded cases; no model in CI)
@@ -76,13 +76,23 @@ FR-131,P0,EP-05,feat/memory-planner,src/quotemind/agents/planner.py,tests/unit/t
 FR-132,P0,EP-05,feat/agents,src/quotemind/tools/,tests/unit/test_tools.py,implemented (one Toolkit per agent)
 DM-01..14,P0,PR-2,feat/PR-2-models,src/quotemind/models/ (all aggregates),tests/unit/test_models_roundtrip.py,implemented
 DM-12,P0,PR-2,feat/PR-2-models,src/quotemind/models/audit.py (hash chain),tests/unit/test_audit_chain.py,implemented
+FR-036,P2,-,-,-,-,not implemented (multi-RFQ splitting; one document = one quote in the demo)
+FR-048,P1,-,-,-,-,not implemented (SOP memory; terms/notes are the documented defaults in orchestrator.py)
+FR-056,P1,-,-,-,-,"not implemented (lead time / stock_status is on the catalog model but never reaches a flag or a note)"
+FR-064,P1,EP-12,fix/live-audit,src/quotemind/orchestrator.py (quote_from_revision) + service.py,tests/unit/test_live_audit_regressions.py,"implemented (re-drafts from the stored extraction; max 3 then needs_manual)"
+FR-065,P1,EP-09,feat/quote-assembly,src/quotemind/quote/render/quote.html.j2 + agents/parser.py,tests/unit/test_render.py,"partial (the template holds the skeleton and the LLM fills slots; register/tone is prompted, not enforced)"
+FR-073,P1,-,-,-,-,not implemented (critic narrative; the critic reports flags and diffs, no prose review note)
+FR-074,P2,-,-,-,-,not implemented (auto-fix loop; every defect goes to the human instead)
+FR-104,P1,-,-,-,-,"not implemented (eval report page; eval/reports/ holds the JSON, nothing renders it)"
+FR-133,P0,EP-03,feat/agent-layer,src/quotemind/agents/parser.py + matcher.py + eval_/baseline.py,tests/unit/test_parser.py + test_agents.py,"partial (structured_model= at the text parser, the matcher and the baseline; vision hand-parses JSON because qwen-vl-ocr is an OCR model, not a tool-calling chat model - see agents/vision.py VISION_SYS)"
+FR-134,P1,-,-,-,-,not implemented (interrupt hook / POST /api/quotes/{id}/cancel)
 E.1,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified
 E.2,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (live DashScope)
 E.3,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (AgentScope structured output)
 MEM-live,-,PR-4,feat/PR-4-memory,src/quotemind/memory/store.py,live Tablestore init_tables + put/get round-trip,verified
 MEM-vector,-,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,live embed(text-embedding-v4) + put_catalog + vector/text search,verified
-SUB-02,P0,SUB,feat/deploy-proof,README.md (Proof of Alibaba Cloud Deployment),,implemented (endpoint URL pending deploy)
+SUB-02,P0,SUB,fix/live-audit,README.md (Proof of Alibaba Cloud Deployment),,implemented (LIVE endpoint + /health reports the deployed commit)
 SUB-03,P0,SUB,feat/deploy-proof,docs/architecture.md + docs/architecture.mmd + docs/architecture.png,,implemented
 SUB-04,P0,SUB,feat/deploy-proof,docs/demo-script.md,,implemented (script; video pending)
-SUB-05,P0,SUB,feat/deploy-proof,docs/submission-description.md,,implemented (491 words of 500)
+SUB-05,P0,SUB,fix/live-audit,docs/submission-description.md,,implemented (rewritten: 455 words; the old one claimed 491 and was 506)
 SUB-06,P0,SUB,feat/deploy-proof,README.md (Track 4 badge),,implemented

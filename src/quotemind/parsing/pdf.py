@@ -25,8 +25,7 @@ def extract_pdf_text(data: bytes) -> str:
     document = pypdfium2.PdfDocument(data)
     try:
         pages = [
-            document[index].get_textpage().get_text_bounded()
-            for index in range(len(document))
+            document[index].get_textpage().get_text_bounded() for index in range(len(document))
         ]
     finally:
         document.close()

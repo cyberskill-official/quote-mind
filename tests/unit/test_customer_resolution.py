@@ -76,9 +76,7 @@ def test_a_name_that_does_not_match_no_longer_hides_the_email() -> None:
 
 def test_the_name_path_still_works_when_it_does_match() -> None:
     facade = FakeFacade()
-    candidates = _candidates(
-        facade, hint=None, company="Công ty TNHH Thành Công", email=None
-    )
+    candidates = _candidates(facade, hint=None, company="Công ty TNHH Thành Công", email=None)
     resolution = resolve_customer(candidates, email=None, name="Công ty TNHH Thành Công")
     assert resolution.profile is not None
     assert resolution.tier is Tier.DEALER

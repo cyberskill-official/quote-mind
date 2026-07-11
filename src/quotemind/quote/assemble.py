@@ -143,5 +143,10 @@ def assemble_quote(
     )
 
 
-__all__ = ["AssemblyLine", "assemble_quote", "DEFAULT_PROJECT_DISCOUNT_PCT", "LEAD_TIME",
-           "VAT_EXCLUDED_CATEGORY"]
+__all__ = [
+    "AssemblyLine",
+    "assemble_quote",
+    "DEFAULT_PROJECT_DISCOUNT_PCT",
+    "LEAD_TIME",
+    "VAT_EXCLUDED_CATEGORY",
+]

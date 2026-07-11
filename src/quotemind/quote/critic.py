@@ -40,7 +40,7 @@ _DIGIT_RE = re.compile(r"\d+")
 # Mojibake signature (FR-072): U+FFFD, a "â€" smart-punctuation artifact, or a Latin-1 high letter
 # (U+00C0-U+00FF) immediately followed by a U+0080-U+00BF continuation byte. None of these occur in
 # correct NFC Vietnamese, where diacritic vowels are single precomposed code points.
-_MOJIBAKE_RE = re.compile("\uFFFD|\u00E2\u20AC|[\u00C0-\u00FF][\u0080-\u00BF]")
+_MOJIBAKE_RE = re.compile("\ufffd|\u00e2\u20ac|[\u00c0-\u00ff][\u0080-\u00bf]")
 
 
 def recompute_diffs(quote: Quote) -> list[RecomputeDiff]:
@@ -197,9 +197,7 @@ def mojibake_fields(quote: Quote) -> list[str]:
     return bad
 
 
-def _summary_note(
-    passed: bool, blocking: list[str], non_blocking: list[str]
-) -> BilingualText:
+def _summary_note(passed: bool, blocking: list[str], non_blocking: list[str]) -> BilingualText:
     if passed:
         note = (
             "Đã kiểm tra: số học, chính sách và song ngữ đều khớp.",

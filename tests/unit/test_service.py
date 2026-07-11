@@ -175,9 +175,7 @@ def _result(sequence: int, *, thin_margin: bool = False) -> PipelineResult:
     )
 
 
-def _service(
-    store: FakeStore, *, thin_margin: bool = False, artifacts: Any = None
-) -> QuoteService:
+def _service(store: FakeStore, *, thin_margin: bool = False, artifacts: Any = None) -> QuoteService:
     async def pipeline(
         _text: str, *, sequence: int, tracer: Tracer | None = None, **_kwargs: Any
     ) -> PipelineResult:
@@ -192,12 +190,29 @@ def _service(
             step.memory(["DELL-LAT-5450"])
         return result.model_copy(update={"trace": tracer.document()})
 
+    async def revision_pipeline(
+        extraction: Any, instruction: str, *, sequence: int, **_kwargs: Any
+    ) -> PipelineResult:
+        # FR-064: the revision amends the *extraction*. Taking a str here is the bug - for a quote
+        # that arrived as a file there is no source text to re-read, so the lines only survive if
+        # they are handed over as data.
+        assert isinstance(extraction, RFQExtraction), (
+            f"the revision pipeline got a {type(extraction).__name__}, not an RFQExtraction: "
+            "a file-sourced quote has no source document to re-parse"
+        )
+        assert extraction.lines, "revised a quote whose line items were already gone"
+        assert instruction
+        return _result(sequence, thin_margin=thin_margin).model_copy(
+            update={"extraction": extraction}
+        )
+
     return QuoteService(
         store=store,  # type: ignore[arg-type]
         facade=object(),  # type: ignore[arg-type]
         settings=_Settings(),  # type: ignore[arg-type]
         seller_block={"name": "CyberSkill JSC"},
         pipeline=pipeline,
+        revision_pipeline=revision_pipeline,
         artifacts=artifacts if artifacts is not None else FakeArtifacts(),
     )
 

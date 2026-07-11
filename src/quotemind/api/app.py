@@ -45,6 +45,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+
 def get_service() -> QuoteService:
     """Build the service from settings. Tests override this via dependency_overrides."""
     settings = get_settings()
@@ -297,9 +298,7 @@ async def submit_rfq(
         email_meta=email_meta,
     )
     if created:
-        background.add_task(
-            _run_pipeline, service, record.quote_id, payload, doc_type, hint, email
-        )
+        background.add_task(_run_pipeline, service, record.quote_id, payload, doc_type, hint, email)
     return {
         "quote_id": record.quote_id,
         "quote_number": record.quote_number,

@@ -144,6 +144,58 @@ def test_the_pdf_route_returns_a_signed_url_rather_than_redirecting_to_it() -> N
         app.dependency_overrides.clear()
 
 
+# --- a revision must not throw away the lines it is revising ---
+def test_revising_a_file_sourced_quote_keeps_its_line_items() -> None:
+    """The last place still reaching for a source document that was never there.
+
+    `revise()` used to append the instruction to `source_text` and re-run the *text* pipeline. For a
+    quote that arrived as a spreadsheet, a PDF or a photo, `source_text` is a placeholder - the
+    bytes are the document, and the text is only what a human reads on the record. So the parser was
+    handed "[Excel: bao-gia.xlsx]" plus a discount request, and the revised quote came back with no
+    line items at all.
+
+    Every test passed, because every test revised a quote that had been *pasted as text* - the one
+    channel where the placeholder happens to be the real thing.
+    """
+    import asyncio  # noqa: PLC0415
+
+    store = FakeStore()
+    service = _service(store)
+
+    record, _ = service.submit(text="Cần 2 laptop", filename="bao-gia.xlsx")
+    asyncio.run(service.process(record, "Cần 2 laptop"))
+
+    # This is the state a file-sourced quote is actually in: the extraction is real, and the source
+    # text is a placeholder, because the spreadsheet's *bytes* were the document and they are gone.
+    store.rows[record.quote_id]["source_text"] = "[Excel: bao-gia.xlsx]"
+
+    revised = asyncio.run(service.revise(record.quote_id, instruction="Chiết khấu thêm 3%"))
+
+    # The old code re-parsed that placeholder. The fake revision pipeline asserts it is handed an
+    # RFQExtraction rather than a string, which is precisely the distinction the bug erased.
+    assert revised.status is Status.PENDING_APPROVAL
+    assert revised.revision == 1
+    stored = store.rows[record.quote_id]
+    assert stored["extraction_json"], "the extraction is what a revision re-drafts from"
+    assert "Laptop" in stored["extraction_json"]  # the lines survived the round trip
+
+
+def test_a_quote_with_no_stored_extraction_is_sent_to_a_human_not_guessed_at() -> None:
+    """Guessing from a placeholder is precisely what caused the bug. Refuse instead."""
+    import asyncio  # noqa: PLC0415
+
+    store = FakeStore()
+    service = _service(store)
+    record, _ = service.submit(text="Cần 2 laptop")
+    store.rows.setdefault(record.quote_id, {})["record"] = record
+    record.status = Status.PENDING_APPROVAL  # a legacy row: priced, but no extraction was kept
+
+    revised = asyncio.run(service.revise(record.quote_id, instruction="Giảm 5%"))
+    assert revised.status is Status.NEEDS_MANUAL
+    events = [event.event for event in store.list_audit(record.quote_id)]
+    assert "revision.no_extraction" in events  # it says why, rather than inventing a quote
+
+
 @pytest.mark.parametrize("path", ["/api/quotes/nope/pdf", "/api/quotes/nope"])
 def test_an_unknown_quote_is_still_a_404(path: str) -> None:
     client = _client(_service(FakeStore()))

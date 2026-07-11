@@ -119,9 +119,7 @@ def _patch(monkeypatch: pytest.MonkeyPatch, extraction: RFQExtraction) -> None:
 def test_pipeline_produces_a_critic_clean_quote(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch(
         monkeypatch,
-        _extraction(
-            [_line("Laptop Dell Latitude 5450", 10), _line("Màn hình Dell 27 inch", 5)]
-        ),
+        _extraction([_line("Laptop Dell Latitude 5450", 10), _line("Màn hình Dell 27 inch", 5)]),
     )
     result = asyncio.run(
         quote_from_text(

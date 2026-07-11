@@ -31,6 +31,7 @@ from .models import (
     Outcome,
     Quote,
     QuoteRecord,
+    RFQExtraction,
     Status,
     assert_transition,
     new_ulid,
@@ -42,6 +43,7 @@ from .orchestrator import (
     quote_from_excel,
     quote_from_image,
     quote_from_pdf,
+    quote_from_revision,
     quote_from_text,
 )
 from .pricing import vat_policy_note
@@ -81,7 +83,10 @@ def _context_columns(result: PipelineResult) -> dict[str, str]:
     decision, not in a debugging artifact afterwards. A memory that only a developer can find is a
     memory the business never gets to use.
     """
-    columns: dict[str, str] = {}
+    # FR-064: what a revision re-drafts from. A quote's document is read exactly once - the bytes
+    # are not kept, and for a file drop `source_text` is only a placeholder - so if the extraction
+    # is not written down here, there is nothing left to amend later.
+    columns: dict[str, str] = {"extraction_json": result.extraction.model_dump_json()}
     if result.plan is not None:
         columns["plan_json"] = result.plan.model_dump_json()
     if result.episodic:
@@ -108,6 +113,7 @@ class QuoteService:
         excel_pipeline: Pipeline = quote_from_excel,
         pdf_pipeline: Pipeline = quote_from_pdf,
         image_pipeline: Pipeline = quote_from_image,
+        revision_pipeline: Pipeline = quote_from_revision,
         artifacts: ArtifactStore | None = None,
     ) -> None:
         self.store = store
@@ -115,6 +121,7 @@ class QuoteService:
         self.settings = settings
         self.seller_block = seller_block
         self.pipeline = pipeline
+        self.revision_pipeline = revision_pipeline
         self._artifacts = artifacts
 
         # FR-021/022/033: which parser runs is decided *here*, once, and both intake channels - the
@@ -582,7 +589,17 @@ class QuoteService:
     async def revise(
         self, quote_id: str, *, instruction: str, on_date: date_type | None = None
     ) -> QuoteRecord:
-        """FR-084: re-run honouring the instruction. After MAX_REVISIONS it goes to a human."""
+        """FR-064/FR-084: re-draft honouring the instruction. After MAX_REVISIONS a human takes it.
+
+        The re-draft starts from the stored *extraction*, not from the source document, because for
+        every channel except a pasted email there is no source document to start from: the bytes
+        were never kept, and `source_text` is a placeholder a human can read.
+
+        This used to concatenate the instruction onto that placeholder and re-run the text pipeline.
+        For a quote that arrived as a spreadsheet, a PDF or a photo, that fed the parser a string
+        with no line items in it - so asking for a 3% discount handed back a quote with nothing on
+        it. Every test passed, because every test revised a quote that had been pasted as text.
+        """
         stored = self._load(quote_id)
         record: QuoteRecord = stored["record"]
         record = self._transition(
@@ -599,11 +616,22 @@ class QuoteService:
                 {"revision": record.revision},
             )
 
-        source_text = stored.get("source_text", "")
-        revised_text = f"{source_text}\n\n[Yêu cầu chỉnh sửa / Revision instruction]\n{instruction}"
+        raw_extraction = stored.get("extraction_json")
+        if not raw_extraction:
+            # A quote stored before extraction_json existed, or one that never got past parsing.
+            # There is nothing to amend, and guessing from a placeholder is what caused the bug.
+            return self._transition(
+                record,
+                Status.NEEDS_MANUAL,
+                SYSTEM,
+                "revision.no_extraction",
+                {"reason": "the quote has no stored extraction to re-draft from"},
+            )
+
         _, sequence = parse_quote_number(record.quote_number)
-        result = await self.pipeline(
-            revised_text,
+        result = await self.revision_pipeline(
+            RFQExtraction.model_validate_json(raw_extraction),
+            instruction,
             settings=self.settings,
             facade=self.facade,
             seller_block=self.seller_block,
@@ -632,4 +660,7 @@ class QuoteService:
             quote_json=result.quote.model_dump_json(),
             critic_json=result.critic.model_dump_json(),
             html=result.html,
+            # The amended extraction replaces the original, so a *second* revision builds on the
+            # first rather than silently reverting it.
+            **_context_columns(result),
         )
