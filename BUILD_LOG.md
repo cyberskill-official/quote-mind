@@ -312,6 +312,29 @@ Decisions / notes (logged):
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (47 files), import-linter 4/4 kept,
 pytest 103 passed.
 
+## 2026-07-11 - EP-06 quote assembly (branch feat/FR-060-assemble)
+
+FR-060, the keystone that turns matched, priced lines into a Quote (DM-10) and ties the whole
+deterministic chain together: pricing -> assembly -> critic -> render.
+
+Delivered (src/quotemind/quote/assemble.py):
+- AssemblyLine: one resolved RFQ line (CatalogProduct + qty + tier + line discount + optional NL
+  overrides for description/unit/note + source). Description/unit default to the catalog values, so
+  assembly is usable without the drafter and the drafter can override later.
+- assemble_quote(...): for each line applies unit_price (FR-051 tiered), vat_rate_for (FR-052,
+  telecom forced to 10%), line_total and vat_amount, then quote_totals for subtotal / per-rate VAT /
+  grand total, amount_in_words_vi for the bang chu, to_usd for the optional USD reference, and
+  margin/blended_margin for MarginInfo. Every number is engine-produced; the LLM only supplies the
+  NL fields, which arrive as inputs. Sets quote flags VAT_EXCLUDED_CATEGORY (any telecom line) and
+  LEAD_TIME (any out-of-stock line).
+- Exported from quote/__init__.py.
+- Tests (3): a two-line dealer+project quote whose numbers are checked against the engine, then the
+  end-to-end proof - run_critic returns zero recompute diffs and passed=True (assembly and the
+  critic agree by construction), and render_html shows the grand total and quote number; the
+  VAT_EXCLUDED_CATEGORY/LEAD_TIME flags; and NL fields defaulting to the catalog.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (47 files), import-linter 4/4 kept,
+pytest 106 passed.
 ## 2026-07-11 - PR-4 live close + memory search metadata fix (branch fix/memory-search-metadata)
 
 OSS was activated and the three offline PRs (EP-03, EP-07, EP-06/09) merged to main. Resumed with
