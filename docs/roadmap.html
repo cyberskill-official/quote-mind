@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuoteMind - product roadmap</title>
+<style>
+  :root {
+    --umber: #45210E; --ochre: #F4BA17; --ink: #1c140d; --muted: #8a7968;
+    --done: #2E7D32; --partial: #F4BA17; --todo: #d8ccc0; --live: #0F6FC5;
+    --bg: #FBF8F5; --card: #ffffff; --line: #e7ddd3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  header { background: var(--umber); color: #fff; padding: 28px 32px 22px;
+    border-bottom: 3px solid var(--ochre); }
+  header h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: .2px; }
+  header .sub { color: #e8d9cd; font-size: 14px; }
+  header .meta { margin-top: 10px; font-size: 12.5px; color: #c9b5a4; }
+  main { max-width: 1180px; margin: 0 auto; padding: 26px 24px 60px; }
+
+  .overall { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 22px; }
+  .overall h2 { margin: 0 0 12px; font-size: 15px; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); }
+  .bar { height: 12px; border-radius: 999px; background: #efe7df; overflow: hidden; display: flex; }
+  .bar i { display: block; height: 100%; }
+  .bar .d { background: var(--done); }
+  .bar .p { background: var(--partial); }
+  .counts { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: 13.5px; }
+  .counts b { font-size: 17px; }
+
+  .callout { background: #fff8e6; border: 1px solid var(--ochre); border-left: 4px solid var(--ochre);
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 24px; }
+  .callout h3 { margin: 0 0 6px; font-size: 14px; }
+  .callout p { margin: 0 0 6px; font-size: 14px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-size: 13px;
+    color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .epic { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .epic.active { border-color: var(--ochre); box-shadow: 0 0 0 3px rgba(244,186,23,.18); }
+  .epic h3 { margin: 0 0 2px; font-size: 15px; }
+  .epic .id { color: var(--umber); font-weight: 700; }
+  .epic .pct { float: right; font-size: 13px; color: var(--muted); }
+  .epic .minibar { height: 6px; border-radius: 999px; background: #efe7df; overflow: hidden;
+    display: flex; margin: 10px 0 12px; }
+  .epic .minibar i { display: block; height: 100%; }
+  .frs { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fr { font-size: 11.5px; font-weight: 600; padding: 3px 7px; border-radius: 5px;
+    background: var(--todo); color: #5b4c3f; }
+  .fr.done { background: var(--done); color: #fff; }
+  .fr.partial { background: var(--partial); color: #4a3b0a; }
+  .fr.live { box-shadow: inset 0 0 0 2px var(--live); }
+  .note { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+
+  h2.section { font-size: 15px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 30px 0 14px; }
+  .phases { display: grid; gap: 10px; }
+  .phase { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 16px; display: flex; gap: 14px; align-items: flex-start; }
+  .phase .tick { width: 22px; height: 22px; border-radius: 50%; flex: none; margin-top: 2px;
+    display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .phase.done .tick { background: var(--done); }
+  .phase.now .tick { background: var(--ochre); color: #4a3b0a; }
+  .phase.next .tick { background: var(--todo); color: #5b4c3f; }
+  .phase b { display: block; font-size: 14px; }
+  .phase span { font-size: 13px; color: var(--muted); }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 34px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>QuoteMind - product roadmap</h1>
+  <div class="sub">Autonomous RFQ-to-quote autopilot for Vietnamese IT resellers - Qwen Cloud Hackathon, Track 4</div>
+  <div class="meta" id="meta"></div>
+</header>
+
+<main>
+  <div class="overall">
+    <h2>Overall progress (82 functional requirements)</h2>
+    <div class="bar" id="overallBar"></div>
+    <div class="counts" id="overallCounts"></div>
+  </div>
+
+  <div class="callout">
+    <h3>Where we are</h3>
+    <p><b>The deterministic core is complete and proven end to end.</b> An RFQ can be parsed (Excel),
+       matched and banded against the catalog, the customer and tier resolved, priced in exact Decimal
+       dong, assembled into a Quote, independently re-checked by the critic (zero diffs), and rendered
+       to bilingual HTML - all offline-tested, 128 tests green.</p>
+    <p><b>The cloud plane is live.</b> OSS buckets provisioned, Tablestore knowledge store seeded,
+       and catalog vector + full-text search verified against real ap-southeast-1 (a real result-mapping
+       bug was found and fixed there).</p>
+    <p><b>The pipeline runs end to end, live.</b> A Vietnamese RFQ email was parsed by qwen-plus, the
+       customer resolved to dealer tier from the email domain, all three lines matched against the
+       seeded catalog, priced, critic-checked with zero recompute diffs, and rendered - see
+       docs/sample-quote.html.</p>
+    <p><b>Next:</b> intake endpoints, human-in-the-loop approval, WeasyPrint PDF + dispatch, then
+       observability and the evaluation harness.</p>
+  </div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--done)"></i> Done (built, gated, merged)</span>
+    <span><i class="dot" style="background:var(--partial)"></i> Partial (core done, remainder noted)</span>
+    <span><i class="dot" style="background:var(--todo)"></i> Not started</span>
+    <span><i class="dot" style="background:#fff;box-shadow:inset 0 0 0 2px var(--live)"></i> Verified on live cloud</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <h2 class="section">Delivery phases</h2>
+  <div class="phases" id="phases"></div>
+
+  <footer>Generated from docs/spec (QM-SPEC-001) and docs/traceability.csv - CyberSkill</footer>
+</main>
+
+<script>
+const EPICS = [
+  { id: "EP-01", name: "Repository, infrastructure, scaffolding", active: false, note: "Seed command live. Remaining: s.yaml deploy descriptor, deployment proof, model bootstrap check.",
+    frs: [["001","done"],["002","done"],["003","todo"],["004","done","live"],["005","todo"],["006","done"],["007","done"],["008","done"],["009","done"],["010","done"],["011","done","live"],["012","todo"]] },
+  { id: "EP-02", name: "Intake and channels", active: false, note: "Upload endpoint, OSS drop, intake classification, idempotency - all pending.",
+    frs: [["020","todo"],["021","todo"],["022","todo"],["023","todo"],["024","todo"],["025","todo"]] },
+  { id: "EP-03", name: "Document parsing and extraction", active: true, note: "Excel parser + validation gate done. Text parser live. Vision + PDF rasterisation remain.",
+    frs: [["030","done","live"],["031","todo"],["032","todo"],["033","done"],["034","done"],["035","partial"],["036","todo"]] },
+  { id: "EP-04", name: "Catalog, customers and memory", active: true, note: "Store, embeddings, hybrid matching and customer resolution all live-verified. Episodic read/write pending.",
+    frs: [["040","done","live"],["041","done","live"],["042","done","live"],["043","done"],["044","todo"],["045","todo"],["046","done"],["047","todo"],["048","todo"],["049","done"]] },
+  { id: "EP-05", name: "Pricing engine (deterministic)", active: false, note: "Complete. Pure Decimal, 100% branch coverage on the money path.",
+    frs: [["050","done"],["051","done"],["052","done"],["053","done"],["054","done"],["055","done"],["056","todo"]] },
+  { id: "EP-06", name: "Quote drafting (bilingual)", active: true, note: "Assembly + numbering format done. Bilingual NL drafting needs the model layer.",
+    frs: [["060","done"],["061","todo"],["062","partial"],["063","todo"],["064","todo"],["065","todo"]] },
+  { id: "EP-07", name: "Critic and validation", active: false, note: "Money recompute, policy flags and bilingual/mojibake checks done. Narrative + auto-fix pending.",
+    frs: [["070","done"],["071","partial"],["072","done"],["073","todo"],["074","todo"]] },
+  { id: "EP-08", name: "Human-in-the-loop approval", active: false, note: "State machine done. Durable pause/resume, review payload and actions pending.",
+    frs: [["080","done"],["081","todo"],["082","todo"],["083","todo"],["084","todo"],["085","todo"]] },
+  { id: "EP-09", name: "Document generation and dispatch", active: false, note: "Bilingual HTML render done (Appendix C). WeasyPrint PDF, OSS artifact + presigned URL, email, audit pending.",
+    frs: [["090","partial"],["091","todo"],["092","todo"],["093","todo"],["094","todo"]] },
+  { id: "EP-10", name: "Review dashboard (frontend)", active: false, note: "Not started.",
+    frs: [["100","todo"],["101","todo"],["102","todo"],["103","todo"],["104","todo"],["105","todo"],["106","todo"]] },
+  { id: "EP-11", name: "Observability and reasoning trace", active: false, note: "Structured logging exists (FR-008). OTel spans, trace doc, cost accounting pending.",
+    frs: [["110","todo"],["111","todo"],["112","todo"],["113","todo"]] },
+  { id: "EP-12", name: "Evaluation harness", active: false, note: "Labeled dataset, metrics runner, baseline and CI smoke eval pending - the Track-3 measurable gain.",
+    frs: [["120","todo"],["121","todo"],["122","todo"],["123","todo"],["124","todo"]] },
+  { id: "EP-13", name: "Orchestration", active: true, note: "Orchestrator live: one RFQ text runs the whole path end to end. Planner/handoff (FR-131) pending.",
+    frs: [["130","done","live"],["131","todo"]] },
+];
+
+const PHASES = [
+  { s: "done", t: "PR-1 to PR-5 foundation", d: "Scaffold, config, CI, models (DM-01..14), state machine, audit hash chain, pricing engine, memory adapter." },
+  { s: "done", t: "Deterministic pipeline", d: "Excel parser + gate, matcher fusion/banding, customer resolution, quote assembly, critic recompute, bilingual HTML render, numbering." },
+  { s: "done", t: "Cloud plane live", d: "OSS buckets provisioned, Tablestore tables + vector index, catalog embed/put/search verified on ap-southeast-1." },
+  { s: "done", t: "Agent / live-model layer", d: "Model client, embedding pipeline, text parser, LLM catalog select with SKU whitelist, orchestrator - proven live end to end." },
+  { s: "now",  t: "Intake, HITL and dispatch", d: "Upload + OSS drop endpoints, approval pause/resume, WeasyPrint PDF, presigned URL, email dispatch, audit trail." },
+  { s: "next", t: "Dashboard, observability, eval", d: "Review UI, OTel GenAI spans and cost accounting, labeled dataset + metrics runner vs single-agent baseline, deployment proof." },
+];
+
+const LABEL = { done: "Done", partial: "Partial", todo: "To do" };
+let D = 0, P = 0, T = 0;
+
+const grid = document.getElementById("grid");
+for (const e of EPICS) {
+  let d = 0, p = 0, t = 0;
+  for (const [, s] of e.frs) { if (s === "done") d++; else if (s === "partial") p++; else t++; }
+  D += d; P += p; T += t;
+  const total = e.frs.length;
+  const pct = Math.round(((d + p * 0.5) / total) * 100);
+  const chips = e.frs.map(([n, s, live]) =>
+    `<span class="fr ${s} ${live ? "live" : ""}">FR-${n}</span>`).join("");
+  grid.insertAdjacentHTML("beforeend", `
+    <div class="epic ${e.active ? "active" : ""}">
+      <span class="pct">${pct}%</span>
+      <h3><span class="id">${e.id}</span> ${e.name}</h3>
+      <div class="minibar">
+        <i class="d" style="width:${(d / total) * 100}%;background:var(--done)"></i>
+        <i class="p" style="width:${(p / total) * 100}%;background:var(--partial)"></i>
+      </div>
+      <div class="frs">${chips}</div>
+      <div class="note">${e.note}</div>
+    </div>`);
+}
+
+const TOTAL = D + P + T;
+document.getElementById("overallBar").innerHTML =
+  `<i class="d" style="width:${(D / TOTAL) * 100}%"></i><i class="p" style="width:${(P / TOTAL) * 100}%"></i>`;
+document.getElementById("overallCounts").innerHTML = `
+  <span><b style="color:var(--done)">${D}</b> done</span>
+  <span><b style="color:#b98c06">${P}</b> partial</span>
+  <span><b style="color:var(--muted)">${T}</b> to do</span>
+  <span style="margin-left:auto;color:var(--muted)">
+    ${Math.round(((D + P * 0.5) / TOTAL) * 100)}% weighted complete - 128 tests green</span>`;
+
+document.getElementById("phases").innerHTML = PHASES.map((p, i) => `
+  <div class="phase ${p.s}">
+    <div class="tick">${p.s === "done" ? "&#10003;" : i + 1}</div>
+    <div><b>${p.t}</b><span>${p.d}</span></div>
+  </div>`).join("");
+
+document.getElementById("meta").textContent =
+  "Status as of 11 July 2026 - " + TOTAL + " functional requirements across 13 epics";
+</script>
+</body>
+</html>
