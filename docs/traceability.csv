@@ -28,3 +28,4 @@ FR-071,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (policy_flags),
 FR-072,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (bilingual/mojibake),tests/unit/test_critic.py,implemented
 FR-062,P0,EP-06,feat/FR-090-render,src/quotemind/quote/numbering.py,tests/unit/test_numbering.py,implemented (format; live counter deferred)
 FR-090,P0,EP-09,feat/FR-090-render,src/quotemind/quote/render/ (quote.html.j2 + __init__.py),tests/unit/test_render.py,implemented (HTML offline; WeasyPrint PDF live)
+FR-060,P0,EP-06,feat/FR-060-assemble,src/quotemind/quote/assemble.py,tests/unit/test_assemble.py,implemented (deterministic; NL fields injected)
