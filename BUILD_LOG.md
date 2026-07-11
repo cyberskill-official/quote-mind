@@ -1419,3 +1419,47 @@ Three bugs, one shape: **a check is worth exactly what it would have caught.**
 
 Live, over HTTPS, against a pipeline run from scratch: **16/16**.
 Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **350 passed**, pricing branch 100%.
+
+### CD ran for the first time, and took the site down for quoting
+
+The eleven secrets landed, the deploy job stopped no-opping, and `s deploy` shipped this line for the
+first time in the project's life:
+
+    DASHSCOPE_BASE_URL: ${{ vars.DASHSCOPE_BASE_URL || 'https://dashscope-intl.aliyuncs.com/api/v1' }}
+
+A fallback typed by hand months earlier and **never once executed**, because until the secrets existed
+the job exited at the guard. It was wrong.
+
+DashScope serves the same models under two bases, and they are not interchangeable: `/compatible-mode/v1`
+is the OpenAI-compatible API (chat, embeddings, vision) and `/api/v1` is the native one that
+AgentScope's `DashScopeChatModel` wants. Five call sites hand `settings.dashscope_base_url` straight
+to an `OpenAI(...)` client, so it must be the compatible base; `agents.model.native_base_url` derives
+the native base *back out of it*. That made "this setting is always the compatible base" load-bearing,
+and it was defended by nothing but a docstring saying so.
+
+Handed the native base, the system did not fall over. It did something worse. **Chat kept working** -
+native is what chat wanted anyway - so `/health` was green, the model probe passed 7/7, the dashboard
+rendered, `/eval` rendered, auth worked, the audit chain verified. And every embedding call went to
+`/api/v1/embeddings`, which does not exist. The matcher took a 404 on every RFQ and every quote died
+at `failed_parse`.
+
+**The site was up. The models answered. It could not produce a quote.**
+
+Three fixes, in descending order of importance:
+
+  1. `Settings` now normalizes either form to the compatible base (`_always_the_compatible_base`).
+     Fixing the workflow line alone would have been fixing the *instance*: the invariant would still
+     have been a comment, and the next person to set that variable would still have had a 50/50
+     chance. Both bases are now derived from one value that cannot be wrong.
+  2. The workflow line is corrected anyway. Belt and braces - but note that a fallback nobody has
+     ever executed is a guess, and this one was a wrong guess sitting in the repo for weeks.
+  3. `deploy/smoke.py` settles on any *resting* state, not a hand-listed set of good ones. Its
+     `SETTLED` set omitted the failure statuses, so a pipeline that was dying in four seconds
+     presented as a 150-second timeout - the check sat there politely re-asking a question that had
+     already been answered.
+
+`tests/unit/test_dashscope_base_url.py` is the fence: 5 of its 9 assertions fail on the old code.
+
+The pattern is the one this log keeps recording, one layer further out. It is no longer *"the tests
+mock the seam"* - it is now **"the deploy pipeline is a seam, and it had never run."** CD's first
+execution is a code path like any other, and it went straight to production.
