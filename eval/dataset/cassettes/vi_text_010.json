@@ -1,0 +1,99 @@
+{
+  "case_id": "vi_text_010",
+  "extraction": {
+    "buyer": {
+      "company": "Hòa Bình",
+      "mst": null,
+      "contact": null,
+      "email": "it@hoabinh-corp.vn"
+    },
+    "lines": [
+      {
+        "raw_text": "40 thuê bao gói cước dữ liệu di động doanh nghiệp (1 tháng)",
+        "description_normalized": "thuê bao gói cước dữ liệu di động doanh nghiệp (1 tháng)",
+        "quantity": "40",
+        "unit": "thuê bao",
+        "unit_original": "thuê bao",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 1.0,
+        "source_span": null
+      },
+      {
+        "raw_text": "10 dịch vụ bảo trì cơ bản",
+        "description_normalized": "dịch vụ bảo trì cơ bản",
+        "quantity": "10",
+        "unit": "dịch vụ",
+        "unit_original": "dịch vụ",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 1.0,
+        "source_span": null
+      }
+    ],
+    "language_per_line": [
+      "vi"
+    ],
+    "notes_raw": null
+  },
+  "lines": [
+    {
+      "vector_skus": [
+        "VIET-SIM-DATA",
+        "MS-M365-BB",
+        "MS-M365-BP",
+        "MS-M365-BS",
+        "SVC-MAINT-BASIC",
+        "BIT-GRAVITYZONE",
+        "SVC-MAINT-PREM",
+        "ADOBE-ACROBAT"
+      ],
+      "text_skus": [
+        "VIET-SIM-DATA",
+        "SVC-INSTALL-NET",
+        "SVC-MAINT-PREM",
+        "SVC-MAINT-BASIC",
+        "SVC-DEPLOY-SRV",
+        "SVC-TRAINING",
+        "CISCO-C9200L-24P",
+        "TPLINK-SG3452P"
+      ],
+      "selection": {
+        "sku": "VIET-SIM-DATA",
+        "confidence": 1.0,
+        "specs_conflict": false,
+        "reason_vi": "Phù hợp chính xác với yêu cầu thuê bao gói cước dữ liệu di động doanh nghiệp 1 tháng.",
+        "reason_en": "Exactly matches the requested enterprise mobile data plan for 1 month."
+      }
+    },
+    {
+      "vector_skus": [
+        "SVC-MAINT-BASIC",
+        "SVC-MAINT-PREM",
+        "SVC-INSTALL-PC",
+        "SVC-DEPLOY-SRV",
+        "SVC-INSTALL-NET",
+        "SVC-TRAINING",
+        "MS-M365-BB",
+        "VIET-SIM-DATA"
+      ],
+      "text_skus": [
+        "SVC-MAINT-BASIC",
+        "SVC-MAINT-PREM",
+        "SVC-TRAINING",
+        "SVC-DEPLOY-SRV",
+        "SVC-INSTALL-PC",
+        "SVC-INSTALL-NET",
+        "MS-OFFICE-LTSC",
+        "MS-WIN11-PRO"
+      ],
+      "selection": {
+        "sku": "SVC-MAINT-BASIC",
+        "confidence": 1.0,
+        "specs_conflict": false,
+        "reason_vi": "Phù hợp chính xác với yêu cầu \"dịch vụ bảo trì cơ bản\".",
+        "reason_en": "Exactly matches the requested \"basic maintenance service\"."
+      }
+    }
+  ]
+}

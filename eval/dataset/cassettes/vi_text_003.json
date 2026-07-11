@@ -1,0 +1,141 @@
+{
+  "case_id": "vi_text_003",
+  "extraction": {
+    "buyer": {
+      "company": "Công ty TNHH Thành Công",
+      "mst": null,
+      "contact": "Nguyễn Văn A",
+      "email": "mua.hang@thanhcong.vn"
+    },
+    "lines": [
+      {
+        "raw_text": "1. Laptop Dell Latitude 5450, Core i7, RAM 32GB, SSD 512GB - số lượng 20 cái",
+        "description_normalized": "Laptop Dell Latitude 5450, Core i7, RAM 32GB, SSD 512GB",
+        "quantity": "20",
+        "unit": "cái",
+        "unit_original": "cái",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.98,
+        "source_span": null
+      },
+      {
+        "raw_text": "2. Màn hình Dell 27 inch P2723DE - 20 cái",
+        "description_normalized": "Màn hình Dell 27 inch P2723DE",
+        "quantity": "20",
+        "unit": "cái",
+        "unit_original": "cái",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.99,
+        "source_span": null
+      },
+      {
+        "raw_text": "3. Bản quyền Microsoft 365 Business Standard - 25 user/năm",
+        "description_normalized": "Bản quyền Microsoft 365 Business Standard",
+        "quantity": "25",
+        "unit": "user/năm",
+        "unit_original": "user/năm",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.97,
+        "source_span": null
+      }
+    ],
+    "language_per_line": [
+      "vi",
+      "vi",
+      "vi"
+    ],
+    "notes_raw": "Giao hàng tại TP.HCM trong 2 tuần. Đề nghị báo giá gồm VAT."
+  },
+  "lines": [
+    {
+      "vector_skus": [
+        "DELL-LAT-5450-I7",
+        "DELL-LAT-5450",
+        "DELL-LAT-7450",
+        "DELL-LAT-5440",
+        "LEN-T14-G5-I7",
+        "DELL-XPS-9440",
+        "LEN-T14-G5",
+        "HP-PROBOOK-450"
+      ],
+      "text_skus": [
+        "DELL-LAT-5450-I7",
+        "DELL-LAT-7450",
+        "DELL-LAT-5450",
+        "DELL-LAT-5440",
+        "DELL-OPT-7010-MT",
+        "LEN-T14-G5-I7",
+        "DELL-PREC-3680",
+        "DELL-XPS-9440"
+      ],
+      "selection": {
+        "sku": "DELL-LAT-5450-I7",
+        "confidence": 0.9,
+        "specs_conflict": true,
+        "reason_vi": "Mẫu đúng nhưng SSD là 1TB thay vì 512GB như yêu cầu.",
+        "reason_en": "Correct model but SSD is 1TB instead of the requested 512GB."
+      }
+    },
+    {
+      "vector_skus": [
+        "DELL-P2723DE",
+        "DELL-P2423D",
+        "DELL-P2723",
+        "DELL-P2422H",
+        "DELL-U3223QE",
+        "DELL-OPT-7010-MT",
+        "DELL-LAT-7450",
+        "DELL-LAT-5450-I7"
+      ],
+      "text_skus": [
+        "DELL-P2723DE",
+        "DELL-P2723",
+        "DELL-P2422H",
+        "DELL-P2423D",
+        "LG-27QN880",
+        "SAMSUNG-S27C",
+        "DELL-U3223QE",
+        "LG-32UN880"
+      ],
+      "selection": {
+        "sku": "DELL-P2723DE",
+        "confidence": 1.0,
+        "specs_conflict": false,
+        "reason_vi": "Khớp chính xác model P2723DE và kích thước 27 inch theo yêu cầu.",
+        "reason_en": "Exact match for model P2723DE and 27-inch size as requested."
+      }
+    },
+    {
+      "vector_skus": [
+        "MS-M365-BS",
+        "MS-M365-BB",
+        "MS-M365-BP",
+        "MS-OFFICE-LTSC",
+        "BIT-GRAVITYZONE",
+        "VMW-VSPHERE",
+        "SVC-INSTALL-PC",
+        "SVC-MAINT-BASIC"
+      ],
+      "text_skus": [
+        "MS-M365-BS",
+        "MS-M365-BB",
+        "MS-M365-BP",
+        "MS-OFFICE-LTSC",
+        "VMW-VSPHERE",
+        "BIT-GRAVITYZONE",
+        "ADOBE-ACROBAT",
+        "KAS-ENDPOINT"
+      ],
+      "selection": {
+        "sku": "MS-M365-BS",
+        "confidence": 1.0,
+        "specs_conflict": false,
+        "reason_vi": "Khớp chính xác với yêu cầu bản quyền Microsoft 365 Business Standard.",
+        "reason_en": "Exact match for the requested Microsoft 365 Business Standard license."
+      }
+    }
+  ]
+}

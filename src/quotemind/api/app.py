@@ -19,6 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .. import __version__
 from ..config import models as model_constants
+from ..config.seller import SELLER_BLOCK
 from ..config.settings import get_settings
 from ..intake import MAX_UPLOAD_BYTES, UnsupportedPayloadError, doc_type_for
 from ..memory.quotes import QuoteStore
@@ -37,22 +38,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
-
-# The demo seller identity; real deployments read this from tenant config.
-SELLER_BLOCK: dict[str, Any] = {
-    "name": "CyberSkill JSC",
-    "address": "1st Floor, 207A Nguyen Van Thu, Tan Dinh Ward, Ho Chi Minh City",
-    "mst": "0312345678",
-    "phone": "(+84)906 878 091",
-    "email": "info@cyberskill.world",
-    "bank": {
-        "bank": "Asia Commercial Joint Stock Bank (ACB)",
-        "beneficiary": "CTY CP TV VA PT GIAI PHAP PHAN MEM CYBERSKILL",
-        "account": "878196868",
-        "swift": "ASCBVNVX",
-    },
-}
-
 
 def get_service() -> QuoteService:
     """Build the service from settings. Tests override this via dependency_overrides."""

@@ -1,0 +1,99 @@
+{
+  "case_id": "adv_001",
+  "extraction": {
+    "buyer": {
+      "company": "Thành Công",
+      "mst": null,
+      "contact": null,
+      "email": "mua.hang@thanhcong.vn"
+    },
+    "lines": [
+      {
+        "raw_text": "3 máy tính bảng vẽ Wacom Cintiq 22",
+        "description_normalized": "máy tính bảng vẽ Wacom Cintiq 22",
+        "quantity": "3",
+        "unit": "cái",
+        "unit_original": "cái",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.95,
+        "source_span": null
+      },
+      {
+        "raw_text": "2 laptop Dell Latitude 5450",
+        "description_normalized": "laptop Dell Latitude 5450",
+        "quantity": "2",
+        "unit": "cái",
+        "unit_original": "cái",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.95,
+        "source_span": null
+      }
+    ],
+    "language_per_line": [
+      "vi"
+    ],
+    "notes_raw": null
+  },
+  "lines": [
+    {
+      "vector_skus": [
+        "SAMSUNG-S27C",
+        "SAMSUNG-S24C",
+        "DELL-P2422H",
+        "DELL-P2723DE",
+        "DELL-P2423D",
+        "HP-Z2-G9",
+        "DELL-P2723",
+        "CIS-C9200"
+      ],
+      "text_skus": [
+        "SVC-INSTALL-PC",
+        "SVC-INSTALL-NET",
+        "SVC-DEPLOY-SRV",
+        "SVC-TRAINING",
+        "SVC-MAINT-BASIC",
+        "LEN-M70Q",
+        "SVC-MAINT-PREM",
+        "MS-OFFICE-LTSC"
+      ],
+      "selection": {
+        "sku": null,
+        "confidence": 0.0,
+        "specs_conflict": false,
+        "reason_vi": "Mô hình chọn SKU ngoài danh sách ứng viên.",
+        "reason_en": "Model chose a SKU outside the candidate list."
+      }
+    },
+    {
+      "vector_skus": [
+        "DELL-LAT-5450",
+        "DELL-LAT-5450-I7",
+        "DELL-LAT-5440",
+        "DELL-LAT-7450",
+        "LEN-T14-G5",
+        "ASUS-B5405",
+        "LEN-T14-G5-I7",
+        "HP-PROBOOK-450"
+      ],
+      "text_skus": [
+        "DELL-LAT-5450",
+        "DELL-LAT-5450-I7",
+        "DELL-LAT-5440",
+        "DELL-LAT-7450",
+        "DELL-XPS-9440",
+        "DELL-P2723",
+        "DELL-P2423D",
+        "DELL-P2422H"
+      ],
+      "selection": {
+        "sku": "DELL-LAT-5450",
+        "confidence": 1.0,
+        "specs_conflict": false,
+        "reason_vi": "Khớp chính xác model Dell Latitude 5450 được yêu cầu.",
+        "reason_en": "Exact match for the requested Dell Latitude 5450 model."
+      }
+    }
+  ]
+}

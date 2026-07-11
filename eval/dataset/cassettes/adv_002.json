@@ -1,0 +1,59 @@
+{
+  "case_id": "adv_002",
+  "extraction": {
+    "buyer": {
+      "company": "An Phát",
+      "mst": null,
+      "contact": null,
+      "email": "kinhdoanh@anphat.com.vn"
+    },
+    "lines": [
+      {
+        "raw_text": "Báo giá 10 laptop Dell Latitude 5450 RAM 64GB SSD 2TB.",
+        "description_normalized": "laptop Dell Latitude 5450 RAM 64GB SSD 2TB",
+        "quantity": "10",
+        "unit": "",
+        "unit_original": "",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.95,
+        "source_span": null
+      }
+    ],
+    "language_per_line": [
+      "vi"
+    ],
+    "notes_raw": null
+  },
+  "lines": [
+    {
+      "vector_skus": [
+        "DELL-LAT-5450",
+        "DELL-LAT-5450-I7",
+        "DELL-LAT-5440",
+        "DELL-LAT-7450",
+        "LEN-E14-G6",
+        "LEN-T14-G5",
+        "LEN-T14-G5-I7",
+        "HP-PROBOOK-450"
+      ],
+      "text_skus": [
+        "DELL-LAT-5450-I7",
+        "DELL-R650",
+        "DELL-LAT-5450",
+        "DELL-LAT-5440",
+        "DELL-LAT-7450",
+        "DELL-XPS-9440",
+        "HP-ELITE-860",
+        "LEN-T14-G5-I7"
+      ],
+      "selection": {
+        "sku": null,
+        "confidence": 0.0,
+        "specs_conflict": false,
+        "reason_vi": "Mô hình chọn SKU ngoài danh sách ứng viên.",
+        "reason_en": "Model chose a SKU outside the candidate list."
+      }
+    }
+  ]
+}

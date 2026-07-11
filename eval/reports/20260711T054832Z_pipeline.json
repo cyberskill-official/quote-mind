@@ -1,0 +1,1343 @@
+{
+  "mode": "pipeline",
+  "generated_at": "2026-07-11T05:58:48.948982+00:00",
+  "aggregate": {
+    "cases": 25,
+    "skipped": 5,
+    "line_extraction": {
+      "precision": 1.0,
+      "recall": 0.9831,
+      "f1": 0.9915,
+      "tp": 58,
+      "fp": 0,
+      "fn": 1
+    },
+    "sku_top1_accuracy": 1.0,
+    "price_exactness": 0.96,
+    "task_success": 0.96,
+    "human_intervention_rate": 0.08,
+    "errors": 0,
+    "latency_ms": {
+      "p50": 22895,
+      "p95": 35372
+    },
+    "tokens": {
+      "in": 176125,
+      "out": 20859
+    },
+    "cost_usd": {
+      "total": "0.273688",
+      "per_quote": "0.010948"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "vi_text_001",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-LAT-5450",
+          "10"
+        ],
+        [
+          "DELL-P2422H",
+          "10"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-LAT-5450",
+          "10"
+        ],
+        [
+          "DELL-P2422H",
+          "10"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 255420000,
+      "expected_total_vnd": 255420000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 25063,
+      "tokens_in": 6777,
+      "tokens_out": 887,
+      "cost_usd": "0.010028"
+    },
+    {
+      "case_id": "vi_text_002",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "MS-M365-BS",
+          "20"
+        ],
+        [
+          "ADOBE-ACROBAT",
+          "5"
+        ]
+      ],
+      "expected": [
+        [
+          "MS-M365-BS",
+          "20"
+        ],
+        [
+          "ADOBE-ACROBAT",
+          "5"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 108864000,
+      "expected_total_vnd": 108864000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 21211,
+      "tokens_in": 5178,
+      "tokens_out": 725,
+      "cost_usd": "0.007814"
+    },
+    {
+      "case_id": "vi_text_003",
+      "tags": [
+        "demo",
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-LAT-5450-I7",
+          "20"
+        ],
+        [
+          "DELL-P2723DE",
+          "20"
+        ],
+        [
+          "MS-M365-BS",
+          "25"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-LAT-5450-I7",
+          "20"
+        ],
+        [
+          "DELL-P2723DE",
+          "20"
+        ],
+        [
+          "MS-M365-BS",
+          "25"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 856980000,
+      "expected_total_vnd": 856980000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 34909,
+      "tokens_in": 8977,
+      "tokens_out": 1272,
+      "cost_usd": "0.014162"
+    },
+    {
+      "case_id": "vi_text_004",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-R650",
+          "2"
+        ],
+        [
+          "SYN-DS1522",
+          "1"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-R650",
+          "2"
+        ],
+        [
+          "SYN-DS1522",
+          "1"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 379620000,
+      "expected_total_vnd": 379620000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 19603,
+      "tokens_in": 6634,
+      "tokens_out": 807,
+      "cost_usd": "0.009901"
+    },
+    {
+      "case_id": "vi_text_005",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "CISCO-C9200L-24P",
+          "4"
+        ],
+        [
+          "UBNT-U6-PRO",
+          "12"
+        ],
+        [
+          "SVC-INSTALL-NET",
+          "5"
+        ]
+      ],
+      "expected": [
+        [
+          "CISCO-C9200L-24P",
+          "4"
+        ],
+        [
+          "UBNT-U6-PRO",
+          "12"
+        ],
+        [
+          "SVC-INSTALL-NET",
+          "5"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 258914340,
+      "expected_total_vnd": 258914340,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 28856,
+      "tokens_in": 8453,
+      "tokens_out": 1135,
+      "cost_usd": "0.013309"
+    },
+    {
+      "case_id": "vi_text_006",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "LEN-T14-G5",
+          "15"
+        ],
+        [
+          "DELL-WD19S",
+          "15"
+        ]
+      ],
+      "expected": [
+        [
+          "LEN-T14-G5",
+          "15"
+        ],
+        [
+          "DELL-WD19S",
+          "15"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 471420000,
+      "expected_total_vnd": 471420000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 24681,
+      "tokens_in": 7082,
+      "tokens_out": 756,
+      "cost_usd": "0.010172"
+    },
+    {
+      "case_id": "vi_text_007",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "MS-WIN11-PRO",
+          "30"
+        ],
+        [
+          "KAS-ENDPOINT",
+          "30"
+        ]
+      ],
+      "expected": [
+        [
+          "MS-WIN11-PRO",
+          "30"
+        ],
+        [
+          "KAS-ENDPOINT",
+          "30"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 171720000,
+      "expected_total_vnd": 171720000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 22640,
+      "tokens_in": 5490,
+      "tokens_out": 738,
+      "cost_usd": "0.008310"
+    },
+    {
+      "case_id": "vi_text_008",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-OPT-7010",
+          "8"
+        ],
+        [
+          "SAMSUNG-S24C",
+          "8"
+        ],
+        [
+          "SVC-INSTALL-PC",
+          "8"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-OPT-7010",
+          "8"
+        ],
+        [
+          "SAMSUNG-S24C",
+          "8"
+        ],
+        [
+          "SVC-INSTALL-PC",
+          "8"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 194400000,
+      "expected_total_vnd": 194400000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 35372,
+      "tokens_in": 9185,
+      "tokens_out": 1221,
+      "cost_usd": "0.014862"
+    },
+    {
+      "case_id": "vi_text_009",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "FORTI-FG-60F",
+          "5"
+        ],
+        [
+          "APC-UPS-1500",
+          "2"
+        ]
+      ],
+      "expected": [
+        [
+          "FORTI-FG-60F",
+          "5"
+        ],
+        [
+          "APC-UPS-1500",
+          "2"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 151092000,
+      "expected_total_vnd": 151092000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 20573,
+      "tokens_in": 7326,
+      "tokens_out": 771,
+      "cost_usd": "0.010558"
+    },
+    {
+      "case_id": "vi_text_010",
+      "tags": [
+        "vat_10_percent",
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "VIET-SIM-DATA",
+          "40"
+        ],
+        [
+          "SVC-MAINT-BASIC",
+          "10"
+        ]
+      ],
+      "expected": [
+        [
+          "VIET-SIM-DATA",
+          "40"
+        ],
+        [
+          "SVC-MAINT-BASIC",
+          "10"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 61924800,
+      "expected_total_vnd": 61924800,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 20720,
+      "tokens_in": 5520,
+      "tokens_out": 756,
+      "cost_usd": "0.008239"
+    },
+    {
+      "case_id": "en_text_001",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-LAT-7450",
+          "12"
+        ],
+        [
+          "DELL-U3223QE",
+          "12"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-LAT-7450",
+          "12"
+        ],
+        [
+          "DELL-U3223QE",
+          "12"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 659664000,
+      "expected_total_vnd": 659664000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 26632,
+      "tokens_in": 6440,
+      "tokens_out": 912,
+      "cost_usd": "0.009904"
+    },
+    {
+      "case_id": "en_text_002",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "MS-M365-BP",
+          "25"
+        ],
+        [
+          "BIT-GRAVITYZONE",
+          "25"
+        ]
+      ],
+      "expected": [
+        [
+          "MS-M365-BP",
+          "25"
+        ],
+        [
+          "BIT-GRAVITYZONE",
+          "25"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 201690000,
+      "expected_total_vnd": 201690000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 20611,
+      "tokens_in": 4921,
+      "tokens_out": 710,
+      "cost_usd": "0.007481"
+    },
+    {
+      "case_id": "en_text_003",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-R750",
+          "3"
+        ],
+        [
+          "VMW-VSPHERE",
+          "2"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-R750",
+          "3"
+        ],
+        [
+          "VMW-VSPHERE",
+          "2"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 856440000,
+      "expected_total_vnd": 856440000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 21639,
+      "tokens_in": 6387,
+      "tokens_out": 775,
+      "cost_usd": "0.009421"
+    },
+    {
+      "case_id": "en_text_004",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "HP-ELITE-840",
+          "6"
+        ],
+        [
+          "LG-27QN880",
+          "6"
+        ],
+        [
+          "KING-DDR5-16",
+          "6"
+        ]
+      ],
+      "expected": [
+        [
+          "HP-ELITE-840",
+          "6"
+        ],
+        [
+          "LG-27QN880",
+          "6"
+        ],
+        [
+          "KING-DDR5-16",
+          "6"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 227318400,
+      "expected_total_vnd": 227318400,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 32432,
+      "tokens_in": 9435,
+      "tokens_out": 1169,
+      "cost_usd": "0.014805"
+    },
+    {
+      "case_id": "en_text_005",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "CISCO-C9200L-48P",
+          "2"
+        ],
+        [
+          "UBNT-U7-PRO",
+          "4"
+        ],
+        [
+          "SVC-DEPLOY-SRV",
+          "3"
+        ]
+      ],
+      "expected": [
+        [
+          "CISCO-C9200L-48P",
+          "2"
+        ],
+        [
+          "UBNT-U7-PRO",
+          "4"
+        ],
+        [
+          "SVC-DEPLOY-SRV",
+          "3"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 235440000,
+      "expected_total_vnd": 235440000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 35388,
+      "tokens_in": 7966,
+      "tokens_out": 1165,
+      "cost_usd": "0.012914"
+    },
+    {
+      "case_id": "vi_xlsx_001",
+      "tags": [
+        "xlsx",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-LAT-5450",
+          "25"
+        ],
+        [
+          "DELL-P2423D",
+          "25"
+        ],
+        [
+          "DELL-WD19S",
+          "25"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-LAT-5450",
+          "25"
+        ],
+        [
+          "DELL-P2423D",
+          "25"
+        ],
+        [
+          "DELL-WD19S",
+          "25"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 783000000,
+      "expected_total_vnd": 783000000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 23407,
+      "tokens_in": 8639,
+      "tokens_out": 594,
+      "cost_usd": "0.013888"
+    },
+    {
+      "case_id": "vi_xlsx_002",
+      "tags": [
+        "xlsx",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "TPLINK-SG3428",
+          "6"
+        ],
+        [
+          "UBNT-U6-PRO",
+          "20"
+        ],
+        [
+          "SVC-INSTALL-NET",
+          "8"
+        ]
+      ],
+      "expected": [
+        [
+          "TPLINK-SG3428",
+          "6"
+        ],
+        [
+          "UBNT-U6-PRO",
+          "20"
+        ],
+        [
+          "SVC-INSTALL-NET",
+          "8"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 134930880,
+      "expected_total_vnd": 134930880,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 21395,
+      "tokens_in": 7192,
+      "tokens_out": 599,
+      "cost_usd": "0.012179"
+    },
+    {
+      "case_id": "vi_xlsx_003",
+      "tags": [
+        "xlsx",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-PREC-3680",
+          "4"
+        ],
+        [
+          "DELL-U3223QE",
+          "8"
+        ],
+        [
+          "ADOBE-CC-ALL",
+          "4"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-PREC-3680",
+          "4"
+        ],
+        [
+          "DELL-U3223QE",
+          "8"
+        ],
+        [
+          "ADOBE-CC-ALL",
+          "4"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 430272000,
+      "expected_total_vnd": 430272000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 22895,
+      "tokens_in": 6951,
+      "tokens_out": 587,
+      "cost_usd": "0.011819"
+    },
+    {
+      "case_id": "en_xlsx_001",
+      "tags": [
+        "xlsx",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "LEN-X1-C12",
+          "8"
+        ],
+        [
+          "SAMSUNG-S27C",
+          "8"
+        ],
+        [
+          "MS-OFFICE-LTSC",
+          "8"
+        ]
+      ],
+      "expected": [
+        [
+          "LEN-X1-C12",
+          "8"
+        ],
+        [
+          "SAMSUNG-S27C",
+          "8"
+        ],
+        [
+          "MS-OFFICE-LTSC",
+          "8"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 558144000,
+      "expected_total_vnd": 558144000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 23397,
+      "tokens_in": 7187,
+      "tokens_out": 584,
+      "cost_usd": "0.012087"
+    },
+    {
+      "case_id": "en_xlsx_002",
+      "tags": [
+        "xlsx",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "SYN-RS2423",
+          "2"
+        ],
+        [
+          "APC-UPS-1500",
+          "4"
+        ],
+        [
+          "SVC-MAINT-PREM",
+          "12"
+        ]
+      ],
+      "expected": [
+        [
+          "SYN-RS2423",
+          "2"
+        ],
+        [
+          "APC-UPS-1500",
+          "4"
+        ],
+        [
+          "SVC-MAINT-PREM",
+          "12"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 310608000,
+      "expected_total_vnd": 310608000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 20827,
+      "tokens_in": 6599,
+      "tokens_out": 602,
+      "cost_usd": "0.011496"
+    },
+    {
+      "case_id": "en_pdf_001",
+      "tags": [
+        "pdf_digital",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-XPS-9440",
+          "5"
+        ],
+        [
+          "DELL-WD19S",
+          "5"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-XPS-9440",
+          "5"
+        ],
+        [
+          "DELL-WD19S",
+          "5"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 305640000,
+      "expected_total_vnd": 305640000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 24694,
+      "tokens_in": 7527,
+      "tokens_out": 933,
+      "cost_usd": "0.011260"
+    },
+    {
+      "case_id": "en_pdf_002",
+      "tags": [
+        "pdf_digital",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "HP-Z2-G9",
+          "3"
+        ],
+        [
+          "SAM-SSD-1TB",
+          "6"
+        ],
+        [
+          "SVC-TRAINING",
+          "2"
+        ]
+      ],
+      "expected": [
+        [
+          "HP-Z2-G9",
+          "3"
+        ],
+        [
+          "SAM-SSD-1TB",
+          "6"
+        ],
+        [
+          "SVC-TRAINING",
+          "2"
+        ]
+      ],
+      "extracted_lines": 3,
+      "sku_correct": 3,
+      "sku_attempted": 3,
+      "total_vnd": 181202400,
+      "expected_total_vnd": 181202400,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 32200,
+      "tokens_in": 9232,
+      "tokens_out": 1125,
+      "cost_usd": "0.014329"
+    },
+    {
+      "case_id": "en_pdf_003",
+      "tags": [
+        "pdf_digital",
+        "en"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "CISCO-CBS350-24",
+          "4"
+        ],
+        [
+          "FORTI-FG-60F",
+          "2"
+        ]
+      ],
+      "expected": [
+        [
+          "CISCO-CBS350-24",
+          "4"
+        ],
+        [
+          "FORTI-FG-60F",
+          "2"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 2,
+      "sku_attempted": 2,
+      "total_vnd": 111240000,
+      "expected_total_vnd": 111240000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": true,
+      "latency_ms": 22373,
+      "tokens_in": 5423,
+      "tokens_out": 765,
+      "cost_usd": "0.008259"
+    },
+    {
+      "case_id": "vi_scan_001",
+      "tags": [
+        "pdf_scan",
+        "vi",
+        "blocked_on:FR-032"
+      ],
+      "skipped": true,
+      "skip_reason": "FR-032 not implemented",
+      "error": null,
+      "predicted": [],
+      "expected": [],
+      "extracted_lines": 0,
+      "sku_correct": 0,
+      "sku_attempted": 0,
+      "total_vnd": null,
+      "expected_total_vnd": null,
+      "price_exact": false,
+      "has_pdf": false,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": false,
+      "latency_ms": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "cost_usd": "0"
+    },
+    {
+      "case_id": "vi_scan_002",
+      "tags": [
+        "pdf_scan",
+        "vi",
+        "blocked_on:FR-032"
+      ],
+      "skipped": true,
+      "skip_reason": "FR-032 not implemented",
+      "error": null,
+      "predicted": [],
+      "expected": [],
+      "extracted_lines": 0,
+      "sku_correct": 0,
+      "sku_attempted": 0,
+      "total_vnd": null,
+      "expected_total_vnd": null,
+      "price_exact": false,
+      "has_pdf": false,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": false,
+      "latency_ms": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "cost_usd": "0"
+    },
+    {
+      "case_id": "vi_scan_003",
+      "tags": [
+        "pdf_scan",
+        "vi",
+        "blocked_on:FR-032"
+      ],
+      "skipped": true,
+      "skip_reason": "FR-032 not implemented",
+      "error": null,
+      "predicted": [],
+      "expected": [],
+      "extracted_lines": 0,
+      "sku_correct": 0,
+      "sku_attempted": 0,
+      "total_vnd": null,
+      "expected_total_vnd": null,
+      "price_exact": false,
+      "has_pdf": false,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": false,
+      "latency_ms": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "cost_usd": "0"
+    },
+    {
+      "case_id": "vi_scan_004",
+      "tags": [
+        "pdf_scan",
+        "vi",
+        "blocked_on:FR-032"
+      ],
+      "skipped": true,
+      "skip_reason": "FR-032 not implemented",
+      "error": null,
+      "predicted": [],
+      "expected": [],
+      "extracted_lines": 0,
+      "sku_correct": 0,
+      "sku_attempted": 0,
+      "total_vnd": null,
+      "expected_total_vnd": null,
+      "price_exact": false,
+      "has_pdf": false,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": false,
+      "latency_ms": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "cost_usd": "0"
+    },
+    {
+      "case_id": "vi_scan_005",
+      "tags": [
+        "pdf_scan",
+        "vi",
+        "blocked_on:FR-032"
+      ],
+      "skipped": true,
+      "skip_reason": "FR-032 not implemented",
+      "error": null,
+      "predicted": [],
+      "expected": [],
+      "extracted_lines": 0,
+      "sku_correct": 0,
+      "sku_attempted": 0,
+      "total_vnd": null,
+      "expected_total_vnd": null,
+      "price_exact": false,
+      "has_pdf": false,
+      "blocking_flags": [],
+      "needs_human": false,
+      "success": false,
+      "latency_ms": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "cost_usd": "0"
+    },
+    {
+      "case_id": "adv_001",
+      "tags": [
+        "adversarial",
+        "out_of_catalog",
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [
+        [
+          "DELL-LAT-5450",
+          "2"
+        ]
+      ],
+      "expected": [
+        [
+          "DELL-LAT-5450",
+          "2"
+        ]
+      ],
+      "extracted_lines": 2,
+      "sku_correct": 1,
+      "sku_attempted": 1,
+      "total_vnd": 42768000,
+      "expected_total_vnd": 42768000,
+      "price_exact": true,
+      "has_pdf": true,
+      "blocking_flags": [],
+      "needs_human": true,
+      "success": true,
+      "latency_ms": 20918,
+      "tokens_in": 7309,
+      "tokens_out": 789,
+      "cost_usd": "0.010726"
+    },
+    {
+      "case_id": "adv_002",
+      "tags": [
+        "adversarial",
+        "spec_conflict",
+        "text",
+        "vi"
+      ],
+      "skipped": false,
+      "skip_reason": null,
+      "error": null,
+      "predicted": [],
+      "expected": [
+        [
+          "DELL-LAT-5450-I7",
+          "10"
+        ]
+      ],
+      "extracted_lines": 1,
+      "sku_correct": 0,
+      "sku_attempted": 0,
+      "total_vnd": null,
+      "expected_total_vnd": 307800000,
+      "price_exact": false,
+      "has_pdf": false,
+      "blocking_flags": [],
+      "needs_human": true,
+      "success": false,
+      "latency_ms": 13793,
+      "tokens_in": 4295,
+      "tokens_out": 482,
+      "cost_usd": "0.005765"
+    }
+  ]
+}

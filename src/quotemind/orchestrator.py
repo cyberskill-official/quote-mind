@@ -32,7 +32,8 @@ from .models import (
 )
 from .obs.otel import OP_EMBEDDINGS, OP_EXECUTE_TOOL
 from .obs.trace import TraceDocument, Tracer
-from .parsing import validation_reasons
+from .parsing import parse_excel, validation_reasons
+from .parsing.pdf import extract_pdf_text
 from .pricing import vat_policy_note
 from .quote import AssemblyLine, assemble_quote, format_quote_number, run_critic
 from .quote.render import render_html
@@ -165,13 +166,117 @@ async def quote_from_text(
     tracer: Tracer | None = None,
 ) -> PipelineResult:
     """FR-130: run one RFQ text end to end and return the quote (or why it needs clarification)."""
-    today = on_date or date_type.today()
     trace = tracer or Tracer(quote_id="")  # tracing is always on; persistence is the caller's call
 
     with trace.step("DocumentParser", "parse", model=MODEL_PARSER_TEXT) as step:
         extraction = await extract_text_rfq(text, settings, usage=step)
         step.note(f"extracted {len(extraction.lines)} line(s)")
         step.content(prompt=text, response=extraction.model_dump_json())
+
+    return await quote_from_extraction(
+        extraction,
+        settings=settings,
+        facade=facade,
+        seller_block=seller_block,
+        sequence=sequence,
+        on_date=on_date,
+        customer_email=customer_email,
+        customer_hint=customer_hint,
+        with_usd=with_usd,
+        tracer=trace,
+    )
+
+
+async def quote_from_excel(
+    data: bytes,
+    *,
+    settings: Settings,
+    facade: MemoryFacade,
+    seller_block: dict[str, object],
+    sequence: int,
+    on_date: date_type | None = None,
+    customer_email: str | None = None,
+    customer_hint: str | None = None,
+    with_usd: bool = False,
+    tracer: Tracer | None = None,
+) -> PipelineResult:
+    """FR-035 + FR-130: a spreadsheet RFQ. The extraction is deterministic - no model, no cost."""
+    trace = tracer or Tracer(quote_id="")
+    with trace.step("DocumentParser", "parse", tool="parse_excel") as step:
+        extraction = parse_excel(data)
+        step.note(f"extracted {len(extraction.lines)} line(s) from the sheet")
+
+    return await quote_from_extraction(
+        extraction,
+        settings=settings,
+        facade=facade,
+        seller_block=seller_block,
+        sequence=sequence,
+        on_date=on_date,
+        customer_email=customer_email,
+        customer_hint=customer_hint,
+        with_usd=with_usd,
+        tracer=trace,
+    )
+
+
+async def quote_from_pdf(
+    data: bytes,
+    *,
+    settings: Settings,
+    facade: MemoryFacade,
+    seller_block: dict[str, object],
+    sequence: int,
+    on_date: date_type | None = None,
+    customer_email: str | None = None,
+    customer_hint: str | None = None,
+    with_usd: bool = False,
+    tracer: Tracer | None = None,
+) -> PipelineResult:
+    """FR-031 + FR-130: a born-digital PDF. Text is lifted out, then the normal text path runs.
+
+    A scanned PDF raises ScannedPdfError rather than being parsed into an empty quote; it needs
+    vision OCR (FR-032).
+    """
+    trace = tracer or Tracer(quote_id="")
+    with trace.step("DocumentParser", "extract", tool="extract_pdf_text") as step:
+        text = extract_pdf_text(data)
+        step.note(f"{len(text)} characters of embedded text")
+
+    return await quote_from_text(
+        text,
+        settings=settings,
+        facade=facade,
+        seller_block=seller_block,
+        sequence=sequence,
+        on_date=on_date,
+        customer_email=customer_email,
+        customer_hint=customer_hint,
+        with_usd=with_usd,
+        tracer=trace,
+    )
+
+
+async def quote_from_extraction(
+    extraction: RFQExtraction,
+    *,
+    settings: Settings,
+    facade: MemoryFacade,
+    seller_block: dict[str, object],
+    sequence: int,
+    on_date: date_type | None = None,
+    customer_email: str | None = None,
+    customer_hint: str | None = None,
+    with_usd: bool = False,
+    tracer: Tracer | None = None,
+) -> PipelineResult:
+    """The shared path after extraction: gate -> customer -> match -> assemble -> critic -> render.
+
+    Every input channel converges here, so text, spreadsheet and PDF RFQs are priced by exactly the
+    same code. A channel that had its own pricing path would be a channel that could disagree.
+    """
+    today = on_date or date_type.today()
+    trace = tracer or Tracer(quote_id="")
     reasons = validation_reasons(extraction)
     if reasons:  # FR-034: never proceed to matching
         return PipelineResult(
