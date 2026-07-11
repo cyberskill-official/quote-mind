@@ -312,6 +312,30 @@ Decisions / notes (logged):
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (47 files), import-linter 4/4 kept,
 pytest 103 passed.
 
+## 2026-07-11 - EP-04 matcher fusion + customer resolution (branch feat/FR-042-matcher)
+
+The deterministic, code-enforced half of catalog matching (FR-042) and customer resolution (FR-043),
+in the tools layer where the agents will call them. No model calls; the LLM select is injected.
+
+Delivered:
+- tools/matching.py (FR-042): reciprocal_rank_fusion / fuse_candidates over the vector and full-text
+  SKU rankings (RRF, k=60, deterministic SKU tie-break); build_match_result bands a selection into a
+  MatchResult (DM-09) - MATCHED, or NEEDS_CONFIRMATION when confidence < 0.75 or specs conflict (with
+  up to 3 alternatives excluding the chosen SKU and a bilingual reason), or NO_MATCH when nothing was
+  selected (near-misses surfaced as alternatives). top_candidate gives a no-LLM default selection.
+- tools/customer.py (FR-043): resolve_customer picks from candidate profiles by email domain, then
+  fuzzy name (difflib ratio over accent-folded names, threshold 0.8), then a free-text hint; falls
+  back to tier end_customer with unknown_customer=true. CustomerResolution carries profile/tier/flag.
+- tools/__init__.py exports both.
+- Tests (11): RRF ranking + scoring + tie-break; the four banding outcomes incl. alternative capping
+  and spec-conflict override; customer resolution by domain / fuzzy accent-insensitive name / hint,
+  domain-beats-name precedence, and the unresolved end_customer fallback.
+
+These connect the live-verified catalog memory to assembly: the matcher yields the SKU and tier that
+feed AssemblyLine, and unknown_customer feeds the critic's non-blocking flag.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (48 files), import-linter 4/4 kept,
+pytest 114 passed.
 ## 2026-07-11 - EP-06 quote assembly (branch feat/FR-060-assemble)
 
 FR-060, the keystone that turns matched, priced lines into a Quote (DM-10) and ties the whole
