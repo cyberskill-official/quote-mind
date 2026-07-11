@@ -454,6 +454,14 @@ function select(id) {
   selected = id;
   $("queue").querySelectorAll("li[data-id]").forEach((li) =>
     li.setAttribute("aria-selected", String(li.dataset.id === id)));
+
+  // A reviewer who wants a second opinion should be able to send someone the quote, not a
+  // description of where to find it. The id is in the URL, so the page is linkable - and the
+  // browser's back button now does what a reviewer expects it to do.
+  const url = new URL(location.href);
+  url.searchParams.set("quote", id);
+  history.replaceState(null, "", url);
+
   loadDetail();
 }
 
@@ -851,6 +859,16 @@ document.addEventListener("keydown", (event) => {
 });
 
 renderFilters();
+
+// FR-100: open straight onto a quote if the URL names one, rather than making the reviewer hunt for
+// it in a queue that may have moved on. `selected` is set before the first fetch so the queue paints
+// with the right row already highlighted.
+const linked = new URLSearchParams(location.search).get("quote");
+if (linked) {
+  selected = linked;
+  loadDetail();
+}
+
 loadQueue();
 setInterval(() => { loadQueue(); if (selected) loadDetail(); }, 5000);  // FR-100
 </script>
