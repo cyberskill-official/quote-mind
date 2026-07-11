@@ -180,6 +180,11 @@ async def _match_line(
         selection.sku,
         selection.confidence,
         specs_conflict=selection.specs_conflict,
+        # The model is the only party here that actually read the specs. When it declines a
+        # line, its sentence is the one the reviewer needs - not a canned "no match found".
+        said=BilingualText(vi=selection.reason_vi, en=selection.reason_en)
+        if selection.reason_vi and selection.reason_en
+        else None,
     )
     return match, products
 

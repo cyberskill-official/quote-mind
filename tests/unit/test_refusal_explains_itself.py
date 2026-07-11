@@ -157,3 +157,34 @@ def test_a_refused_quote_can_still_be_revised() -> None:
     stored = store.rows[final.quote_id]
     assert stored["extraction_json"]
     assert "64GB" in json.loads(stored["extraction_json"])["lines"][0]["description_normalized"]
+
+
+def test_the_reviewer_gets_the_models_sentence_not_a_canned_one() -> None:
+    """The band is deterministic. The *explanation* belongs to the model that read the specs.
+
+    `build_match_result` used to overwrite the model's reason with a stock line - so the reviewer
+    was told "No matching catalog product found" when what the model had actually written was
+    "None of the candidate SKUs meet the requested 64GB RAM and 2TB SSD specifications."
+
+    One of those tells a human what to do next.
+    """
+    from quotemind.tools import build_match_result  # noqa: PLC0415
+
+    said = BilingualText(
+        vi="Không có SKU nào đáp ứng RAM 64GB và SSD 2TB.",
+        en="No candidate meets the 64GB RAM and 2TB SSD requirement.",
+    )
+
+    refused = build_match_result(1, ["DELL-LAT-5450-I7"], None, 0.0, said=said)
+    assert refused.status is MatchStatus.NO_MATCH
+    assert refused.reason == said, "the model's reason was replaced by a canned one"
+
+    # And when the model says nothing useful, the canned line is still there to fall back on.
+    silent = build_match_result(1, ["DELL-LAT-5450-I7"], None, 0.0)
+    assert silent.reason is not None
+    assert "No matching catalog product" in silent.reason.en
+
+    # A confident match needs no explanation at all - the SKU is the explanation.
+    matched = build_match_result(1, ["DELL-LAT-5450"], "DELL-LAT-5450", 0.95, said=said)
+    assert matched.status is MatchStatus.MATCHED
+    assert matched.reason is None

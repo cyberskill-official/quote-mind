@@ -59,9 +59,23 @@ def build_match_result(
     confidence: float,
     *,
     specs_conflict: bool = False,
+    said: BilingualText | None = None,
 ) -> MatchResult:
     """FR-042 banding: MATCHED, or NEEDS_CONFIRMATION (< 0.75 or spec conflict, with <=3 alts), or
-    NO_MATCH when nothing was selected (near-misses surfaced as alternatives)."""
+    NO_MATCH when nothing was selected (near-misses surfaced as alternatives).
+
+    The *band* is deterministic and stays that way: the model proposes a SKU and a confidence, and
+    this decides what that means. But the *explanation* should be the model's, because the model is
+    the only party here that actually looked at the specs.
+
+    `said` is what it wrote. It used to be dropped on the floor, and the reviewer got a canned
+    sentence instead - "No matching catalog product found" - in place of the real one:
+
+        "None of the candidate SKUs meet the requested 64GB RAM and 2TB SSD specifications."
+
+    One of those tells a human what to do next. The other tells them to go and read the email again.
+    The canned lines survive as the fallback for when the model says nothing useful.
+    """
     if chosen_sku is None:
         return MatchResult(
             line_ref=line_ref,
@@ -69,7 +83,7 @@ def build_match_result(
             sku=None,
             match_confidence=0.0,
             alternatives=_alternatives(fused_skus, None),
-            reason=_NO_MATCH_REASON,
+            reason=said or _NO_MATCH_REASON,
         )
     if confidence < CONFIDENCE_THRESHOLD or specs_conflict:
         return MatchResult(
@@ -78,7 +92,7 @@ def build_match_result(
             sku=chosen_sku,
             match_confidence=confidence,
             alternatives=_alternatives(fused_skus, chosen_sku),
-            reason=_SPECS_REASON if specs_conflict else _LOWCONF_REASON,
+            reason=said or (_SPECS_REASON if specs_conflict else _LOWCONF_REASON),
         )
     return MatchResult(
         line_ref=line_ref,
