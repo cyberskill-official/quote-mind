@@ -707,8 +707,7 @@
     },
     "tags": [
       "pdf_scan",
-      "vi",
-      "blocked_on:FR-032"
+      "vi"
     ]
   },
   {
@@ -734,9 +733,9 @@
       "expected_flags": []
     },
     "tags": [
+      "demo",
       "pdf_scan",
-      "vi",
-      "blocked_on:FR-032"
+      "vi"
     ]
   },
   {
@@ -758,8 +757,7 @@
     },
     "tags": [
       "pdf_scan",
-      "vi",
-      "blocked_on:FR-032"
+      "vi"
     ]
   },
   {
@@ -786,8 +784,7 @@
     },
     "tags": [
       "pdf_scan",
-      "vi",
-      "blocked_on:FR-032"
+      "vi"
     ]
   },
   {
@@ -809,8 +806,7 @@
     },
     "tags": [
       "pdf_scan",
-      "vi",
-      "blocked_on:FR-032"
+      "vi"
     ]
   },
   {

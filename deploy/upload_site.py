@@ -1,4 +1,12 @@
-"""FR-106: publish web/index.html to OSS static website hosting.
+"""FR-106: publish the dashboard to OSS static website hosting.
+
+Kept, but not the live path. This account has Block Public Access enabled on the artifacts bucket,
+so OSS refuses `Put public object acl` and the upload fails - correctly, since that bucket holds
+customer quote PDFs served by short-lived presigned URLs. The deployed dashboard is served by the
+API itself (`GET /`), same-origin with the API it calls. This script remains useful for an account
+with a bucket dedicated to public static content.
+
+Original purpose follows.
 
 The dashboard is one file with two placeholders (__API_BASE__, __API_TOKEN__). They are substituted
 here, at upload time, so the checked-in source stays free of any deployment secret. The page is the
@@ -21,7 +29,7 @@ from quotemind.cloud.oss import ArtifactStore
 from quotemind.config.settings import require_settings
 
 SITE_KEY = "web/index.html"
-SOURCE = Path(__file__).resolve().parent.parent / "web" / "index.html"
+SOURCE = Path(__file__).resolve().parent.parent / "src" / "quotemind" / "web" / "index.html"
 
 
 def render(html: str, *, api_base: str, api_token: str) -> str:

@@ -13,6 +13,10 @@
 #
 # Secrets are injected from the environment at deploy time (${env('NAME')}) and never committed.
 # Run `s deploy` with the same .env you use locally - `make deploy` does this for you.
+#
+# `s build` MUST run before `s deploy`. FC uploads the code directory as-is, so without a build step
+# the bundle contains source and no site-packages, and the function dies at cold start on
+# `import fastapi`. The build reads requirements.txt at the repo root. `make deploy` does both.
 
 edition: 3.0.0
 name: quotemind
@@ -37,17 +41,33 @@ vars:
     MAIL_TRANSPORT: ${env('MAIL_TRANSPORT')}
     DIRECTMAIL_SMTP_HOST: ${env('DIRECTMAIL_SMTP_HOST')}
     DIRECTMAIL_SMTP_PORT: ${env('DIRECTMAIL_SMTP_PORT')}
-    DIRECTMAIL_USER: ${env('DIRECTMAIL_USER')}
-    DIRECTMAIL_PASSWORD: ${env('DIRECTMAIL_PASSWORD')}
     DEMO_API_TOKEN: ${env('DEMO_API_TOKEN')}
+    # DIRECTMAIL_USER / DIRECTMAIL_PASSWORD are deliberately NOT injected here.
+    #
+    # They are empty in .env because the demo default is the stub mail transport (FR-093), and
+    # Serverless Devs treats an empty environment variable as *missing* and aborts the whole deploy
+    # rather than passing through the empty string. Listing an optional secret here therefore makes
+    # the deploy fail for everyone who has not configured a feature they do not need.
+    #
+    # Settings types both as `str | None = None`, so their absence is the correct, working state.
+    # To send real mail: set MAIL_TRANSPORT=smtp and add the two variables in the Function Compute
+    # console (or add them back here once your .env actually has values in them).
     FX_USD_VND: ${env('FX_USD_VND')}
     MARGIN_FLOOR_PCT: ${env('MARGIN_FLOOR_PCT')}
     QUOTE_VALIDITY_DAYS: ${env('QUOTE_VALIDITY_DAYS')}
     OTEL_SEMCONV_STABILITY_OPT_IN: ${env('OTEL_SEMCONV_STABILITY_OPT_IN')}
     QM_ENV: fc
     REGION: ap-southeast-1
-    # PYTHONPATH so the FC bundle can import the package straight from src/ without a wheel build.
-    PYTHONPATH: /code/src:/code
+    # PYTHONPATH must lead with /code/python. That is where `s build` vendors every runtime
+    # dependency, and it is only importable because the platform puts it on the path - so a
+    # PYTHONPATH of our own *replaces* that default rather than adding to it.
+    #
+    # Setting this to just "/code/src:/code" is what caused the first deployment to 502: the
+    # function booted with our package importable and not one of its dependencies, and died on
+    # `import fastapi` before a single request reached it. Reproduced exactly with
+    # `s local start`, which runs the real FC runtime image - the only way to see the traceback,
+    # since this account cannot create the SLS project that FC logs to.
+    PYTHONPATH: /code/python:/code/src:/code
 
 resources:
   quotemind-api:
@@ -57,11 +77,19 @@ resources:
       functionName: quotemind-api
       runtime: ${vars.runtime}
       code: ../
-      handler: quotemind.api.fc.handler
+      handler: index.handler
       # FR-012: the initializer probes every frozen model id once per cold start and activates the
       # documented fallback if a primary has been retired. It never raises - see api/app.py.
-      initializer: quotemind.api.fc.initialize
-      initializationTimeout: 60
+      #
+      # This lives under instanceLifecycleConfig because that is where FC *3.0* keeps it. The FC 2.0
+      # spelling - top-level `initializer:` and `initializationTimeout:` - is not an error: Serverless
+      # Devs accepts those keys, drops them, and deploys a function with no initializer at all. The
+      # only visible symptom was /health honestly reporting every model as `unverified`, which is
+      # exactly what that field is for. `s info` showed no initializer in the deployed config.
+      instanceLifecycleConfig:
+        initializer:
+          handler: index.initialize
+          timeout: 60
       # 1024 MB because WeasyPrint's font stack and the 1024-dim embeddings are the memory floor,
       # not the LLM calls (those are network-bound).
       memorySize: 1024
@@ -69,6 +97,19 @@ resources:
       # headroom. It is a ceiling for a stuck call, not a target.
       timeout: 300
       environmentVariables: ${vars.environmentVariables}
+      # FR-008: the app emits JSON lines to stdout; this is what collects them into SLS.
+      #
+      # It must be declared HERE, not just enabled in the console: `s deploy` writes the function's
+      # whole configuration, so a logConfig that exists only in the console is silently erased on
+      # the next deploy - which is exactly what happened, taking the traceback with it right when it
+      # was needed. The project is named explicitly rather than using `auto`, because `auto` asks
+      # Serverless Devs to create one and that call fails on networks where the SLS control plane is
+      # slow or DNS-blocked.
+      logConfig:
+        project: ${env('SLS_PROJECT')}
+        logstore: default-logs
+        enableRequestMetrics: true
+        enableInstanceMetrics: true
       triggers:
         - triggerName: http
           triggerType: http
@@ -86,7 +127,7 @@ resources:
       functionName: quotemind-ingest
       runtime: ${vars.runtime}
       code: ../
-      handler: deploy.ingest.handler
+      handler: index_ingest.handler
       memorySize: 1024
       timeout: 300
       environmentVariables: ${vars.environmentVariables}

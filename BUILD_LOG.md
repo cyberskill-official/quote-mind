@@ -767,3 +767,72 @@ Makefile targets are now real rather than `@echo` placeholders: `make proof`, `m
 
 Verification: ruff clean, mypy clean (74 files), import-linter 4/4 kept, pytest 237 passed, pricing
 branch coverage 100%. Live: alibaba_proof 8/8, /health reports 4/4 models verified.
+
+## Batch: vision OCR + the deployment made real (feat/vision-ocr)
+
+FR-031/032, and FR-003/FR-012/FR-106 taken from "descriptor exists" to "you can click it".
+
+**Vision OCR (FR-031/032).** Scanned RFQs are rasterised at 200 DPI (10-page cap) and read by
+`qwen-vl-ocr`. The prompt demands JSON only; `strip_fence` removes a code fence and nothing else -
+it never "repairs" malformed JSON, because a parser that guesses at a price is worse than one that
+refuses. An unreadable quantity becomes `None`, never a guess. This unblocked the 5 scanned cases the
+eval had been carrying as skipped, so the denominator is now the real 30.
+
+**The eval, complete for the first time.** 30/30 runnable, including 5 real OCR scans:
+
+| | task success | line F1 | SKU top-1 | price exact | needs human | p50 | $/quote |
+|---|---|---|---|---|---|---|---|
+| pipeline | **97%** | 0.993 | 100% | **97%** | 7% | 23.0 s | $0.0103 |
+| single-agent baseline | 40% | 0.929 | 98% | 40% | **0%** | 22.8 s | $0.0109 |
+
+A +57 point gap, and the baseline got *worse* when the scans were added (48% -> 40%): more documents
+mean more arithmetic, and it does the arithmetic in the model. It is exactly priced-correctly 40% of
+the time and it flags a problem 0% of the time. That combination - confidently wrong, silently - is
+the failure mode the whole architecture exists to prevent.
+
+**Function Compute: four 502s, and what each one actually was.** The endpoint is now live at
+https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run. Getting there cost four wrong answers,
+and the useful part of this entry is that the first three were guesses:
+
+1. *No dependencies in the bundle.* Fixed with a root `requirements.txt` + `s build`.
+2. *`PYTHONPATH` clobbered FC's default.* FC vendors runtime deps at `/code/python`; setting our own
+   PYTHONPATH replaced that path rather than adding to it, so the function booted with our package
+   importable and not one of its dependencies. It must lead with `/code/python`.
+3. *`AttributeError: module 'lib' has no attribute 'GEN_EMAIL'`.* `oss2` -> `aliyunsdkcore` ->
+   vendored urllib3 -> pyOpenSSL. The runtime ships an old pyOpenSSL; our bundle shadowed the
+   runtime's `cryptography` with a modern one that had removed the binding it dereferences at import.
+   Both halves must now be pinned together, and the pairing is load-bearing.
+4. *The real one.* I had asserted, confidently and wrongly, that "FC 3.0 runs an ASGI app directly".
+   Then that FC serves HTTP functions over WSGI. Both were assumptions. So I stopped guessing and
+   logged what FC actually passes: `handler(event: bytes, ctx: FCContext)`, where the event is an
+   HTTP envelope (`rawPath`, `headers`, base64 `body`, `requestContext.http.method`) and the
+   expected return is an envelope too. FC's WSGI path exists but only fires when
+   `request.http_params` is set, and the `fcapp.run` endpoint never sets it. `api/fc.py` now
+   translates envelope -> WSGI environ -> app -> envelope, base64 in both directions so a PDF and a
+   Vietnamese quote both survive the crossing. `tests/unit/test_fc_handler.py` asserts against the
+   captured envelope, not an invented one.
+
+The lesson recorded for its own sake: three deploys were spent guessing because the function's logs
+were unavailable, and I kept proposing fixes instead of first fixing the reason I was blind.
+
+**FR-012 was never running in production.** `/health` reported every model `unverified` - correctly,
+and I nearly dismissed it as cosmetic. `initializer:` / `initializationTimeout:` is the FC *2.0*
+spelling; Serverless Devs accepted the keys, dropped them, and deployed a function with **no
+initializer at all** (`s info` confirmed it). Fixing the YAML (`instanceLifecycleConfig`) was
+necessary but not sufficient: a probe that only runs from a platform hook is one config typo away
+from silently not running again. The probe now runs on first need, and the initializer merely warms
+it. Live, `/health` reports `unverified: []`, `substitutions: {}` - every frozen model id answered
+from inside FC, which also proves FC -> DashScope connectivity that had never been exercised.
+
+**FR-106 dashboard: served by the API, not by OSS.** OSS refused `Put public object acl` - the
+artifacts bucket has Block Public Access on. The right response was not to switch it off: that bucket
+holds customer quote PDFs, handed out as 10-minute presigned URLs precisely because they must not be
+world-readable. A bucket configured to host a public dashboard is a bucket that would just as happily
+serve someone else's quote. The dashboard moved into the package (`src/quotemind/web/`) and is served
+at `GET /`, same-origin with the API it calls. Note the trap that nearly ate it: `.fcignore` had a
+bare `web/` line, which is gitignore-style and matches at any depth - it would have stripped the
+dashboard out of the deployed bundle, and the page would have 500'd in production only.
+
+Verification: ruff clean, mypy clean (77 files), import-linter 4/4 kept, pytest 263 passed, pricing
+branch coverage 100%. Live: `/` serves the dashboard, `/health` 200 with 0 unverified models,
+`/api/quotes` 401 without a token and returns real Tablestore rows with one.

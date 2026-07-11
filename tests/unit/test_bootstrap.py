@@ -114,9 +114,9 @@ def test_a_model_with_no_fallback_proceeds_on_the_primary_and_is_flagged() -> No
     assert body["substitutions"] == {}
 
 
-def test_health_says_unverified_when_no_probe_has_run() -> None:
-    # The honest state before initialize(). Reporting the frozen constants with no caveat would
-    # imply a check happened that did not.
+def test_health_says_unverified_when_the_probe_could_not_run() -> None:
+    # The honest state when the probe did not succeed. Reporting the frozen constants with no caveat
+    # would imply a check happened that did not - and for a while, in production, it had not.
     app_module._MODEL_STATUS = []
     body = TestClient(app).get("/health").json()
 
@@ -142,11 +142,49 @@ def test_initialize_never_raises_even_if_the_probe_blows_up(monkeypatch: Any) ->
         raise RuntimeError("DashScope unreachable")
 
     monkeypatch.setattr(app_module, "check_models", explode)
+    app_module._PROBE_ATTEMPTED = False
     app_module.initialize()  # must not raise
     assert app_module._MODEL_STATUS == []
 
     body = TestClient(app).get("/health").json()
     assert body["status"] == "ok"  # still serving
+
+
+def test_health_runs_the_probe_itself_when_the_initializer_never_did(monkeypatch: Any) -> None:
+    # The bug this guards: Function Compute silently deployed the function with no initializer, so
+    # the probe never ran and /health reported every model unverified. FR-012 must not depend on a
+    # platform hook firing - the probe runs the first time anything needs its answer.
+    calls: list[int] = []
+
+    def probe(*_args: Any, **_kwargs: Any) -> Any:
+        calls.append(1)
+        return check_models(_Settings(), client=_Client())  # type: ignore[arg-type]
+
+    monkeypatch.setattr(app_module, "check_models", probe)
+    app_module._PROBE_ATTEMPTED = False  # as if the process had just started
+
+    body = TestClient(app).get("/health").json()
+    assert body["unverified"] == []  # it probed, and everything answered
+    assert body["models"]["planner"] == "qwen3-max"
+
+    TestClient(app).get("/health")
+    assert calls == [1], "the probe must run once per process, not once per request"
+
+
+def test_a_failed_probe_is_not_retried_on_every_request(monkeypatch: Any) -> None:
+    # A DashScope outage must not turn every /health into a slow call.
+    calls: list[int] = []
+
+    def explode(*_args: Any, **_kwargs: Any) -> None:
+        calls.append(1)
+        raise RuntimeError("DashScope unreachable")
+
+    monkeypatch.setattr(app_module, "check_models", explode)
+    app_module._PROBE_ATTEMPTED = False
+
+    for _ in range(3):
+        assert TestClient(app).get("/health").json()["status"] == "ok"
+    assert calls == [1]
 
 
 # --- the distinction the live run forced: absence vs a bad argument ---
