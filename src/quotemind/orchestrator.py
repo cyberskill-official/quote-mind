@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from .agents.matcher import select_sku
 from .agents.parser import extract_text_rfq
-from .agents.vision import extract_scanned_rfq
+from .agents.vision import extract_image_rfq, extract_scanned_rfq
 from .config.models import MODEL_EMBED, MODEL_PARSER_TEXT, MODEL_PARSER_VISION, MODEL_PLANNER
 from .config.settings import Settings
 from .memory.embedding import embed_text
@@ -270,6 +270,42 @@ async def quote_from_pdf(
 
     return await quote_from_text(
         text,
+        settings=settings,
+        facade=facade,
+        seller_block=seller_block,
+        sequence=sequence,
+        on_date=on_date,
+        customer_email=customer_email,
+        customer_hint=customer_hint,
+        with_usd=with_usd,
+        tracer=trace,
+    )
+
+
+async def quote_from_image(
+    data: bytes,
+    *,
+    settings: Settings,
+    facade: MemoryFacade,
+    seller_block: dict[str, object],
+    sequence: int,
+    on_date: date_type | None = None,
+    customer_email: str | None = None,
+    customer_hint: str | None = None,
+    with_usd: bool = False,
+    tracer: Tracer | None = None,
+) -> PipelineResult:
+    """FR-033: a photographed or screenshotted RFQ. One page, read by the same vision path."""
+    trace = tracer or Tracer(quote_id="")
+
+    with trace.step(
+        "DocumentParser", "parse", model=MODEL_PARSER_VISION, operation=OP_CHAT
+    ) as step:
+        extraction = await extract_image_rfq(data, settings, usage=step)
+        step.note(f"OCR read {len(extraction.lines)} line(s) from the image")
+
+    return await quote_from_extraction(
+        extraction,
         settings=settings,
         facade=facade,
         seller_block=seller_block,

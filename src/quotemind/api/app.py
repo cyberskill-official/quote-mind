@@ -27,7 +27,7 @@ from ..config.settings import get_settings
 from ..intake import MAX_UPLOAD_BYTES, UnsupportedPayloadError, doc_type_for
 from ..memory.quotes import QuoteStore
 from ..memory.store import MemoryFacade
-from ..models import Channel, EmailMeta, Status
+from ..models import Channel, DocType, EmailMeta, Status
 from ..obs.log import log_event
 from ..service import ApprovalBlockedError, QuoteNotFoundError, QuoteService
 from ..web import dashboard_html
@@ -202,7 +202,8 @@ def health() -> dict[str, Any]:
 async def _run_pipeline(
     service: QuoteService,
     quote_id: str,
-    text: str,
+    payload: str | bytes,
+    doc_type: DocType,
     customer_hint: str | None,
     email: str | None,
 ) -> None:
@@ -210,8 +211,26 @@ async def _run_pipeline(
     if stored is None:
         return
     await service.process(
-        stored["record"], text, customer_hint=customer_hint, customer_email=email
+        stored["record"],
+        payload,
+        doc_type=doc_type,
+        customer_hint=customer_hint,
+        customer_email=email,
     )
+
+
+def _payload_and_text(
+    raw: bytes, doc_type: DocType, filename: str | None
+) -> tuple[bytes | str, str]:
+    """What the pipeline parses, and what a human sees on the record.
+
+    For text they are the same string. For a file they are not: the pipeline needs the bytes, and
+    the record needs something a reviewer can read in a queue - not 40 KB of decoded spreadsheet.
+    """
+    if doc_type is DocType.EMAIL_TEXT:
+        text = raw.decode("utf-8", errors="replace")
+        return text, text
+    return raw, f"[{doc_type.value}] {filename or 'unnamed'}"
 
 
 @app.post("/api/rfq", status_code=202, dependencies=[Depends(require_bearer)])
@@ -234,13 +253,17 @@ async def submit_rfq(
             raise _error(422, "empty_payload", "multipart request without a file part")
         raw = await upload.read()
         try:  # FR-025
-            doc_type_for(upload.filename)
+            doc_type = doc_type_for(upload.filename)
             if len(raw) > MAX_UPLOAD_BYTES:
                 raise UnsupportedPayloadError(f"file exceeds the {MAX_UPLOAD_BYTES} byte limit")
         except UnsupportedPayloadError as exc:
             raise _error(422, "unsupported_payload", exc.reason) from exc
-        # Only text-bearing uploads run today; PDF and image parsing land with FR-031/032.
-        text = raw.decode("utf-8", errors="replace")
+
+        # FR-021/022/031/032/033: the parser is chosen by document type, and the bytes are handed to
+        # it intact. This line used to read `raw.decode("utf-8", errors="replace")` for *every*
+        # upload, which turned a spreadsheet into mojibake and then quoted the mojibake.
+        payload, text = _payload_and_text(raw, doc_type, upload.filename)
+        digest_payload: bytes | str = raw
         channel: Channel = Channel.UPLOAD
         filename = upload.filename
         hint = form.get("customer_hint")
@@ -252,16 +275,26 @@ async def submit_rfq(
         except (ValidationError, ValueError) as exc:
             raise _error(422, "empty_payload", "provide either a JSON body or a file") from exc
         text = body.text
+        payload = text
+        digest_payload = text
+        doc_type = DocType.EMAIL_TEXT
         channel = body.channel
         hint = body.customer_hint
         email_meta = body.email_meta
         email = email_meta.from_addr if email_meta else None
 
     record, created = service.submit(
-        text=text, channel=channel, filename=filename, customer_hint=hint, email_meta=email_meta
+        text=text,
+        digest_payload=digest_payload,
+        channel=channel,
+        filename=filename,
+        customer_hint=hint,
+        email_meta=email_meta,
     )
     if created:
-        background.add_task(_run_pipeline, service, record.quote_id, text, hint, email)
+        background.add_task(
+            _run_pipeline, service, record.quote_id, payload, doc_type, hint, email
+        )
     return {
         "quote_id": record.quote_id,
         "quote_number": record.quote_number,

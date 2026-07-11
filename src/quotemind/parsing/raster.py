@@ -61,6 +61,28 @@ def _render(page: pypdfium2.PdfPage) -> bytes:
     return buffer.getvalue()
 
 
+def image_to_png(data: bytes) -> bytes:
+    """Normalise any uploaded image to the same PNG the PDF rasteriser produces.
+
+    A photographed RFQ is a one-page scan. Passing the original bytes through would mean the vision
+    path's input depends on whatever the sender's phone happened to emit - a JPEG, a HEIC-converted
+    JPEG, a 12-megapixel original - and `to_data_url` would then label all of them `image/png`. So
+    the image is decoded and re-encoded through exactly the same size budget as a rendered page.
+    """
+    image = Image.open(io.BytesIO(data)).convert("RGB")
+
+    longest = max(image.size)
+    if longest > MAX_LONG_EDGE:
+        ratio = MAX_LONG_EDGE / longest
+        image = image.resize(
+            (int(image.width * ratio), int(image.height * ratio)), Image.Resampling.LANCZOS
+        )
+
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
 def to_data_url(png: bytes) -> str:
     """The OpenAI-compatible content array wants a data URL, not raw bytes."""
     return f"data:image/png;base64,{base64.b64encode(png).decode()}"

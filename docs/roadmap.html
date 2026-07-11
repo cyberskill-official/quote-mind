@@ -136,8 +136,15 @@
        id from inside FC, and both lists being empty means each one answered live. Getting there cost
        four 502s; the honest part is that the first three were guesses, and the fix only came once the
        function was made to log what FC actually passes it. See api/fc.py and BUILD_LOG.</p>
-    <p><b>Next:</b> rehearse and shoot the demo video. Then bilingual NL drafting (FR-061), episodic
-       memory (FR-044/045), planner handoff (FR-131).</p>
+    <p><b>The autopilot loop closes.</b> A spreadsheet dropped into oss://quotemind-inbox/rfq/ is
+       parsed, matched, priced, critic-checked and parked at the human approval gate by itself -
+       proven live as QM-2026-0006, flagged UNKNOWN_CUSTOMER because a bare file drop carries no
+       sender and the system refuses to guess a pricing tier. Getting there exposed a real bug: both
+       file channels had been decoding every upload as UTF-8, so a spreadsheet became mojibake and a
+       scanned PDF became noise. The eval never caught it because the eval calls the parsers
+       directly - it proved the parsers and never touched the seam joining them to the product.</p>
+    <p><b>Next:</b> the last two P0s - episodic memory (FR-044/045) and the PlanNotebook planner
+       (FR-131) - then rehearse and shoot the demo video.</p>
   </div>
 
   <div class="legend">
@@ -196,8 +203,9 @@ const PHASES = [
   { s: "done", t: "Evaluation harness", d: "30 labelled cases against a 61-SKU catalog, metrics runner, single-agent baseline, CI cassettes, golden PDF. The multi-agent gain is now measured." },
   { s: "done", t: "Deployment proof and submission artifacts", d: "s.yaml (FC 3.0, two functions), the Alibaba proof module (8/8 live), the FR-012 cold-start model check, architecture diagram, demo script, submission text." },
   { s: "done", t: "Vision OCR and the live endpoint", d: "FR-031/032 (200 DPI raster + qwen-vl-ocr, 5/5 scanned cases quoted); the eval complete at 30/30 - 97% vs 40% task success against the baseline; the API deployed and verified on FC 3.0, dashboard served same-origin, /health reporting 0 unverified models." },
-  { s: "now",  t: "Rehearse and shoot the demo", d: "Run the EV-08 rehearsal against the live endpoint and record the video (docs/demo-script.md)." },
-  { s: "next", t: "Remaining P1 surface", d: "Bilingual NL drafting (FR-061), episodic memory (FR-044/045), planner handoff (FR-131), realtime push (FR-104)." },
+  { s: "done", t: "The file channels read files", d: "FR-021/022/024/033: parser routing moved into QuoteService and both intake channels call it. The OSS drop loop is proven live end to end. Idempotency now hashes the file bytes, not the filename." },
+  { s: "now",  t: "The last two P0s", d: "Episodic memory write + retrieval (FR-044/045) - the primitives exist but nothing calls them - and the PlanNotebook planner (FR-131)." },
+  { s: "next", t: "Rehearse and shoot the demo", d: "Run the EV-08 rehearsal against the live endpoint and record the video (docs/demo-script.md). Remaining P1: critic narrative (FR-073), revision re-draft (FR-064), eval report page (FR-104)." },
 ];
 
 const LABEL = { done: "Done", partial: "Partial", todo: "To do" };

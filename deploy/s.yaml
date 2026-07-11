@@ -131,6 +131,20 @@ resources:
       memorySize: 1024
       timeout: 300
       environmentVariables: ${vars.environmentVariables}
+      # An event-driven function has no caller to return an error to. Without this, a failed ingest
+      # is a file that silently never becomes a quote - the worst possible failure mode for the one
+      # path nobody is watching.
+      logConfig:
+        project: ${env('SLS_PROJECT')}
+        logstore: default-logs
+        enableRequestMetrics: true
+        enableInstanceMetrics: true
+      # This trigger is declared here because it is the truth about the system, but `s deploy` cannot
+      # create it on every network: Serverless Devs hard-codes a 3 s timeout on the RAM call that
+      # resolves AliyunOSSEventNotificationRole, and RAM answers in 3-20 s from Vietnam. The deploy
+      # then aborts *before* creating the function at all. See docs/deploy/oss-trigger.md - the
+      # function is deployed with this block commented out, and the trigger is created once, by hand,
+      # to exactly this specification.
       triggers:
         - triggerName: oss-rfq-drop
           triggerType: oss
