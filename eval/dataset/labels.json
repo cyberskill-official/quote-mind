@@ -1,0 +1,864 @@
+[
+  {
+    "case_id": "vi_text_001",
+    "input": {
+      "file": null,
+      "text": "Kính gửi Quý công ty,\nCông ty TNHH Thành Công cần báo giá các mặt hàng sau:\n1. Laptop Dell Latitude 5450 Core i5 RAM 16GB SSD 512GB - số lượng 10 cái\n2. Màn hình Dell P2422H 24 inch - 10 cái\nGiao hàng tại TP.HCM. Đề nghị báo giá đã gồm VAT.\nTrân trọng, Chị Lan - mua.hang@thanhcong.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Laptop Dell Latitude 5450 Core i5",
+          "sku": "DELL-LAT-5450",
+          "qty": "10"
+        },
+        {
+          "description_canon": "Màn hình Dell P2422H 24 inch",
+          "sku": "DELL-P2422H",
+          "qty": "10"
+        }
+      ],
+      "customer_id": "cust_thanhcong",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_002",
+    "input": {
+      "file": null,
+      "text": "Chào anh/chị,\nBên em cần báo giá 20 bộ Microsoft 365 Business Standard (1 năm) và 5 bản quyền Adobe Acrobat Pro.\nCông ty Cổ phần An Phát - kinhdoanh@anphat.com.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Microsoft 365 Business Standard",
+          "sku": "MS-M365-BS",
+          "qty": "20"
+        },
+        {
+          "description_canon": "Adobe Acrobat Pro",
+          "sku": "ADOBE-ACROBAT",
+          "qty": "5"
+        }
+      ],
+      "customer_id": "cust_anphat",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_003",
+    "input": {
+      "file": null,
+      "text": "Kính gửi Quý công ty,\nCông ty TNHH Thành Công cần báo giá các mặt hàng sau:\n1. Laptop Dell Latitude 5450, Core i7, RAM 32GB, SSD 512GB - số lượng 20 cái\n2. Màn hình Dell 27 inch P2723DE - 20 cái\n3. Bản quyền Microsoft 365 Business Standard - 25 user/năm\nGiao hàng tại TP.HCM trong 2 tuần. Đề nghị báo giá gồm VAT.\nTrân trọng, Nguyễn Văn A - mua.hang@thanhcong.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Laptop Dell Latitude 5450 Core i7 32GB",
+          "sku": "DELL-LAT-5450-I7",
+          "qty": "20"
+        },
+        {
+          "description_canon": "Màn hình Dell P2723DE 27 inch",
+          "sku": "DELL-P2723DE",
+          "qty": "20"
+        },
+        {
+          "description_canon": "Microsoft 365 Business Standard",
+          "sku": "MS-M365-BS",
+          "qty": "25"
+        }
+      ],
+      "customer_id": "cust_thanhcong",
+      "expected_flags": []
+    },
+    "tags": [
+      "demo",
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_004",
+    "input": {
+      "file": null,
+      "text": "Chào shop, cho mình xin báo giá:\n- 2 máy chủ Dell PowerEdge R650\n- 1 thiết bị lưu trữ Synology DS1522+\nCông ty TNHH Minh Long, ketoan@minhlong.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Máy chủ Dell PowerEdge R650",
+          "sku": "DELL-R650",
+          "qty": "2"
+        },
+        {
+          "description_canon": "Synology DS1522+",
+          "sku": "SYN-DS1522",
+          "qty": "1"
+        }
+      ],
+      "customer_id": "cust_minhlong",
+      "expected_flags": [
+        "LEAD_TIME"
+      ]
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_005",
+    "input": {
+      "file": null,
+      "text": "Tập đoàn Xây dựng Hòa Bình cần trang bị cho văn phòng mới:\n1. Switch Cisco Catalyst 9200L 24 cổng PoE+ : 4 cái\n2. Thiết bị phát WiFi Ubiquiti UniFi U6 Pro : 12 cái\n3. Dịch vụ lắp đặt hệ thống mạng : 5 ngày công\nLiên hệ: it@hoabinh-corp.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Switch Cisco Catalyst 9200L 24 cổng PoE+",
+          "sku": "CISCO-C9200L-24P",
+          "qty": "4"
+        },
+        {
+          "description_canon": "Ubiquiti UniFi U6 Pro",
+          "sku": "UBNT-U6-PRO",
+          "qty": "12"
+        },
+        {
+          "description_canon": "Dịch vụ lắp đặt hệ thống mạng",
+          "sku": "SVC-INSTALL-NET",
+          "qty": "5"
+        }
+      ],
+      "customer_id": "cust_hoabinh",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_006",
+    "input": {
+      "file": null,
+      "text": "Cần báo giá gấp 15 laptop Lenovo ThinkPad T14 Gen 5 core i5 và 15 dock Dell WD19S.\nCông ty TNHH Đại Việt - contact@daiviet.net.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Lenovo ThinkPad T14 Gen 5 core i5",
+          "sku": "LEN-T14-G5",
+          "qty": "15"
+        },
+        {
+          "description_canon": "Dock Dell WD19S",
+          "sku": "DELL-WD19S",
+          "qty": "15"
+        }
+      ],
+      "customer_id": "cust_daiviet",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_007",
+    "input": {
+      "file": null,
+      "text": "Kính gửi anh/chị,\nBáo giá giúp em 30 bộ Windows 11 Pro và 30 gói Kaspersky Endpoint Security.\nAn Phát - kinhdoanh@anphat.com.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Windows 11 Pro",
+          "sku": "MS-WIN11-PRO",
+          "qty": "30"
+        },
+        {
+          "description_canon": "Kaspersky Endpoint Security",
+          "sku": "KAS-ENDPOINT",
+          "qty": "30"
+        }
+      ],
+      "customer_id": "cust_anphat",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_008",
+    "input": {
+      "file": null,
+      "text": "Chào anh, công ty em cần:\n- 8 máy tính để bàn Dell OptiPlex 7010 SFF\n- 8 màn hình Samsung 24 inch S24C\n- 8 dịch vụ cài đặt máy tính\nMinh Long - ketoan@minhlong.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Dell OptiPlex 7010 SFF",
+          "sku": "DELL-OPT-7010",
+          "qty": "8"
+        },
+        {
+          "description_canon": "Màn hình Samsung S24C 24 inch",
+          "sku": "SAMSUNG-S24C",
+          "qty": "8"
+        },
+        {
+          "description_canon": "Dịch vụ cài đặt máy tính",
+          "sku": "SVC-INSTALL-PC",
+          "qty": "8"
+        }
+      ],
+      "customer_id": "cust_minhlong",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_009",
+    "input": {
+      "file": null,
+      "text": "Báo giá 5 tường lửa Fortinet FortiGate 60F và 2 bộ lưu điện APC Smart-UPS 1500VA.\nThành Công - mua.hang@thanhcong.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Tường lửa Fortinet FortiGate 60F",
+          "sku": "FORTI-FG-60F",
+          "qty": "5"
+        },
+        {
+          "description_canon": "Bộ lưu điện APC Smart-UPS 1500VA",
+          "sku": "APC-UPS-1500",
+          "qty": "2"
+        }
+      ],
+      "customer_id": "cust_thanhcong",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_text_010",
+    "input": {
+      "file": null,
+      "text": "Cần báo giá 40 thuê bao gói cước dữ liệu di động doanh nghiệp (1 tháng) và 10 dịch vụ bảo trì cơ bản.\nHòa Bình - it@hoabinh-corp.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Gói cước dữ liệu di động doanh nghiệp",
+          "sku": "VIET-SIM-DATA",
+          "qty": "40"
+        },
+        {
+          "description_canon": "Dịch vụ bảo trì cơ bản",
+          "sku": "SVC-MAINT-BASIC",
+          "qty": "10"
+        }
+      ],
+      "customer_id": "cust_hoabinh",
+      "expected_flags": []
+    },
+    "tags": [
+      "vat_10_percent",
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "en_text_001",
+    "input": {
+      "file": null,
+      "text": "Dear Sales team,\nSunrise Manufacturing Vietnam would like a quotation for:\n1. Dell Latitude 7450 laptop (i7, 16GB, 512GB) - 12 units\n2. Dell UltraSharp U3223QE 32 inch 4K monitor - 12 units\nPlease quote in VND with a USD reference.\nBest regards, David Tan - purchasing@sunrise-mfg.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Dell Latitude 7450 laptop i7",
+          "sku": "DELL-LAT-7450",
+          "qty": "12"
+        },
+        {
+          "description_canon": "Dell UltraSharp U3223QE 32 inch 4K",
+          "sku": "DELL-U3223QE",
+          "qty": "12"
+        }
+      ],
+      "customer_id": "cust_sunrise",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_text_002",
+    "input": {
+      "file": null,
+      "text": "Hello,\nPlease quote 25 seats of Microsoft 365 Business Premium (1 year) and 25 seats of Bitdefender GravityZone Business.\nVietSoft Solutions - admin@vietsoft.io"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Microsoft 365 Business Premium",
+          "sku": "MS-M365-BP",
+          "qty": "25"
+        },
+        {
+          "description_canon": "Bitdefender GravityZone Business",
+          "sku": "BIT-GRAVITYZONE",
+          "qty": "25"
+        }
+      ],
+      "customer_id": "cust_vietsoft",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_text_003",
+    "input": {
+      "file": null,
+      "text": "Hi team,\nWe need a quotation for 3 x Dell PowerEdge R750 servers and 2 x VMware vSphere Standard licences (1 CPU, 1 year).\nSunrise Manufacturing - purchasing@sunrise-mfg.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Dell PowerEdge R750 server",
+          "sku": "DELL-R750",
+          "qty": "3"
+        },
+        {
+          "description_canon": "VMware vSphere Standard licence",
+          "sku": "VMW-VSPHERE",
+          "qty": "2"
+        }
+      ],
+      "customer_id": "cust_sunrise",
+      "expected_flags": [
+        "LEAD_TIME"
+      ]
+    },
+    "tags": [
+      "text",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_text_004",
+    "input": {
+      "file": null,
+      "text": "Please quote:\n- 6 x HP EliteBook 840 G11 (Ultra 5, 16GB)\n- 6 x LG 27QN880 27 inch QHD monitor\n- 6 x Kingston DDR5 16GB memory\nVietSoft Solutions - admin@vietsoft.io"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "HP EliteBook 840 G11",
+          "sku": "HP-ELITE-840",
+          "qty": "6"
+        },
+        {
+          "description_canon": "LG 27QN880 27 inch QHD monitor",
+          "sku": "LG-27QN880",
+          "qty": "6"
+        },
+        {
+          "description_canon": "Kingston DDR5 16GB",
+          "sku": "KING-DDR5-16",
+          "qty": "6"
+        }
+      ],
+      "customer_id": "cust_vietsoft",
+      "expected_flags": []
+    },
+    "tags": [
+      "text",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_text_005",
+    "input": {
+      "file": null,
+      "text": "Quotation request: 2 x Cisco Catalyst 9200L 48-port PoE+ switch, 4 x Ubiquiti UniFi U7 Pro access point, 3 man-days of server deployment service.\nSunrise Manufacturing - purchasing@sunrise-mfg.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Cisco Catalyst 9200L 48-port PoE+ switch",
+          "sku": "CISCO-C9200L-48P",
+          "qty": "2"
+        },
+        {
+          "description_canon": "Ubiquiti UniFi U7 Pro access point",
+          "sku": "UBNT-U7-PRO",
+          "qty": "4"
+        },
+        {
+          "description_canon": "Server deployment service",
+          "sku": "SVC-DEPLOY-SRV",
+          "qty": "3"
+        }
+      ],
+      "customer_id": "cust_sunrise",
+      "expected_flags": [
+        "LEAD_TIME"
+      ]
+    },
+    "tags": [
+      "text",
+      "en"
+    ]
+  },
+  {
+    "case_id": "vi_xlsx_001",
+    "input": {
+      "file": "vi_xlsx_001.xlsx",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Laptop Dell Latitude 5450 Core i5",
+          "sku": "DELL-LAT-5450",
+          "qty": "25"
+        },
+        {
+          "description_canon": "Màn hình Dell P2423D 24 inch QHD",
+          "sku": "DELL-P2423D",
+          "qty": "25"
+        },
+        {
+          "description_canon": "Dock Dell WD19S",
+          "sku": "DELL-WD19S",
+          "qty": "25"
+        }
+      ],
+      "customer_id": "cust_thanhcong",
+      "expected_flags": []
+    },
+    "tags": [
+      "xlsx",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_xlsx_002",
+    "input": {
+      "file": "vi_xlsx_002.xlsx",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Switch TP-Link Omada SG3428 24 cổng",
+          "sku": "TPLINK-SG3428",
+          "qty": "6"
+        },
+        {
+          "description_canon": "Thiết bị phát WiFi Ubiquiti UniFi U6 Pro",
+          "sku": "UBNT-U6-PRO",
+          "qty": "20"
+        },
+        {
+          "description_canon": "Dịch vụ lắp đặt hệ thống mạng",
+          "sku": "SVC-INSTALL-NET",
+          "qty": "8"
+        }
+      ],
+      "customer_id": "cust_hoabinh",
+      "expected_flags": []
+    },
+    "tags": [
+      "xlsx",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "vi_xlsx_003",
+    "input": {
+      "file": "vi_xlsx_003.xlsx",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Máy trạm Dell Precision 3680",
+          "sku": "DELL-PREC-3680",
+          "qty": "4"
+        },
+        {
+          "description_canon": "Màn hình Dell UltraSharp U3223QE 32 inch",
+          "sku": "DELL-U3223QE",
+          "qty": "8"
+        },
+        {
+          "description_canon": "Bản quyền Adobe Creative Cloud All Apps",
+          "sku": "ADOBE-CC-ALL",
+          "qty": "4"
+        }
+      ],
+      "customer_id": "cust_anphat",
+      "expected_flags": []
+    },
+    "tags": [
+      "xlsx",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "en_xlsx_001",
+    "input": {
+      "file": "en_xlsx_001.xlsx",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Lenovo ThinkPad X1 Carbon Gen 12",
+          "sku": "LEN-X1-C12",
+          "qty": "8"
+        },
+        {
+          "description_canon": "Samsung ViewFinity S27C 27 inch QHD",
+          "sku": "SAMSUNG-S27C",
+          "qty": "8"
+        },
+        {
+          "description_canon": "Office LTSC Standard 2024",
+          "sku": "MS-OFFICE-LTSC",
+          "qty": "8"
+        }
+      ],
+      "customer_id": "cust_sunrise",
+      "expected_flags": []
+    },
+    "tags": [
+      "xlsx",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_xlsx_002",
+    "input": {
+      "file": "en_xlsx_002.xlsx",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Synology RS2423+ NAS 12-bay",
+          "sku": "SYN-RS2423",
+          "qty": "2"
+        },
+        {
+          "description_canon": "APC Smart-UPS 1500VA",
+          "sku": "APC-UPS-1500",
+          "qty": "4"
+        },
+        {
+          "description_canon": "Premium maintenance service",
+          "sku": "SVC-MAINT-PREM",
+          "qty": "12"
+        }
+      ],
+      "customer_id": "cust_vietsoft",
+      "expected_flags": []
+    },
+    "tags": [
+      "xlsx",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_pdf_001",
+    "input": {
+      "file": "en_pdf_001.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Dell XPS 14 9440 laptop",
+          "sku": "DELL-XPS-9440",
+          "qty": "5"
+        },
+        {
+          "description_canon": "Dell WD19S 130W USB-C dock",
+          "sku": "DELL-WD19S",
+          "qty": "5"
+        }
+      ],
+      "customer_id": "cust_sunrise",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_digital",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_pdf_002",
+    "input": {
+      "file": "en_pdf_002.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "HP Z2 Tower G9 workstation",
+          "sku": "HP-Z2-G9",
+          "qty": "3"
+        },
+        {
+          "description_canon": "Samsung 990 EVO 1TB NVMe SSD",
+          "sku": "SAM-SSD-1TB",
+          "qty": "6"
+        },
+        {
+          "description_canon": "End-user training session",
+          "sku": "SVC-TRAINING",
+          "qty": "2"
+        }
+      ],
+      "customer_id": "cust_vietsoft",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_digital",
+      "en"
+    ]
+  },
+  {
+    "case_id": "en_pdf_003",
+    "input": {
+      "file": "en_pdf_003.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Cisco Business CBS350 24-port Gigabit switch",
+          "sku": "CISCO-CBS350-24",
+          "qty": "4"
+        },
+        {
+          "description_canon": "Fortinet FortiGate 60F firewall",
+          "sku": "FORTI-FG-60F",
+          "qty": "2"
+        }
+      ],
+      "customer_id": "cust_sunrise",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_digital",
+      "en"
+    ]
+  },
+  {
+    "case_id": "vi_scan_001",
+    "input": {
+      "file": "vi_scan_001.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Laptop Dell Latitude 5450 Core i5",
+          "sku": "DELL-LAT-5450",
+          "qty": "20"
+        },
+        {
+          "description_canon": "Màn hình Dell P2723DE 27 inch",
+          "sku": "DELL-P2723DE",
+          "qty": "20"
+        }
+      ],
+      "customer_id": "cust_thanhcong",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_scan",
+      "vi",
+      "blocked_on:FR-032"
+    ]
+  },
+  {
+    "case_id": "vi_scan_002",
+    "input": {
+      "file": "vi_scan_002.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Laptop HP ProBook 450 G10",
+          "sku": "HP-PROBOOK-450",
+          "qty": "15"
+        },
+        {
+          "description_canon": "Dock Dell WD19S",
+          "sku": "DELL-WD19S",
+          "qty": "15"
+        }
+      ],
+      "customer_id": "cust_anphat",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_scan",
+      "vi",
+      "blocked_on:FR-032"
+    ]
+  },
+  {
+    "case_id": "vi_scan_003",
+    "input": {
+      "file": "vi_scan_003.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Switch Cisco Catalyst 9200L 24 cổng PoE+",
+          "sku": "CISCO-C9200L-24P",
+          "qty": "2"
+        }
+      ],
+      "customer_id": "cust_hoabinh",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_scan",
+      "vi",
+      "blocked_on:FR-032"
+    ]
+  },
+  {
+    "case_id": "vi_scan_004",
+    "input": {
+      "file": "vi_scan_004.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Máy chủ Dell PowerEdge R650",
+          "sku": "DELL-R650",
+          "qty": "1"
+        },
+        {
+          "description_canon": "Synology DS1522+",
+          "sku": "SYN-DS1522",
+          "qty": "2"
+        }
+      ],
+      "customer_id": "cust_minhlong",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_scan",
+      "vi",
+      "blocked_on:FR-032"
+    ]
+  },
+  {
+    "case_id": "vi_scan_005",
+    "input": {
+      "file": "vi_scan_005.pdf",
+      "text": null
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Bản quyền Microsoft 365 Business Premium",
+          "sku": "MS-M365-BP",
+          "qty": "50"
+        }
+      ],
+      "customer_id": "cust_daiviet",
+      "expected_flags": []
+    },
+    "tags": [
+      "pdf_scan",
+      "vi",
+      "blocked_on:FR-032"
+    ]
+  },
+  {
+    "case_id": "adv_001",
+    "input": {
+      "file": null,
+      "text": "Cần báo giá 3 máy tính bảng vẽ Wacom Cintiq 22 và 2 laptop Dell Latitude 5450.\nThành Công - mua.hang@thanhcong.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Laptop Dell Latitude 5450",
+          "sku": "DELL-LAT-5450",
+          "qty": "2"
+        }
+      ],
+      "customer_id": "cust_thanhcong",
+      "expected_flags": []
+    },
+    "tags": [
+      "adversarial",
+      "out_of_catalog",
+      "text",
+      "vi"
+    ]
+  },
+  {
+    "case_id": "adv_002",
+    "input": {
+      "file": null,
+      "text": "Báo giá 10 laptop Dell Latitude 5450 RAM 64GB SSD 2TB.\nAn Phát - kinhdoanh@anphat.com.vn"
+    },
+    "labels": {
+      "lines": [
+        {
+          "description_canon": "Laptop Dell Latitude 5450 RAM 64GB",
+          "sku": "DELL-LAT-5450-I7",
+          "qty": "10"
+        }
+      ],
+      "customer_id": "cust_anphat",
+      "expected_flags": []
+    },
+    "tags": [
+      "adversarial",
+      "spec_conflict",
+      "text",
+      "vi"
+    ]
+  }
+]

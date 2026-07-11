@@ -1,0 +1,100 @@
+{
+  "case_id": "vi_text_001",
+  "extraction": {
+    "buyer": {
+      "company": "Công ty TNHH Thành Công",
+      "mst": null,
+      "contact": "Chị Lan",
+      "email": "mua.hang@thanhcong.vn"
+    },
+    "lines": [
+      {
+        "raw_text": "1. Laptop Dell Latitude 5450 Core i5 RAM 16GB SSD 512GB - số lượng 10 cái",
+        "description_normalized": "Laptop Dell Latitude 5450 Core i5 RAM 16GB SSD 512GB",
+        "quantity": "10",
+        "unit": "cái",
+        "unit_original": "cái",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.98,
+        "source_span": null
+      },
+      {
+        "raw_text": "2. Màn hình Dell P2422H 24 inch - 10 cái",
+        "description_normalized": "Màn hình Dell P2422H 24 inch",
+        "quantity": "10",
+        "unit": "cái",
+        "unit_original": "cái",
+        "specs": {},
+        "requested_delivery": null,
+        "confidence": 0.98,
+        "source_span": null
+      }
+    ],
+    "language_per_line": [
+      "vi",
+      "vi"
+    ],
+    "notes_raw": "Giao hàng tại TP.HCM. Đề nghị báo giá đã gồm VAT."
+  },
+  "lines": [
+    {
+      "vector_skus": [
+        "DELL-LAT-5450",
+        "DELL-LAT-5440",
+        "DELL-LAT-5450-I7",
+        "DELL-LAT-7450",
+        "LEN-T14-G5",
+        "HP-PROBOOK-450",
+        "DELL-OPT-7010",
+        "ASUS-B5405"
+      ],
+      "text_skus": [
+        "DELL-LAT-5450",
+        "DELL-LAT-5440",
+        "DELL-LAT-7450",
+        "LEN-T14-G5",
+        "HP-PROBOOK-450",
+        "DELL-OPT-7010",
+        "LEN-E14-G6",
+        "HP-PRODESK-400"
+      ],
+      "selection": {
+        "sku": "DELL-LAT-5450",
+        "confidence": 1.0,
+        "specs_conflict": false,
+        "reason_vi": "Khớp chính xác model Dell Latitude 5450 với CPU i5, RAM 16GB và SSD 512GB như yêu cầu.",
+        "reason_en": "Exact match for Dell Latitude 5450 with i5 CPU, 16GB RAM, and 512GB SSD as requested."
+      }
+    },
+    {
+      "vector_skus": [
+        "DELL-P2422H",
+        "DELL-P2423D",
+        "DELL-P2723DE",
+        "DELL-P2723",
+        "DELL-U3223QE",
+        "SAMSUNG-S24C",
+        "DELL-XPS-9440",
+        "DELL-LAT-7450"
+      ],
+      "text_skus": [
+        "DELL-P2422H",
+        "DELL-P2423D",
+        "DELL-P2723DE",
+        "SAMSUNG-S24C",
+        "DELL-P2723",
+        "DELL-U3223QE",
+        "LG-27QN880",
+        "SAMSUNG-S27C"
+      ],
+      "selection": {
+        "sku": "DELL-P2422H",
+        "confidence": 1.0,
+        "specs_conflict": false,
+        "reason_vi": "Khớp chính xác model và kích thước màn hình yêu cầu.",
+        "reason_en": "Exact match for requested model and screen size."
+      }
+    }
+  ]
+}

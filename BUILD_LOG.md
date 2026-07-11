@@ -586,3 +586,97 @@ Tablestore. Screenshot at docs/dashboard.png.
 
 Verification: ruff clean, mypy clean (63 files), import-linter 4/4 kept, pytest 175 passed, pricing
 branch coverage 100%.
+
+## Batch: evaluation harness (EP-12) - feat/eval-harness
+
+FR-120/121/122/123/124, plus FR-031 and a real FR-011 catalog. This is the batch that turns the
+Track-4 claim from an assertion into a measurement.
+
+### The headline
+
+30 labelled RFQ cases against a 61-SKU catalog, run live on real DashScope + Tablestore + OSS, in
+two modes on identical inputs with identical models. 25 runnable; the 5 scanned-PDF cases are
+declared and skipped, not quietly dropped from the denominator.
+
+| mode | task success | line F1 | SKU top-1 | price exact | needs human | p50 | $/quote |
+|---|---|---|---|---|---|---|---|
+| pipeline | **96%** | 0.992 | 100% | **96%** | 8% | 22.9s | $0.0109 |
+| baseline | **48%** | 0.992 | 98% | **48%** | **0%** | 21.0s | $0.0134 |
+
+**+48 points of task success. +48 points of price exactness.**
+
+The interesting part is not the gap, it is the *shape* of it. The single agent extracts the line
+items almost as well as the pipeline does (F1 0.992 vs 0.992) and picks the right SKU almost as often
+(98% vs 100%). It is not a stupid baseline. It fails on exactly one thing: **every single one of its
+13 failures is the money.** It gets the arithmetic wrong on 52% of quotes - and its
+human-intervention rate is 0%, because with no critic and no gate it never once notices. On the
+out-of-catalog case it invented a price for a product that does not exist (123,768,000 vs
+42,768,000).
+
+That is the whole argument for the architecture, and it is now a number rather than a slogan: the
+model is good at reading and matching, and cannot be trusted with VND arithmetic across multiple
+lines at two VAT rates. Taking the arithmetic away from it, and putting a critic behind it, is worth
+48 points. The pipeline is also *cheaper* ($0.0109 vs $0.0134), because the baseline has to carry the
+whole candidate catalog in one prompt.
+
+Against the spec's goals (section 3.1): G-01 success >= 80% -> 96%. G-02 F1 >= 0.95 -> 0.992.
+G-03 SKU >= 0.90 -> 1.00. G-05 p50 <= 90s -> 22.9s. G-06 delta >= +10 pts -> +48. G-07 cost <=
+$0.05 -> $0.0109. All met.
+
+### The eval caught two of my own bugs, which is the point of having one
+
+The first run scored 68%, not 96%. Both causes were mine, and neither was visible to any unit test:
+
+1. **Thin service margins in the fixture.** Appendix A.1 mandates 6-18% margins; I had authored 14
+   SKUs (mostly services and licences) at 3.5-5.9%, *below* the critic's 5% floor. So the critic
+   correctly flagged three perfectly good quotes as MARGIN_BELOW_FLOOR - it was right and my data was
+   wrong. The fix was the data, not the floor. A weaker instinct here would have been to relax the
+   critic to make the number go up.
+2. **Customer resolution on file-borne RFQs.** A spreadsheet carries no sender inside it, and the
+   harness was passing `customer_id` as a name hint - but `resolve_customer` matches on *name*, so
+   all four xlsx cases silently fell through to END_CUSTOMER list pricing and mispriced by 7-14%. In
+   the real world a spreadsheet arrives *attached to an email*, and intake passes that envelope
+   through; the eval now supplies the sender exactly as intake does.
+
+Fixing both took the pipeline from 68% to 96%. Neither bug is one the unit suite could have found,
+because both are about the fixture and the plumbing agreeing with reality rather than with themselves.
+
+### The one remaining failure, and why it is arguable
+
+adv_002 asks for a "Latitude 5450 with 64GB RAM". No such machine exists - the catalog tops out at
+32GB. The recorded run shows the model reaching for a SKU that was not among its candidates, and the
+**SKU whitelist refused it**, so no quote was produced and the case went to a human. My label says it
+should have matched the closest SKU and raised a spec-conflict flag, so the harness scores it as a
+miss. I have left the label alone and reported the miss rather than relabelling to reach 100%,
+because the disagreement is real and worth arguing about - and because a system that refuses to
+quote a machine that does not exist is not obviously worse than one that substitutes a 32GB laptop
+and lets the customer find out on delivery.
+
+### Also in this batch
+
+- **A real seller identity problem, fixed.** `api/app.py` carried CyberSkill's *actual* bank account
+  number, SWIFT and beneficiary name in a public repo. Appendix A.6 explicitly forbids this, and it
+  is a genuine invoice-fraud exposure: a quote PDF carries payment instructions. All of it is now
+  clearly-marked SAMPLE data in `config/seller.py` (which also lets the eval build quotes without
+  importing the API layer). Real tenant identity belongs in deploy-time config, never in source.
+- **FR-011: the catalog is now 61 SKUs and 8 customers** (Appendix A.1/A.2). The old 8-SKU catalog
+  made "top-1 SKU accuracy" meaningless - almost any retrieval would land on the right row. The new
+  one is built with deliberately confusable families (Latitude 5450 i5 / 5450 i7 / 5440 / 7450;
+  P2422H / P2423D / P2723DE) so the matcher actually has to discriminate.
+- **FR-031: digital PDF extraction.** Text is lifted out with pypdfium2 and handed to the normal text
+  path. A scanned PDF raises `ScannedPdfError` rather than being parsed into a confidently empty
+  quote - it needs vision OCR (FR-032), which is what the 5 skipped cases are waiting on.
+- **Orchestrator entry points** for text, spreadsheet and PDF now converge on one shared
+  `quote_from_extraction`. A channel with its own pricing path would be a channel that could disagree.
+- **FR-123: CI cassettes.** Five cases recorded from a live run's own trace (FR-111 with
+  TRACE_CONTENT=1 - so what CI replays is what the models really said) and replayed with no API key,
+  no cost and no network. The thresholds are exact, not approximate: given the same recorded model
+  output the deterministic half must produce the same quote to the đồng, every time.
+- **FR-124: the golden PDF.** Rendered, rasterised and pixel-diffed at 2%. It exercises both VAT
+  bands (8% goods + 10% telecom) so a VAT regression shows up as a picture. Caveat stated rather than
+  hidden: the golden is font-dependent - recorded on macOS it differs from Linux by ~25% of pixels,
+  which is font fallback, not layout - so it is pinned to the CI platform until the Be Vietnam Pro
+  TTFs are bundled.
+
+Verification: ruff clean, mypy clean (71 files), import-linter 4/4 kept, pytest 229 passed, pricing
+branch coverage 100%.
