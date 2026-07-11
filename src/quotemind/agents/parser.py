@@ -12,13 +12,19 @@ from ..config.models import MODEL_PARSER_TEXT
 from ..config.settings import Settings
 from ..models import RFQExtraction
 from ..prompts import PARSER_SYS
-from .model import build_agent
+from .model import UsageSink, build_agent
 
 
-async def extract_text_rfq(text: str, settings: Settings) -> RFQExtraction:
+async def extract_text_rfq(
+    text: str, settings: Settings, *, usage: UsageSink | None = None
+) -> RFQExtraction:
     """FR-030: extract an RFQExtraction from Vietnamese or English RFQ text."""
     agent = build_agent(
-        name="parser", sys_prompt=PARSER_SYS, model_name=MODEL_PARSER_TEXT, settings=settings
+        name="parser",
+        sys_prompt=PARSER_SYS,
+        model_name=MODEL_PARSER_TEXT,
+        settings=settings,
+        usage=usage,
     )
     reply = await agent(Msg("user", text, "user"), structured_model=RFQExtraction)
     return RFQExtraction.model_validate(reply.metadata)

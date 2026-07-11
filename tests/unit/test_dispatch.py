@@ -12,13 +12,22 @@ from .test_render import _quote
 class FakeArtifacts:
     """Stand-in for ArtifactStore."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, trace_fails: bool = False) -> None:
         self.pdfs: dict[str, bytes] = {}
         self.emls: dict[str, bytes] = {}
+        self.traces: dict[str, str] = {}
+        self.trace_fails = trace_fails
 
     def put_pdf(self, quote_number: str, data: bytes) -> str:
         key = f"quotes/{quote_number}.pdf"
         self.pdfs[key] = data
+        return key
+
+    def put_trace(self, quote_id: str, payload: str) -> str:
+        if self.trace_fails:
+            raise RuntimeError("OSS unreachable")
+        key = f"traces/{quote_id}.json"
+        self.traces[key] = payload
         return key
 
     def put_eml(self, quote_number: str, data: bytes) -> str:

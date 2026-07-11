@@ -99,11 +99,11 @@ def _facade() -> MagicMock:
 
 
 def _patch(monkeypatch: pytest.MonkeyPatch, extraction: RFQExtraction) -> None:
-    async def fake_extract(_text: str, _settings: Any) -> RFQExtraction:
+    async def fake_extract(_text: str, _settings: Any, **_kwargs: Any) -> RFQExtraction:
         return extraction
 
     async def fake_select(
-        description: str, candidates: list[CatalogProduct], _settings: Any
+        description: str, candidates: list[CatalogProduct], _settings: Any, **_kwargs: Any
     ) -> MatchSelection:
         if not candidates:
             return MatchSelection(sku=None, confidence=0.0)

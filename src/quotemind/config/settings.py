@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     margin_floor_pct: int = 5
     quote_validity_days: int = 14
 
+    # FR-111: prompt/response bodies are excluded from the trace unless this is switched on.
+    trace_content: bool = False
     otel_semconv_stability_opt_in: str = "gen_ai_latest_experimental"
     qm_env: Literal["local", "fc"] = "local"
     region: str = "ap-southeast-1"

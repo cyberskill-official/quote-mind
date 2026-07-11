@@ -31,6 +31,7 @@ from .models import (
     assert_transition,
     new_ulid,
 )
+from .obs.trace import Tracer
 from .orchestrator import PipelineResult, quote_from_text
 from .pricing import vat_policy_note
 from .quote import format_quote_number, parse_quote_number
@@ -174,6 +175,7 @@ class QuoteService:
         """Run the pipeline, persisting each stage. Ends at pending_approval or a failure state."""
         record = self._transition(record, Status.PARSING, PIPELINE, "pipeline.parsing")
         _, sequence = parse_quote_number(record.quote_number)
+        tracer = Tracer(record.quote_id, include_content=self.settings.trace_content)
 
         try:
             result = await self.pipeline(
@@ -185,6 +187,7 @@ class QuoteService:
                 on_date=on_date,
                 customer_email=customer_email,
                 customer_hint=customer_hint,
+                tracer=tracer,
             )
         except Exception as exc:  # noqa: BLE001 - any pipeline failure must land in a durable state
             return self._transition(
@@ -195,6 +198,8 @@ class QuoteService:
                 {"error": f"{type(exc).__name__}: {exc}"},
             )
 
+        trace_json = self._persist_trace(record, result)
+
         if result.clarification_reasons:  # FR-034
             return self._transition(
                 record,
@@ -202,6 +207,7 @@ class QuoteService:
                 PIPELINE,
                 "pipeline.needs_clarification",
                 {"reasons": result.clarification_reasons},
+                trace_json=trace_json,
             )
 
         if result.resolution is not None and result.resolution.profile is not None:
@@ -248,6 +254,7 @@ class QuoteService:
                 "critic.failed",
                 {"diffs": [diff.model_dump(mode="json") for diff in critic.recompute_diffs]},
                 quote_json=quote_json,
+                trace_json=trace_json,
                 critic_json=critic.model_dump_json(),
                 html=result.html,
             )
@@ -263,9 +270,36 @@ class QuoteService:
                 "non_blocking": critic.non_blocking,
             },
             quote_json=quote_json,
+            trace_json=trace_json,
             critic_json=critic.model_dump_json(),
             html=result.html,
         )
+
+    def _persist_trace(self, record: QuoteRecord, result: PipelineResult) -> str | None:
+        """FR-111: write trace.json to OSS. A trace failure must never fail a quote."""
+        if result.trace is None:
+            return None
+        document = result.trace.model_copy(update={"quote_id": record.quote_id})
+        payload = document.model_dump_json()
+        try:
+            self.artifacts.put_trace(record.quote_id, payload)
+        except Exception as exc:  # noqa: BLE001 - observability is never load-bearing
+            self.store.append_audit(
+                record.quote_id,
+                actor=SYSTEM,
+                event="trace.persist_failed",
+                payload_json={"error": f"{type(exc).__name__}: {exc}"},
+            )
+        return payload
+
+    def trace(self, quote_id: str) -> dict[str, Any]:
+        """API-05: the persisted reasoning trace."""
+        stored = self._load(quote_id)
+        raw = stored.get("trace_json")
+        if not isinstance(raw, str):
+            return {"quote_id": quote_id, "steps": []}
+        document: dict[str, Any] = json.loads(raw)
+        return document
 
     # --- review payload (FR-082) ---
     def review(self, quote_id: str) -> dict[str, Any]:

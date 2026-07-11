@@ -140,6 +140,7 @@ class QuoteStore:
         source_text: str | None = None,
         quote_json: str | None = None,
         critic_json: str | None = None,
+        trace_json: str | None = None,
         html: str | None = None,
     ) -> None:
         """Merge-write the row. update_row (not put_row) so a status change cannot wipe payloads."""
@@ -153,6 +154,7 @@ class QuoteStore:
             ("source_text", source_text),
             ("quote_json", quote_json),
             ("critic_json", critic_json),
+            ("trace_json", trace_json),
             ("html", html),
         ):
             if value is not None:
@@ -173,7 +175,7 @@ class QuoteStore:
         if not isinstance(raw_record, str):
             return None
         stored: dict[str, Any] = {"record": QuoteRecord.model_validate_json(raw_record)}
-        for key in ("source_text", "quote_json", "critic_json", "html"):
+        for key in ("source_text", "quote_json", "critic_json", "trace_json", "html"):
             if key in columns:
                 stored[key] = columns[key]
         return stored

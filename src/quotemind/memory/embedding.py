@@ -22,9 +22,16 @@ def build_embedding_client(settings: Settings) -> OpenAI:
 
 
 def embed_texts(
-    texts: list[str], settings: Settings, *, client: Any | None = None
+    texts: list[str],
+    settings: Settings,
+    *,
+    client: Any | None = None,
+    usage: Any | None = None,
 ) -> list[list[float]]:
-    """Embed texts in input order, batching at MAX_BATCH, always at EMBED_DIMENSIONS."""
+    """Embed texts in input order, batching at MAX_BATCH, always at EMBED_DIMENSIONS.
+
+    When a usage sink is given, the provider's own token count is reported to it (FR-112).
+    """
     if not texts:
         return []
     embedder = client if client is not None else build_embedding_client(settings)
@@ -34,11 +41,17 @@ def embed_texts(
         response = embedder.embeddings.create(
             model=MODEL_EMBED, input=chunk, dimensions=EMBED_DIMENSIONS
         )
+        if usage is not None:
+            counts = getattr(response, "usage", None)
+            tokens = getattr(counts, "total_tokens", 0) or getattr(counts, "prompt_tokens", 0)
+            usage.usage(int(tokens or 0), 0)  # the provider's own count, never an estimate
         for item in sorted(response.data, key=lambda datum: datum.index):
             vectors.append(list(item.embedding))
     return vectors
 
 
-def embed_text(text: str, settings: Settings, *, client: Any | None = None) -> list[float]:
+def embed_text(
+    text: str, settings: Settings, *, client: Any | None = None, usage: Any | None = None
+) -> list[float]:
     """Embed a single text (query vector)."""
-    return embed_texts([text], settings, client=client)[0]
+    return embed_texts([text], settings, client=client, usage=usage)[0]

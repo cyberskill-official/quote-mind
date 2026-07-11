@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from .agents.matcher import select_sku
 from .agents.parser import extract_text_rfq
+from .config.models import MODEL_EMBED, MODEL_PARSER_TEXT, MODEL_PLANNER
 from .config.settings import Settings
 from .memory.embedding import embed_text
 from .memory.store import MemoryFacade
@@ -29,6 +30,8 @@ from .models import (
     RFQExtraction,
     new_ulid,
 )
+from .obs.otel import OP_EMBEDDINGS, OP_EXECUTE_TOOL
+from .obs.trace import TraceDocument, Tracer
 from .parsing import validation_reasons
 from .pricing import vat_policy_note
 from .quote import AssemblyLine, assemble_quote, format_quote_number, run_critic
@@ -72,6 +75,7 @@ class PipelineResult(BaseModel):
     critic: CriticReport | None = None
     html: str | None = None
     clarification_reasons: list[str] = Field(default_factory=list)
+    trace: TraceDocument | None = None
 
 
 def _customer_block(resolution: CustomerResolution, extraction: RFQExtraction) -> dict[str, object]:
@@ -95,12 +99,32 @@ def _customer_block(resolution: CustomerResolution, extraction: RFQExtraction) -
 
 
 async def _match_line(
-    description: str, facade: MemoryFacade, settings: Settings, line_ref: int
+    description: str,
+    facade: MemoryFacade,
+    settings: Settings,
+    line_ref: int,
+    tracer: Tracer,
 ) -> tuple[MatchResult, dict[str, CatalogProduct]]:
     """Retrieve (vector + full text), fuse deterministically, let the model pick, then band it."""
-    query_vector = embed_text(description, settings)
-    vector_hits = facade.search_catalog_vector(query_vector, top_k=TOP_K)
-    text_hits = facade.search_catalog_text(description, limit=TOP_K)
+    with tracer.step(
+        "CatalogMatcher", "embed", model=MODEL_EMBED, operation=OP_EMBEDDINGS
+    ) as step:
+        query_vector = embed_text(description, settings, usage=step)
+        step.note(f"embedded line {line_ref}")
+
+    with tracer.step(
+        "CatalogMatcher", "retrieve", tool="vector_search", operation=OP_EXECUTE_TOOL
+    ) as step:
+        vector_hits = facade.search_catalog_vector(query_vector, top_k=TOP_K)
+        step.memory([product.sku for product, _ in vector_hits])
+        step.note(f"{len(vector_hits)} vector candidates")
+
+    with tracer.step(
+        "CatalogMatcher", "retrieve", tool="full_text_search", operation=OP_EXECUTE_TOOL
+    ) as step:
+        text_hits = facade.search_catalog_text(description, limit=TOP_K)
+        step.memory([product.sku for product, _ in text_hits])
+        step.note(f"{len(text_hits)} full-text candidates")
 
     products: dict[str, CatalogProduct] = {}
     for product, _ in [*vector_hits, *text_hits]:
@@ -109,7 +133,14 @@ async def _match_line(
     fused = fuse_candidates(
         [product.sku for product, _ in vector_hits], [product.sku for product, _ in text_hits]
     )
-    selection = await select_sku(description, [products[sku] for sku in fused], settings)
+
+    with tracer.step("CatalogMatcher", "select", model=MODEL_PLANNER) as step:
+        selection = await select_sku(
+            description, [products[sku] for sku in fused], settings, usage=step
+        )
+        step.note(f"selected {selection.sku or 'none'} @ {selection.confidence:.2f}")
+        step.content(prompt=description, response=selection.model_dump_json())
+
     match = build_match_result(
         line_ref,
         fused,
@@ -131,14 +162,21 @@ async def quote_from_text(
     customer_email: str | None = None,
     customer_hint: str | None = None,
     with_usd: bool = False,
+    tracer: Tracer | None = None,
 ) -> PipelineResult:
     """FR-130: run one RFQ text end to end and return the quote (or why it needs clarification)."""
     today = on_date or date_type.today()
+    trace = tracer or Tracer(quote_id="")  # tracing is always on; persistence is the caller's call
 
-    extraction = await extract_text_rfq(text, settings)
+    with trace.step("DocumentParser", "parse", model=MODEL_PARSER_TEXT) as step:
+        extraction = await extract_text_rfq(text, settings, usage=step)
+        step.note(f"extracted {len(extraction.lines)} line(s)")
+        step.content(prompt=text, response=extraction.model_dump_json())
     reasons = validation_reasons(extraction)
     if reasons:  # FR-034: never proceed to matching
-        return PipelineResult(extraction=extraction, clarification_reasons=reasons)
+        return PipelineResult(
+            extraction=extraction, clarification_reasons=reasons, trace=trace.document()
+        )
 
     # FR-043: candidates from the customers tenant, then the deterministic pick.
     email = customer_email or extraction.buyer.email
@@ -152,7 +190,7 @@ async def quote_from_text(
     assembly: list[AssemblyLine] = []
     for line_ref, line in enumerate(extraction.lines, start=1):
         match, products = await _match_line(
-            line.description_normalized, facade, settings, line_ref
+            line.description_normalized, facade, settings, line_ref, trace
         )
         matches.append(match)
         if match.sku is None or match.sku not in products:
@@ -175,6 +213,7 @@ async def quote_from_text(
             matches=matches,
             resolution=resolution,
             clarification_reasons=["NO_LINE_ITEMS"],
+            trace=trace.document(),
         )
 
     profile = resolution.profile
@@ -206,4 +245,5 @@ async def quote_from_text(
         quote=quote,
         critic=report,
         html=html,
+        trace=trace.document(),
     )

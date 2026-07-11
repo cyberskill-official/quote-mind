@@ -14,7 +14,7 @@ from ..config.models import MODEL_PLANNER
 from ..config.settings import Settings
 from ..models import CatalogProduct
 from ..prompts import MATCHER_SYS
-from .model import build_agent
+from .model import UsageSink, build_agent
 
 
 class MatchSelection(BaseModel):
@@ -39,14 +39,22 @@ def _candidate_block(candidates: list[CatalogProduct]) -> str:
 
 
 async def select_sku(
-    line_description: str, candidates: list[CatalogProduct], settings: Settings
+    line_description: str,
+    candidates: list[CatalogProduct],
+    settings: Settings,
+    *,
+    usage: UsageSink | None = None,
 ) -> MatchSelection:
     """FR-042 LLM select. Returns sku=None when nothing fits or the model invents a SKU."""
     if not candidates:
         return MatchSelection(sku=None, confidence=0.0)
 
     agent = build_agent(
-        name="matcher", sys_prompt=MATCHER_SYS, model_name=MODEL_PLANNER, settings=settings
+        name="matcher",
+        sys_prompt=MATCHER_SYS,
+        model_name=MODEL_PLANNER,
+        settings=settings,
+        usage=usage,
     )
     prompt = (
         f"RFQ line:\n{line_description}\n\n"
