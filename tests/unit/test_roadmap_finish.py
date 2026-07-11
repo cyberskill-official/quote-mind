@@ -262,6 +262,68 @@ def test_a_quote_still_has_terms_when_the_memory_store_is_down(
     assert applied == ["payment=default", "delivery=default", "warranty=default"]
 
 
+def test_a_server_is_not_quoted_on_software_payment_terms(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The bug this rule exists for, and it was found live.
+
+    Asked for the payment terms on a Dell PowerEdge, the vector search returned "software licences
+    and implementation services: 100% payment before activation" at 0.657, above the generic 30-day
+    term at 0.617. Both talk about money and both say "100%", so they sit close together in the
+    embedding - and the wrong one would have gone onto a customer's quotation as a payment
+    obligation they never agreed to.
+
+    Similarity is a fine way to rank the terms that are *allowed*. It is a terrible way to decide
+    which are allowed. So the goods decide eligibility, and similarity only ranks within that.
+    """
+    monkeypatch.setattr("quotemind.memory.sop.embed_text", lambda *_a, **_k: [0.1] * 8)
+
+    software_terms = SOPSnippet(
+        topic=SopTopic.PAYMENT,
+        text=BilingualText(vi="Phần mềm: 100% trước.", en="Software: 100% up front."),
+        applies_to=[Category.SOFTWARE_LICENSE, Category.SERVICE],
+    )
+    generic = SOPSnippet(
+        topic=SopTopic.PAYMENT,
+        text=BilingualText(vi="Thanh toán 100% trong 30 ngày.", en="100% payment within 30 days."),
+    )
+    # The fake returns them in the order the real search did: the wrong one first.
+    facade = _SopFacade([software_terms, generic])
+
+    terms, _ = retrieve_terms(
+        facade=facade,  # type: ignore[arg-type]
+        settings=_Settings(),  # type: ignore[arg-type]
+        extraction=_extraction(),
+        categories={Category.SERVER},
+    )
+    assert terms.payment == generic.text, "a server was quoted on software payment terms"
+
+    # And the same snippet is exactly right when the goods really are software.
+    terms, _ = retrieve_terms(
+        facade=facade,  # type: ignore[arg-type]
+        settings=_Settings(),  # type: ignore[arg-type]
+        extraction=_extraction(),
+        categories={Category.SOFTWARE_LICENSE},
+    )
+    assert terms.payment == software_terms.text
+
+
+def test_the_search_is_wide_enough_that_the_topic_filter_cannot_starve() -> None:
+    """TOP_K was 4, over the whole tenant, filtered by topic afterwards.
+
+    With 11 snippets across 5 topics, that meant a topic could contribute a single survivor to the
+    top 4 - and a single survivor wins by default, however badly it fits. A filter applied after a
+    truncation is a filter over a lottery.
+    """
+    from quotemind.memory.sop import TOP_K  # noqa: PLC0415
+    from quotemind.seed.sop import SOPS  # noqa: PLC0415
+
+    assert TOP_K >= len(SOPS), (
+        f"top_k={TOP_K} over a tenant of {len(SOPS)} snippets cannot guarantee that every topic "
+        "reaches the filter. Raise it, or filter inside the search."
+    )
+
+
 def test_the_retrieval_is_per_topic_so_one_topic_cannot_crowd_out_another(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

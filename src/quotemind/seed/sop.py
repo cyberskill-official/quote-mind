@@ -17,7 +17,10 @@ en text is its translation. Both are written in the trang trọng business regis
 
 from __future__ import annotations
 
-from ..models import BilingualText, SOPSnippet, SopTopic
+from ..models import BilingualText, Category, SOPSnippet, SopTopic
+
+SOFTWARE = [Category.SOFTWARE_LICENSE, Category.SERVICE, Category.TELECOM_SERVICE]
+MADE_TO_ORDER = [Category.SERVER, Category.NETWORK]
 
 SOPS: list[SOPSnippet] = [
     # --- payment ---
@@ -52,6 +55,10 @@ SOPS: list[SOPSnippet] = [
             # wrote the text. See test_every_seeded_sop_survives_the_bilingual_number_check.
             en="Software licences and implementation services: 100% payment before activation.",
         ),
+        # And this is why applies_to exists. Asked for the payment terms on a Dell server, the
+        # vector search ranked THIS snippet above the generic 30-day one - both are about money and
+        # both say "100%", so they sit close in the embedding. A server is not a software licence.
+        applies_to=SOFTWARE,
     ),
     # --- delivery ---
     SOPSnippet(
@@ -73,6 +80,7 @@ SOPS: list[SOPSnippet] = [
                 "manufacturer's lead time, which is stated on the quotation."
             ),
         ),
+        applies_to=MADE_TO_ORDER,
     ),
     SOPSnippet(
         topic=SopTopic.DELIVERY,
@@ -104,6 +112,7 @@ SOPS: list[SOPSnippet] = [
                 "policy, with on-site support during business hours."
             ),
         ),
+        applies_to=MADE_TO_ORDER,
     ),
     SOPSnippet(
         topic=SopTopic.WARRANTY,
@@ -117,6 +126,7 @@ SOPS: list[SOPSnippet] = [
                 "does not apply."
             ),
         ),
+        applies_to=SOFTWARE,
     ),
     # --- validity ---
     SOPSnippet(

@@ -566,9 +566,17 @@ async def quote_from_extraction(
     # FR-048: the terms this quote carries are *retrieved*, not hardcoded. They used to be a module
     # constant, which meant a made-to-order server was quoted with "delivery within 7 working days"
     # - a promise the business cannot keep, printed on a document a customer is invoiced from.
+    #
+    # This runs *after* matching, and that ordering is the fix for a second, subtler version of the
+    # same bug: retrieval by similarity alone put "software licences: 100% before activation" on a
+    # quote for a Dell server. The categories of the matched goods decide which terms are even
+    # eligible; similarity then ranks within them. Retrieval proposes, the rule disposes.
     with trace.step("Drafter", "sop", model=MODEL_EMBED, operation=OP_EMBEDDINGS) as step:
-        terms, applied = retrieve_terms(facade=facade, settings=settings, extraction=extraction)
-        step.note("SOP applied: " + ", ".join(applied))
+        categories = {item.product.category for item in assembly}
+        terms, applied = retrieve_terms(
+            facade=facade, settings=settings, extraction=extraction, categories=categories
+        )
+        step.note(f"SOP for {sorted(c.value for c in categories)}: " + ", ".join(applied))
 
     profile = resolution.profile
     quote = assemble_quote(

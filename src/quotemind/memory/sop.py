@@ -24,12 +24,15 @@ Like episodic recall, this touches the *words* and never the numbers.
 from __future__ import annotations
 
 from ..config.settings import Settings
-from ..models import BilingualText, QuoteTerms, RFQExtraction, SOPSnippet, SopTopic
+from ..models import BilingualText, Category, QuoteTerms, RFQExtraction, SOPSnippet, SopTopic
 from .embedding import embed_text
 from .store import MemoryFacade
 
-# One search per topic; the best hit is used. 4 is enough to see past a near-duplicate.
-TOP_K = 4
+# The search is over the WHOLE tenant and the topic filter is applied afterwards, so top_k has to be
+# large enough that the filter cannot starve. It was 4, and that was a bug: asked for the payment
+# terms on a server, only one payment snippet survived into the top 4 - and it happened to be the
+# wrong one, so it won by default. A filter applied after a truncation is a filter over a lottery.
+TOP_K = 25
 
 # Retrieval is an aid. If the sop tenant is empty (a fresh tenant, an un-seeded environment), the
 # quote still has to carry terms - so these are the same sentences seed/sop.py writes.
@@ -61,17 +64,39 @@ def _query(extraction: RFQExtraction, topic: SopTopic) -> str:
     return f"{topic.value} {goods}".strip()
 
 
+def _applicable(snippet: SOPSnippet, categories: set[Category]) -> bool:
+    """FR-048: may this term be printed on a quote containing these goods?
+
+    Retrieval proposes; this disposes. Vector similarity is a fine way to *rank* the terms that are
+    allowed, and a terrible way to decide which are allowed at all - "software licences: 100% before
+    activation" and "100% within 30 days of delivery" both talk about money and both say 100%, so
+    they sit close together in the embedding, and the first one outranked the second on a quote for
+    a Dell PowerEdge server. That is a payment obligation the customer never agreed to, printed on a
+    document they get invoiced from.
+
+    Whether a software payment term applies to a server is not a fuzzy question. The business knows.
+    An empty `applies_to` means the term is universal, which is the common case.
+    """
+    return not snippet.applies_to or bool(set(snippet.applies_to) & categories)
+
+
 def retrieve_terms(
     *,
     facade: MemoryFacade,
     settings: Settings,
     extraction: RFQExtraction,
+    categories: set[Category] | None = None,
 ) -> tuple[QuoteTerms, list[str]]:
     """FR-048: the payment, delivery and warranty terms this quote should carry.
 
-    Returns the terms and the ids of the snippets that produced them, so the trace can show a
-    reviewer *which* SOP was applied - a term that appears from nowhere is a term nobody trusts.
+    `categories` are the catalog categories of the *matched* lines - so this runs after matching,
+    not before. Passing nothing means "no goods resolved", and then only the universal terms apply,
+    which is the safe direction: a term that says nothing specific is never wrong.
+
+    Returns the terms and a note per topic saying where each came from, so the trace can show a
+    reviewer *which* SOP was applied. A term that appears from nowhere is a term nobody trusts.
     """
+    goods = categories or set()
     chosen: dict[SopTopic, BilingualText] = {}
     applied: list[str] = []
 
@@ -79,7 +104,11 @@ def retrieve_terms(
         hits: list[tuple[SOPSnippet, float]] = []
         try:
             vector = embed_text(_query(extraction, topic), settings)
-            hits = [hit for hit in facade.search_sop(vector, top_k=TOP_K) if hit[0].topic == topic]
+            hits = [
+                hit
+                for hit in facade.search_sop(vector, top_k=TOP_K)
+                if hit[0].topic == topic and _applicable(hit[0], goods)
+            ]
         except Exception:  # noqa: BLE001 - SOP retrieval is an aid, never a dependency
             hits = []
 
