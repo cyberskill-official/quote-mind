@@ -32,23 +32,31 @@ verify:
 ## seed: load the demo catalog + customers into Tablestore (FR-011; needs live env)
 seed:
 	python deploy/seed.py
+## eval-smoke: replay the 5 recorded cases with no model (FR-123).
 eval-smoke:
-	@echo 'eval-smoke: implemented in FR-123 (EP-12).'
+	pytest -q tests/integration/test_smoke_eval.py
+## eval: the full 30-case run, pipeline vs single-agent baseline (FR-121/122).
 eval:
-	@echo 'eval: implemented in FR-121 (EP-12).'
+	python -m quotemind.eval_.run --mode both
+## eval-baseline: the single-agent control on its own (FR-122).
 eval-baseline:
-	@echo 'eval-baseline: implemented in FR-122 (EP-12).'
+	python -m quotemind.eval_.run --mode baseline
+## demo: seed the catalog, then run the demo RFQ end to end (NFR-011).
 demo:
-	@echo 'demo: implemented in NFR-011 (EP-13).'
+	python deploy/seed.py && python deploy/smoke_trace.py
 ## gc: run episodic forgetting + compaction sweep (FR-046; needs live memory env)
 gc:
 	python -m quotemind.memory.gc
+## diagrams: render the architecture Mermaid to PNG (SUB-03).
 diagrams:
-	@echo 'diagrams: implemented with the docs/diagrams PR (SUB-03).'
+	npx -y @mermaid-js/mermaid-cli -i docs/architecture.mmd -o docs/architecture.png -b transparent
+## deploy: push both Function Compute functions (FR-003). Reads .env for the secrets.
 deploy:
-	@echo 'deploy: implemented in PR-5 (FR-003).'
+	cd deploy && s deploy -y
+## deploy-frontend: publish the dashboard to OSS static hosting (FR-106).
 deploy-frontend:
-	@echo 'deploy-frontend: implemented in EP-10.'
+	python deploy/upload_site.py --api-base $(API_BASE)
+## proof: exercise DashScope + OSS + Tablestore for real (FR-005 / SUB-02).
 proof:
-	@echo 'proof: implemented in PR-5 (FR-005). Run: python -m quotemind.cloud.alibaba_proof'
+	python -m quotemind.cloud.alibaba_proof
 

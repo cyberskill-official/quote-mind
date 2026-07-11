@@ -680,3 +680,90 @@ and lets the customer find out on delivery.
 
 Verification: ruff clean, mypy clean (71 files), import-linter 4/4 kept, pytest 229 passed, pricing
 branch coverage 100%.
+
+## Batch: deployment proof and submission artifacts (EP-01, SUB-*) - feat/deploy-proof
+
+FR-003, FR-005, FR-012, and SUB-02..06.
+
+### FR-005: the Alibaba proof, and why it asserts on content
+
+`src/quotemind/cloud/alibaba_proof.py` is the file the hackathon asks for - "a link to a code file
+demonstrating use of Alibaba Cloud services and APIs". It is deliberately one module with no
+indirection, so a judge can read it top to bottom in two minutes.
+
+Every check asserts on *what came back*, not on the absence of an exception. That distinction is the
+whole design: an embedding check that only asserted "no error" would happily accept a vector of the
+wrong width into a system whose index is pinned at 1024, and the failure would surface months later
+as bad retrieval rather than as a red line today. So it asserts the dimension. Likewise OSS
+round-trips a Vietnamese payload and byte-compares it, and Tablestore reads its row back and checks
+the diacritics survived.
+
+Live: **8/8 PASS on ap-southeast-1, exit 0.** DashScope chat (`qwen3-max`, 'OK' in 2,023 ms) and
+embedding (1024 dims); OSS put -> V4-presigned GET -> HTTP 200 -> byte-match -> delete; Tablestore
+create -> put -> get (byte-exact) -> delete.
+
+### FR-012: the cold-start check caught itself being wrong, twice
+
+The model-availability probe is supposed to detect a retired model id and swap in the documented
+fallback. Running it live against the real gateway, it did something worse than nothing: it reported
+`qwen-vl-ocr` as unavailable and **activated the fallback on a perfectly healthy model**, while
+marking `text-embedding-v4` unverified.
+
+Neither model was down. The probe was sending a text-only chat call to *every* frozen id - and an
+embedding model has no chat endpoint, while a vision model rejects a message with no image part.
+The check was manufacturing its own outages.
+
+The first fix was to make the probe modality-aware (embeddings -> `embeddings.create`, vision -> a
+message with an image part). That surfaced the second bug immediately: the vision model rejected the
+1x1 PNG with `[height:1 or width:1 must be larger than 10]`.
+
+And that error is the actual insight. **A model that rejects our input has, by definition, answered
+us** - it is deployed, reachable, and talking. It is only a model that is *gone* that should trigger
+a fallback. So the probe now fails closed on absence (`model_not_found`, `does not exist`) and open
+on argument: a 400 about a parameter counts as reachable. Without that distinction the check is
+fragile in the worst possible direction - any future tightening of an input rule by Model Studio
+would silently reroute production traffic onto a different model, which is precisely the outcome
+FR-012 exists to prevent.
+
+Live, after the fix: **all four frozen model ids verified, zero substitutions, nothing unverified.**
+
+Two properties the check is built to have, both because the alternative is worse: it never blocks a
+cold start (a boot check that can take the API down is a liability, not a safeguard), and any
+substitution is visible on `/health` (a silent fallback is how you spend a day debugging a quality
+regression before noticing you have been on a different model since Tuesday).
+
+### FR-003: two functions, one pipeline
+
+`deploy/s.yaml` (Serverless Devs 3.0.0, `fc3`) deploys `quotemind-api` on an HTTP trigger and
+`quotemind-ingest` on an OSS object-created trigger over `quotemind-inbox/rfq/`. They share one
+codebase on purpose - an ingest path with its own copy of the quoting logic would be a second system
+that could disagree with the first about the price. `api/fc.py` is a thin shim: FC 3.0 runs an ASGI
+app directly, so `handler` *is* the FastAPI app rather than a hand-rolled event adapter that could
+drift from the one every test exercises.
+
+The `authType: anonymous` trigger is argued for in the file rather than glossed over: FC's gateway
+auth signs with the account AK/SK, which a browser dashboard cannot hold and a judge cannot use, so
+the *application* is the authorization boundary (bearer token on every `/api/*` route, FR-010) and
+`/health` is deliberately open so the deployment can be verified without a credential. Demo-grade by
+design, and section 3.2 says so.
+
+### Submission artifacts
+
+- **SUB-02** README section "Proof of Alibaba Cloud Deployment", linking the module and tabulating
+  what each check proves. The deployed endpoint URL is the one blank left - it needs `s deploy`.
+- **SUB-03** `docs/architecture.md` + `architecture.mmd` + rendered `architecture.png`. The diagram
+  puts the deterministic pricing engine in ochre and the two gates in red, because those are the
+  parts of the picture that carry the argument.
+- **SUB-04** `docs/demo-script.md` - five beats, ~3 minutes, paced so the beat that matters (the
+  system refusing to sign off a thin-margin quote) lands with time to spare. It includes a
+  "what not to do" section: do not hide the one eval failure, do not fake the 23-second latency, do
+  not oversell the autonomy.
+- **SUB-05** `docs/submission-description.md`, 491 words of the 500 allowed.
+- **SUB-06** Track 4 badge already in the README.
+
+Makefile targets are now real rather than `@echo` placeholders: `make proof`, `make deploy`,
+`make deploy-frontend`, `make eval`, `make eval-smoke`, `make eval-baseline`, `make diagrams`,
+`make demo`.
+
+Verification: ruff clean, mypy clean (74 files), import-linter 4/4 kept, pytest 237 passed, pricing
+branch coverage 100%. Live: alibaba_proof 8/8, /health reports 4/4 models verified.
