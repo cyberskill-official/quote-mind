@@ -82,6 +82,8 @@ def _customer_block(resolution: CustomerResolution, extraction: RFQExtraction) -
             "mst": profile.mst,
             "address": profile.address,
             "contact": profile.contact,
+            # Carried so dispatch (FR-092) knows where to send without re-reading the tenant.
+            "email": profile.emails[0] if profile.emails else None,
         }
     buyer = extraction.buyer
     return {

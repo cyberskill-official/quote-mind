@@ -39,6 +39,9 @@ def test_doc_type_from_filename() -> None:
     assert validate_upload("rfq.xlsx", 1000) == DocType.EXCEL
     assert validate_upload("scan.pdf", 1000) == DocType.PDF_DIGITAL
     assert validate_upload("photo.JPG", 1000) == DocType.IMAGE
+    # A text drop (FR-021 puts .txt/.eml into the inbox) is an email_text document.
+    assert validate_upload("rfq-fpt.txt", 1000) == DocType.EMAIL_TEXT
+    assert validate_upload("forwarded.eml", 1000) == DocType.EMAIL_TEXT
 
 
 def test_oversize_and_unsupported_are_rejected() -> None:

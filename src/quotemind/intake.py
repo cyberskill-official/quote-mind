@@ -16,6 +16,9 @@ from .models import CustomerMatch, DocType, EmailMeta, IntakeResult, Language, U
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024  # FR-025: 15 MB
 
 _EXTENSION_TYPES: dict[str, DocType] = {
+    ".txt": DocType.EMAIL_TEXT,  # a dropped text file / saved email body
+    ".eml": DocType.EMAIL_TEXT,
+    ".md": DocType.EMAIL_TEXT,
     ".pdf": DocType.PDF_DIGITAL,  # scan vs digital is decided by the rasteriser (FR-031)
     ".xlsx": DocType.EXCEL,
     ".xlsm": DocType.EXCEL,

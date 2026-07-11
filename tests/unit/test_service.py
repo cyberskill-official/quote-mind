@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import date
 from decimal import Decimal
 from typing import Any
@@ -30,6 +31,8 @@ from quotemind.orchestrator import DEFAULT_NOTES, DEFAULT_TERMS, PipelineResult
 from quotemind.quote import AssemblyLine, assemble_quote, format_quote_number, run_critic
 from quotemind.service import ApprovalBlockedError, QuoteService
 
+from .test_dispatch import FakeArtifacts
+
 _ON = date(2026, 7, 11)
 
 
@@ -39,6 +42,12 @@ class _Settings:
     quote_validity_days = 14
     margin_floor_pct = 5
     fx_usd_vnd = 25_400
+    mail_from = "quotes@demo.cyberskill.world"
+    mail_transport = "stub"
+    directmail_smtp_host = "smtpdm-ap-southeast-1.aliyun.com"
+    directmail_smtp_port = 465
+    directmail_user = None
+    directmail_password = None
 
 
 class FakeStore:
@@ -120,7 +129,11 @@ def _result(sequence: int, *, thin_margin: bool = False) -> PipelineResult:
         quote_id="01JQUOTE0000000000000000000",
         quote_number=format_quote_number(2026, sequence),
         seller_block={"name": "CyberSkill JSC"},
-        customer_block={"name": "Công ty ABC"},
+        customer_block={
+            "name": "Công ty ABC",
+            "contact": "Chị Lan",
+            "email": "mua.hang@thanhcong.vn",
+        },
         date=_ON.isoformat(),
         validity_days=14,
         lines=[AssemblyLine(product=product, qty=Decimal(2), tier=Tier.DEALER)],
@@ -149,7 +162,9 @@ def _result(sequence: int, *, thin_margin: bool = False) -> PipelineResult:
     )
 
 
-def _service(store: FakeStore, *, thin_margin: bool = False) -> QuoteService:
+def _service(
+    store: FakeStore, *, thin_margin: bool = False, artifacts: Any = None
+) -> QuoteService:
     async def pipeline(_text: str, *, sequence: int, **_kwargs: Any) -> PipelineResult:
         return _result(sequence, thin_margin=thin_margin)
 
@@ -159,6 +174,7 @@ def _service(store: FakeStore, *, thin_margin: bool = False) -> QuoteService:
         settings=_Settings(),  # type: ignore[arg-type]
         seller_block={"name": "CyberSkill JSC"},
         pipeline=pipeline,
+        artifacts=artifacts if artifacts is not None else FakeArtifacts(),
     )
 
 
@@ -231,6 +247,49 @@ def test_reject_and_illegal_transition() -> None:
 
     final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
     assert service.reject(final.quote_id, comment="giá cao").status == Status.REJECTED
+
+
+def test_dispatch_renders_stores_and_sends_then_marks_sent() -> None:
+    store = FakeStore()
+    artifacts = FakeArtifacts()
+    service = _service(store, artifacts=artifacts)
+    record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
+    final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
+    service.approve(final.quote_id)
+
+    sent = service.dispatch(final.quote_id)
+    assert sent.status == Status.SENT
+
+    # FR-091: a real PDF landed privately under quotes/{quote_number}.pdf
+    key = f"quotes/{final.quote_number}.pdf"
+    assert artifacts.pdfs[key].startswith(b"%PDF-")
+    # FR-093: the stub transport wrote the same message to the outbox
+    assert f"outbox/{final.quote_number}.eml" in artifacts.emls
+
+    event = [e for e in store.list_audit(final.quote_id) if e.event == "dispatch.sent_stub"][0]
+    assert event.payload_json["transport"] == "stub"
+    assert event.payload_json["pdf_key"] == key
+    assert event.payload_json["attached"] is True
+    assert verify_chain(store.list_audit(final.quote_id)) is True
+
+
+def test_dispatch_without_a_recipient_fails_durably() -> None:
+    store = FakeStore()
+    service = _service(store)
+    record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
+    final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
+    service.approve(final.quote_id)
+
+    # Strip the recipient the pipeline put on the quote.
+    stored = store.rows[final.quote_id]
+    quote = json.loads(stored["quote_json"])
+    quote["customer_block"].pop("email")
+    stored["quote_json"] = json.dumps(quote)
+
+    failed = service.dispatch(final.quote_id)
+    assert failed.status == Status.FAILED_DISPATCH
+    reason = [e for e in store.list_audit(final.quote_id) if e.event == "dispatch.failed"][0]
+    assert "no recipient" in reason.payload_json["error"]
 
 
 def test_revise_reruns_and_counts_revisions() -> None:

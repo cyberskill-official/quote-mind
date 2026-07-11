@@ -478,3 +478,47 @@ Deferred: OSS drop channel (FR-021), FR-085's log event and dashboard badge, and
 presigned URL, email) which is the next batch.
 
 Verification: ruff clean, mypy clean (57 files), import-linter 4/4 kept, pytest 146 passed.
+
+## 2026-07-11 - Dispatch: PDF, OSS artifact, email, OSS drop (branch feat/dispatch)
+
+The quote now leaves the building. On approval it is rendered to PDF, stored privately in OSS,
+fetched back over a presigned URL, and emailed - and an RFQ dropped into the inbox bucket runs the
+whole path by itself.
+
+Delivered:
+- cloud/oss.py: ArtifactStore over the two buckets. Artifacts land at the frozen keys
+  quotes/{quote_number}.pdf and outbox/{quote_number}.eml; presigned GETs are V4-signed with
+  slash_safe=True and a 600s TTL (FR-091). The inbox side lists and reads rfq/ objects (FR-021).
+- quote/render/render_pdf (FR-090): WeasyPrint over the existing Appendix C template. Verified the
+  way the AC asks - the PDF text is extracted back out with pypdfium2 and every Vietnamese string
+  (BÁO GIÁ, Mô tả hàng hóa, Bằng chữ, the bang chu total, Thanh toán trong 30 ngày) still carries its
+  diacritics byte-exact. The brand TTFs are not committed (binary assets); WeasyPrint falls back to
+  the system sans and diacritics still render - see quote/render/fonts/README.md.
+- dispatch.py (FR-092/093): one bilingual MIME message, two transports. Vietnamese leads (it is the
+  governing language), English follows, the presigned link is in both parts, and the PDF is attached
+  only when <= 3 MB. `smtp` goes through DirectMail over SSL 465; `stub` writes the identical message
+  to oss://quotemind-artifacts/outbox/ and is audited as sent_stub, so demos are deterministic.
+- service.dispatch: approved -> dispatching -> sent, with every step audited and any failure landing
+  durably in failed_dispatch. pdf_url renders on demand if the object is missing.
+- api: API-09 GET /api/quotes/{id}/pdf returns 302 to a fresh presigned URL; approval now triggers
+  dispatch in the background (FR-083).
+- deploy/ingest.py (FR-021): one code path, two entry points - an FC OSS trigger handler and a
+  `python deploy/ingest.py` scan. The dropped key becomes source_uri and channel is oss_drop, so a
+  file-borne RFQ is indistinguishable downstream from an API one.
+
+Bug the live run caught: .txt and .eml were not in the supported-extension map, so the OSS drop
+rejected its own text file as an unsupported type. Fixed - a dropped text file is an email_text
+document. This is exactly the class of bug the unit tests could not see, because they never named a
+real file.
+
+Live (real cloud): QM-2026-0002 approved -> PDF rendered -> stored at quotes/QM-2026-0002.pdf ->
+presigned GET returned HTTP 200 with 37,421 real PDF bytes -> stub email written to
+outbox/QM-2026-0002.eml with the PDF attached -> audit chain still verifies. Separately, a .txt RFQ
+dropped into oss://quotemind-inbox/rfq/ was ingested by deploy/ingest.py and ran to
+pending_approval as QM-2026-0003. The rendered PDF is committed at docs/sample-quote.pdf.
+
+Deferred: the DirectMail smtp path is implemented but untested against a live verified sender (the
+demo default is stub); brand TTFs; FR-085's log event and badge.
+
+Verification: ruff clean, mypy clean (59 files), import-linter 4/4 kept, pytest 155 passed, pricing
+branch coverage 100%. CI now installs pango/cairo before the pdf extra so WeasyPrint runs there too.

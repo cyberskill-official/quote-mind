@@ -11,7 +11,7 @@ import os
 from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -220,7 +220,12 @@ def get_audit(service: ServiceDep, quote_id: str) -> dict[str, Any]:
 
 
 @app.post("/api/quotes/{quote_id}/approve", dependencies=[Depends(require_bearer)])
-def approve(service: ServiceDep, quote_id: str, body: ApproveBody | None = None) -> dict[str, Any]:
+def approve(
+    service: ServiceDep,
+    background: BackgroundTasks,
+    quote_id: str,
+    body: ApproveBody | None = None,
+) -> dict[str, Any]:
     """API-06 / FR-083. Blocking flags need an explicit, audited waiver, else 409."""
     payload = body or ApproveBody()
     try:
@@ -234,7 +239,19 @@ def approve(service: ServiceDep, quote_id: str, body: ApproveBody | None = None)
         raise _error(404, "not_found", f"no quote {quote_id}") from exc
     except ApprovalBlockedError as exc:
         raise _error(409, "blocking_flags", str(exc), flags=exc.flags) from exc
+
+    background.add_task(service.dispatch, quote_id)  # FR-083: approval triggers dispatch
     return {"quote_id": quote_id, "status": record.status.value}
+
+
+@app.get("/api/quotes/{quote_id}/pdf", dependencies=[Depends(require_bearer)])
+def quote_pdf(service: ServiceDep, quote_id: str) -> RedirectResponse:
+    """API-09 / FR-091: 302 to a fresh, short-lived presigned GET on the private object."""
+    try:
+        url = service.pdf_url(quote_id)
+    except QuoteNotFoundError as exc:
+        raise _error(404, "not_found", f"no quote {quote_id}") from exc
+    return RedirectResponse(url=url, status_code=302)
 
 
 @app.post("/api/quotes/{quote_id}/reject", dependencies=[Depends(require_bearer)])

@@ -14,9 +14,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # Offline gate installs every package whose modules are imported, so import-linter can
-      # build the full graph: agents (AgentScope/OpenAI) + memory (Tablestore) + parse (openpyxl).
-      - run: pip install -e .[agents,memory,parse,dev]
+      # Offline gate installs every package whose modules are imported, so import-linter can build
+      # the full graph. WeasyPrint needs pango/cairo, hence the apt step before the pdf extra.
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
+      - run: pip install -e .[agents,memory,parse,cloud,pdf,dev]
       - run: ruff check .
       - run: lint-imports
 
@@ -27,7 +28,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e .[agents,memory,parse,dev]
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
+      - run: pip install -e .[agents,memory,parse,cloud,pdf,dev]
       - run: mypy -p quotemind
 
   unit:
@@ -37,7 +39,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e .[agents,memory,parse,dev]
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
+      - run: pip install -e .[agents,memory,parse,cloud,pdf,dev]
       - run: pytest -q --cov=quotemind --cov-branch --cov-report=term-missing
       # Money path: 100% branch coverage on the pricing engine (NFR-010, QM-REPO-001 section 8).
       - run: pytest -q --cov=quotemind.pricing --cov-branch --cov-fail-under=100

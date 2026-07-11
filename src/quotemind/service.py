@@ -14,7 +14,9 @@ from datetime import date as date_type
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from .cloud import ArtifactStore, artifact_key
 from .config.settings import Settings
+from .dispatch import send_quote
 from .intake import classify, payload_hash
 from .memory.quotes import QuoteStore, totals_of
 from .memory.store import MemoryFacade
@@ -23,13 +25,16 @@ from .models import (
     Channel,
     CriticReport,
     EmailMeta,
+    Quote,
     QuoteRecord,
     Status,
     assert_transition,
     new_ulid,
 )
 from .orchestrator import PipelineResult, quote_from_text
+from .pricing import vat_policy_note
 from .quote import format_quote_number, parse_quote_number
+from .quote.render import render_pdf
 
 MAX_REVISIONS = 3  # FR-064: after this many revisions the quote goes to a human
 PENDING_REMINDER_HOURS = 4  # FR-085
@@ -68,12 +73,21 @@ class QuoteService:
         settings: Settings,
         seller_block: dict[str, Any],
         pipeline: Pipeline = quote_from_text,
+        artifacts: ArtifactStore | None = None,
     ) -> None:
         self.store = store
         self.facade = facade
         self.settings = settings
         self.seller_block = seller_block
         self.pipeline = pipeline
+        self._artifacts = artifacts
+
+    @property
+    def artifacts(self) -> ArtifactStore:
+        """OSS is only needed for dispatch, so the client is built lazily."""
+        if self._artifacts is None:
+            self._artifacts = ArtifactStore.from_settings(self.settings)
+        return self._artifacts
 
     # --- persistence helpers ---
     def _load(self, quote_id: str) -> dict[str, Any]:
@@ -312,6 +326,78 @@ class QuoteService:
             payload["waived_flags"] = sorted(waived)
             payload["waiver_reason"] = reason
         return self._transition(record, Status.APPROVED, HUMAN, "human.approved", payload)
+
+    # --- dispatch (FR-090..094) ---
+    def quote_of(self, quote_id: str) -> Quote:
+        """The stored Quote aggregate. Raises if the pipeline never produced one."""
+        stored = self._load(quote_id)
+        raw = stored.get("quote_json")
+        if not isinstance(raw, str):
+            raise QuoteNotFoundError(f"{quote_id} has no quote yet")
+        return Quote.model_validate_json(raw)
+
+    def pdf_url(self, quote_id: str) -> str:
+        """API-09 / FR-091: a fresh presigned GET, rendering and storing the PDF if needed."""
+        quote = self.quote_of(quote_id)
+        key = artifact_key(quote.quote_number)
+        if not self.artifacts.exists(key):
+            self.artifacts.put_pdf(quote.quote_number, self._render(quote))
+        return self.artifacts.presigned_get(key)
+
+    def _render(self, quote: Quote) -> bytes:
+        note = vat_policy_note(date_type.fromisoformat(quote.date))
+        return render_pdf(quote, vat_policy_note=note)
+
+    def dispatch(self, quote_id: str, *, recipient: str | None = None) -> QuoteRecord:
+        """FR-090..093: render, store privately, presign, and send. Every step is audited."""
+        stored = self._load(quote_id)
+        record: QuoteRecord = stored["record"]
+        quote = self.quote_of(quote_id)
+        record = self._transition(record, Status.DISPATCHING, SYSTEM, "dispatch.started")
+
+        try:
+            pdf = self._render(quote)
+            key = self.artifacts.put_pdf(quote.quote_number, pdf)  # FR-091: private object
+            link = self.artifacts.presigned_get(key)
+
+            to = recipient or quote.customer_block.get("email")
+            if not isinstance(to, str) or not to:
+                raise ValueError("no recipient email on the quote")
+
+            result = send_quote(  # FR-092 / FR-093
+                quote,
+                settings=self.settings,
+                artifacts=self.artifacts,
+                seller_name=str(self.seller_block.get("name", "CyberSkill")),
+                recipient=to,
+                link=link,
+                contact=quote.customer_block.get("contact"),
+                pdf=pdf,
+            )
+        except Exception as exc:  # noqa: BLE001 - a failed dispatch must land in a durable state
+            return self._transition(
+                record,
+                Status.FAILED_DISPATCH,
+                SYSTEM,
+                "dispatch.failed",
+                {"error": f"{type(exc).__name__}: {exc}"},
+            )
+
+        event = "dispatch.sent" if result.transport == "smtp" else "dispatch.sent_stub"
+        return self._transition(
+            record,
+            Status.SENT,
+            SYSTEM,
+            event,
+            {
+                "transport": result.transport,
+                "message_id": result.message_id,
+                "recipient": result.recipient,
+                "pdf_key": key,
+                "attached": result.attached,
+                "outbox_key": result.outbox_key,
+            },
+        )
 
     def reject(self, quote_id: str, *, comment: str | None = None) -> QuoteRecord:
         record: QuoteRecord = self._load(quote_id)["record"]
