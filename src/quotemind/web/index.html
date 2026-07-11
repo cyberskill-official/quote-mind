@@ -519,6 +519,24 @@ async function loadDetail() {
     };
   }
 
+  // FR-080: needs_clarification is terminal, so the way forward is a corrected RFQ, not a patched
+  // quote. Pre-fill it from what we read, so the reviewer edits one line instead of retyping an
+  // email they have already read twice.
+  const resubmit = $("bResubmit");
+  if (resubmit) {
+    resubmit.onclick = () => {
+      const lines = (review.extraction?.lines || [])
+        .map((l) => `${l.quantity ?? ""} ${l.unit || ""} ${l.description_normalized || l.raw_text}`.trim());
+      const buyer = review.extraction?.buyer || {};
+      const prefill = [
+        ...lines,
+        buyer.company ? `\n${buyer.company}` : "",
+        buyer.email || "",
+      ].filter(Boolean).join("\n");
+      openDialog("resubmit", prefill);
+    };
+  }
+
   if (canAct) {
     $("bApprove").onclick = () => openDialog("approve");
     $("bReject").onclick = () => openDialog("reject");
@@ -638,11 +656,30 @@ function stalled(review) {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
+    </div>
+
+    <!-- FR-080 makes needs_clarification terminal, and that is right: the *request* was ambiguous,
+         so the fix is a corrected request, not a patched quote. But terminal must not mean "the
+         reviewer has nowhere to go" - without this they were left looking at a perfectly good
+         explanation and a dead end. This hands them the line as text, to correct and re-ask. It
+         opens a NEW quote, which is exactly what happens in the real business: you go back to the
+         customer, and their next email is a new RFQ. -->
+    <div class="cs-review-gate" style="margin-top:var(--cs-space-4)">
+      <div class="cs-review-gate__risk">
+        Yêu cầu này chưa rõ. Sửa lại và gửi như một báo giá mới.<br>
+        This request was ambiguous. Correct it and re-ask as a new quote.
+      </div>
+      <div class="cs-review-gate__actions">
+        <button class="cs-button" id="bResubmit">Sửa & hỏi lại / Correct &amp; re-ask</button>
+      </div>
     </div>` : `<div class="state"><p>Không đọc được dòng hàng nào / no line items could be read.</p></div>`}`;
 }
 
 function reviewGate(review, canAct) {
   if (!canAct) {
+    // A refused quote already carries its own action (Correct & re-ask), so do not tell the
+    // reviewer twice - and above all do not tell them there is nothing to do when there plainly is.
+    if (review.status === "needs_clarification") return "";
     return `<div class="cs-review-gate" style="border-color:var(--cs-color-border-default)">
       <div class="cs-review-gate__risk" style="color:var(--cs-color-text-muted)">
         Trạng thái hiện tại: <b>${esc(review.status)}</b> — không cần thao tác.<br>
@@ -811,10 +848,11 @@ function traceSection(trace) {
 }
 
 // ---- the decision ----
-function openDialog(kind) {
+function openDialog(kind, prefill) {
   const titles = {
     approve: "Duyệt báo giá / Approve", reject: "Từ chối / Reject",
     revise: "Yêu cầu sửa / Revise", cancel: "Huỷ báo giá / Cancel",
+    resubmit: "Sửa & hỏi lại / Correct and re-ask",
   };
   const labels = {
     approve: "Ghi chú (tuỳ chọn) / comment (optional)",
@@ -823,10 +861,13 @@ function openDialog(kind) {
     // FR-134. Deliberately asks *why*, because "cancelled" without a reason is a hole in the record
     // - and this is the one action whose whole purpose is to be distinguishable from a rejection.
     cancel: "Vì sao huỷ? (khách rút yêu cầu, trùng lặp, gửi nhầm...) / why? (customer withdrew, duplicate, sent in error...)",
+    // The RFQ as we read it. Fix the ambiguous line and send it again - this creates a new quote,
+    // because the state machine is right that a clarified request is a different request.
+    resubmit: "Yêu cầu đã sửa / the corrected request",
   };
   $("dlgTitle").textContent = titles[kind];
   $("dlgLabel").textContent = labels[kind];
-  $("dlgText").value = "";
+  $("dlgText").value = prefill || "";
 
   // An RFQ that arrived as a file in the inbox carries no sender - there is nobody to send the quote
   // back to. That is not an error, and approving used to make it look like one: the dispatch failed
@@ -869,6 +910,12 @@ async function submitAction(kind) {
     } else if (kind === "reject") {
       await api(`/api/quotes/${selected}/reject`, { method: "POST", body: JSON.stringify({ comment: text || null }) });
       toast("Đã từ chối / rejected");
+    } else if (kind === "resubmit") {
+      if (!text) { toast("Cần nội dung yêu cầu / the request cannot be empty"); return; }
+      const created = await api("/api/rfq", { method: "POST", body: JSON.stringify({ text }) });
+      toast("Đã tạo báo giá mới / new quote created: " + created.quote_number);
+      selected = created.quote_id;
+      loadQueue();
     } else if (kind === "cancel") {
       await api(`/api/quotes/${selected}/cancel`, { method: "POST", body: JSON.stringify({ comment: text || null }) });
       toast("Đã huỷ / cancelled — ghi là huỷ, không phải từ chối");
