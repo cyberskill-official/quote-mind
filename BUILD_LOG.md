@@ -431,3 +431,50 @@ Also added docs/roadmap.html - a self-contained view of all 13 epics / 82 FRs wi
 
 Verification: ruff clean, mypy clean (54 files), import-linter 4/4 kept, pytest 128 passed,
 pricing branch coverage 100%.
+
+## 2026-07-11 - Intake, persistence and the human gate (branch feat/intake-hitl)
+
+Single batch branch. The pipeline now has durable state: an RFQ posted to the API is persisted,
+numbered, run to the approval gate, and can be approved by a completely different process.
+
+Delivered:
+- memory/quotes.py: QuoteStore over the three frozen tables (qm_quotes, qm_audit, qm_counters).
+  FR-062 numbering now uses a real atomic per-year counter - the Python Tablestore SDK cannot read
+  back an incremented value (ReturnType has no RT_AFTER_MODIFY), so it is a bounded compare-and-set
+  loop, which is still atomic: a losing writer retries against the new value. Idempotency (FR-024)
+  is a pointer row inside qm_quotes rather than a fourth table, and the queue is a bounded scan;
+  both are documented demo-scale choices that keep the frozen table list intact. put_quote uses
+  update_row (not put_row) so a status change cannot wipe the stored quote/critic/html.
+- intake.py (FR-022/024/025): deterministic classification - doc type from the filename, language
+  from Vietnamese diacritics (vi/en/mixed), urgency from keywords. No model needed, and code cannot
+  hallucinate a doc type. Oversize (>15 MB) and unsupported types are rejected before anything else.
+- service.py: QuoteService, the only writer of quote state. Every transition goes through the frozen
+  state machine (FR-080) and writes a hash-chained audit event (FR-094) before returning. submit
+  (idempotent), process (persists each stage), review (FR-082), approve/reject (FR-083), revise
+  (FR-084, capped at 3 revisions), stale_pending (FR-085).
+- api/app.py: API-01..08. POST /api/rfq returns 202 and runs the pipeline in the background (FR-020).
+  FastAPI cannot mix a JSON body model with File/Form on one route, so the content type is dispatched
+  by hand to satisfy FR-020's "multipart OR JSON" requirement.
+- models/common.py: added Language.MIXED and DocType.IMAGE, which FR-022 requires and the DM enums
+  had omitted.
+
+Spec correction worth noting: an earlier reading sent every quote with a blocking flag to
+critic_failed. That is wrong. FR-070 (a recompute mismatch) is a hard failure - the arithmetic did
+not survive an independent check. FR-071 policy flags (e.g. MARGIN_BELOW_FLOOR) are different: the
+quote still reaches the human, who may waive them explicitly at the gate, and the waiver is audited
+(FR-083). The code now does exactly that.
+
+Live run (real Tablestore):
+  tables created -> submit -> QM-2026-0001 from the atomic counter -> re-post returns the same id
+  (FR-024) -> pipeline to pending_approval, total 248,400,000 VND -> a BRAND NEW QuoteService (new
+  client, new objects) loads the quote from Tablestore, verifies the 7-event hash chain, and approves
+  it. That is FR-081 durable pause and resume, proven rather than asserted.
+
+Tests: +18 (146 total). Intake classification and guards; the service lifecycle against real
+assembled/critiqued quotes including the blocking-flag waiver path and an illegal transition; the API
+surface end to end with a fake store (202, idempotent re-post, 409 with the flag list, 404, 422, 401).
+
+Deferred: OSS drop channel (FR-021), FR-085's log event and dashboard badge, and dispatch (PDF,
+presigned URL, email) which is the next batch.
+
+Verification: ruff clean, mypy clean (57 files), import-linter 4/4 kept, pytest 146 passed.
