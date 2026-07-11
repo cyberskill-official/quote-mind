@@ -9,6 +9,7 @@ served by a different process that simply loads the record.
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Awaitable, Callable
 from datetime import date as date_type
 from datetime import datetime, timedelta, timezone
@@ -19,6 +20,7 @@ from .config.settings import Settings
 from .dispatch import send_quote
 from .intake import classify, payload_hash
 from .memory.quotes import QuoteStore, totals_of
+from .memory.recall import write_episode
 from .memory.store import MemoryFacade
 from .models import (
     Actor,
@@ -26,12 +28,14 @@ from .models import (
     CriticReport,
     DocType,
     EmailMeta,
+    Outcome,
     Quote,
     QuoteRecord,
     Status,
     assert_transition,
     new_ulid,
 )
+from .obs.log import log_event
 from .obs.trace import Tracer
 from .orchestrator import (
     PipelineResult,
@@ -68,6 +72,26 @@ class ApprovalBlockedError(RuntimeError):
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _context_columns(result: PipelineResult) -> dict[str, str]:
+    """FR-131 + FR-045: the plan and the recalled memories, persisted with the quote.
+
+    They are stored rather than merely traced because the reviewer needs them at the moment of the
+    decision, not in a debugging artifact afterwards. A memory that only a developer can find is a
+    memory the business never gets to use.
+    """
+    columns: dict[str, str] = {}
+    if result.plan is not None:
+        columns["plan_json"] = result.plan.model_dump_json()
+    if result.episodic:
+        columns["episodic_json"] = json.dumps(
+            {
+                "truncated": result.episodic_truncated,
+                "recalls": [recall.model_dump(mode="json") for recall in result.episodic],
+            }
+        )
+    return columns
 
 
 class QuoteService:
@@ -297,6 +321,7 @@ class QuoteService:
                 trace_json=trace_json,
                 critic_json=critic.model_dump_json(),
                 html=result.html,
+                **_context_columns(result),
             )
 
         return self._transition(
@@ -313,6 +338,7 @@ class QuoteService:
             trace_json=trace_json,
             critic_json=critic.model_dump_json(),
             html=result.html,
+            **_context_columns(result),
         )
 
     def _persist_trace(self, record: QuoteRecord, result: PipelineResult) -> str | None:
@@ -352,7 +378,7 @@ class QuoteService:
             "flags": record.flags,
             "totals": record.totals_json,
         }
-        for key in ("quote_json", "critic_json"):
+        for key in ("quote_json", "critic_json", "plan_json", "episodic_json"):
             if key in stored:
                 payload[key.removesuffix("_json")] = json.loads(stored[key])
         payload["audit"] = [
@@ -399,7 +425,52 @@ class QuoteService:
         if waived:
             payload["waived_flags"] = sorted(waived)
             payload["waiver_reason"] = reason
-        return self._transition(record, Status.APPROVED, HUMAN, "human.approved", payload)
+        record = self._transition(record, Status.APPROVED, HUMAN, "human.approved", payload)
+
+        # FR-046 distinguishes an approval from an *edited* approval, and the difference is real: a
+        # quote a human had to waive a flag on, or send back for revision first, is a more
+        # interesting memory than one they nodded through.
+        edited = bool(waived) or record.revision > 0
+        self._remember(
+            record,
+            stored,
+            Outcome.EDITED if edited else Outcome.APPROVED,
+            human_edits=reason or comment,
+        )
+        return record
+
+    def _remember(
+        self,
+        record: QuoteRecord,
+        stored: dict[str, Any],
+        outcome: Outcome,
+        *,
+        human_edits: str | None,
+    ) -> None:
+        """FR-044: write the episode the human just decided.
+
+        Never raises. The human's decision is the thing that matters and it is already durably
+        recorded on the audit chain; losing a *memory* of it must not lose the decision itself. A
+        failed write is logged and the approval stands.
+        """
+        if record.customer_id is None or "quote_json" not in stored:
+            return  # nothing to attribute the memory to, or no quote was ever produced
+        try:
+            write_episode(
+                facade=self.facade,
+                settings=self.settings,
+                quote=Quote.model_validate_json(stored["quote_json"]),
+                customer_id=record.customer_id,
+                outcome=outcome,
+                human_edits=human_edits,
+            )
+        except Exception as exc:  # noqa: BLE001 - a memory must never cost us a decision
+            log_event(
+                "episodic_write_failed",
+                level=logging.WARNING,
+                quote_id=record.quote_id,
+                error=f"{type(exc).__name__}: {exc}",
+            )
 
     # --- dispatch (FR-090..094) ---
     def quote_of(self, quote_id: str) -> Quote:
@@ -474,10 +545,15 @@ class QuoteService:
         )
 
     def reject(self, quote_id: str, *, comment: str | None = None) -> QuoteRecord:
-        record: QuoteRecord = self._load(quote_id)["record"]
-        return self._transition(
+        stored = self._load(quote_id)
+        record: QuoteRecord = stored["record"]
+        record = self._transition(
             record, Status.REJECTED, HUMAN, "human.rejected", {"comment": comment}
         )
+        # FR-044/046: a rejection is the *most* important thing to remember (importance 0.9). It is
+        # the only signal that says this quote, for this customer, was wrong.
+        self._remember(record, stored, Outcome.REJECTED, human_edits=comment)
+        return record
 
     async def revise(
         self, quote_id: str, *, instruction: str, on_date: date_type | None = None

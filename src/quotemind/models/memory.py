@@ -36,3 +36,22 @@ class SOPSnippet(BaseModel):
     topic: SopTopic
     text: BilingualText
     embedding: list[float] | None = None
+
+
+class EpisodicRecall(BaseModel):
+    """FR-045: one retrieved memory, and every term that decided where it ranked.
+
+    The components are carried separately rather than collapsed into a single number, because a
+    reviewer looking at the trace should be able to see *why* a memory surfaced - a strong match on
+    an old, low-importance episode is a different claim from a weak match on last week's rejection.
+    """
+
+    memory_id: str
+    quote_number: str
+    summary: BilingualText
+    outcome: Outcome
+    similarity: float
+    importance: float
+    recency_decay: float
+    age_days: float
+    effective_score: float

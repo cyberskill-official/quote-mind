@@ -27,7 +27,9 @@ FR-040,P0,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,tests/un
 FR-041,P0,EP-04,feat/agent-layer,src/quotemind/memory/embedding.py,tests/unit/test_embedding.py,implemented (live-verified)
 FR-042,P0,EP-04,feat/agent-layer,src/quotemind/tools/matching.py + src/quotemind/agents/matcher.py,tests/unit/test_matching.py + test_agents.py,implemented (fusion+banding+LLM select; live-verified)
 FR-043,P0,EP-04,feat/FR-042-matcher,src/quotemind/tools/customer.py,tests/unit/test_customer.py,implemented
-FR-046,P0,EP-04,feat/EP-04-forgetting,src/quotemind/memory/episodic.py + gc.py,tests/unit/test_episodic_scoring.py + test_gc.py,implemented
+FR-044,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py,tests/unit/test_recall.py,implemented (LIVE: episode written on approve/reject; bilingual LLM summary)
+FR-045,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py + orchestrator.py,tests/unit/test_recall.py,implemented (LIVE: top-3 re-ranked by effective score, 1200-token budget, memory ids in the trace; memories inform the reviewer - never the price - see recall.py)
+FR-046,P0,EP-04,feat/memory-planner,src/quotemind/memory/episodic.py,tests/unit/test_recall.py,implemented (importance + decay now actually drive retrieval)
 FR-047,P0,EP-04,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_memory.py,implemented (MemoryStore Session per quote)
 FR-049,P1,EP-04,feat/EP-04-forgetting,src/quotemind/memory/budget.py,tests/unit/test_budget.py,implemented
 FR-050,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py,tests/unit/test_pricing.py,implemented
@@ -70,6 +72,7 @@ FR-122,P0,EP-12,feat/eval-harness,src/quotemind/eval_/baseline.py,tests/unit/tes
 FR-123,P0,EP-12,feat/eval-harness,src/quotemind/eval_/cassette.py + deploy/record_cassettes.py,tests/integration/test_smoke_eval.py,implemented (5 recorded cases; no model in CI)
 FR-124,P1,EP-12,feat/eval-harness,tests/golden/test_golden_pdf.py,tests/golden/test_golden_pdf.py,implemented (pinned to the CI platform; fonts not yet bundled)
 FR-130,P0,EP-13,feat/agent-layer,src/quotemind/orchestrator.py,tests/unit/test_orchestrator.py,implemented (live end-to-end)
+FR-131,P0,EP-05,feat/memory-planner,src/quotemind/agents/planner.py,tests/unit/test_planner.py,implemented (LIVE: AgentScope PlanNotebook; subtasks closed by the pipeline that ran; trivial quotes skip with a logged reason)
 FR-132,P0,EP-05,feat/agents,src/quotemind/tools/,tests/unit/test_tools.py,implemented (one Toolkit per agent)
 DM-01..14,P0,PR-2,feat/PR-2-models,src/quotemind/models/ (all aggregates),tests/unit/test_models_roundtrip.py,implemented
 DM-12,P0,PR-2,feat/PR-2-models,src/quotemind/models/audit.py (hash chain),tests/unit/test_audit_chain.py,implemented
