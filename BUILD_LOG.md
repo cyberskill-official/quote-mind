@@ -1463,3 +1463,20 @@ Three fixes, in descending order of importance:
 The pattern is the one this log keeps recording, one layer further out. It is no longer *"the tests
 mock the seam"* - it is now **"the deploy pipeline is a seam, and it had never run."** CD's first
 execution is a code path like any other, and it went straight to production.
+
+### CD now asks the second question
+
+The verify step that let the outage through was not wrong, it was *insufficient*, and the difference
+matters. It asked **"is the right code live?"** - SHA match, `/health` green, model probe 7/7,
+`curl /` returns 200 - and every one of those passed while the site could not produce a quote. It
+never asked **"does the thing still work?"**
+
+It also pointed at the `fcapp.run` domain, which is the endpoint that sends
+`Content-Disposition: attachment`. So the "the dashboard renders" line in CD was verifying a page
+that, in a browser, downloads.
+
+CD now runs `deploy/smoke.py` against the real domain over HTTPS: it pushes an RFQ the system has
+never seen all the way to the approval gate, on every deploy. A broken deploy is now a **red** deploy.
+
+That is the whole argument for the smoke test existing, made twice in one afternoon - once by the
+bug, once by the pipeline that shipped it.
