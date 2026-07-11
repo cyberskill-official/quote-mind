@@ -1,0 +1,375 @@
+"""Quote lifecycle service: intake, the persisted pipeline, and the human approval gate.
+
+Every status change goes through the frozen state machine (FR-080) and is written to Tablestore with
+a hash-chained audit event (FR-094) before the call returns. That is what makes FR-081 real: the
+pipeline stops at `pending_approval` and nothing waits in memory, so an approval minutes later is
+served by a different process that simply loads the record.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Awaitable, Callable
+from datetime import date as date_type
+from datetime import datetime, timedelta, timezone
+from typing import Any
+
+from .config.settings import Settings
+from .intake import classify, payload_hash
+from .memory.quotes import QuoteStore, totals_of
+from .memory.store import MemoryFacade
+from .models import (
+    Actor,
+    Channel,
+    CriticReport,
+    EmailMeta,
+    QuoteRecord,
+    Status,
+    assert_transition,
+    new_ulid,
+)
+from .orchestrator import PipelineResult, quote_from_text
+from .quote import format_quote_number, parse_quote_number
+
+MAX_REVISIONS = 3  # FR-064: after this many revisions the quote goes to a human
+PENDING_REMINDER_HOURS = 4  # FR-085
+
+SYSTEM = Actor(kind="system")
+HUMAN = Actor(kind="human")
+PIPELINE = Actor(kind="agent", name="orchestrator")
+
+Pipeline = Callable[..., Awaitable[PipelineResult]]
+
+
+class QuoteNotFoundError(KeyError):
+    """No quote with that id."""
+
+
+class ApprovalBlockedError(RuntimeError):
+    """FR-083: blocking critic flags must be explicitly waived before approval."""
+
+    def __init__(self, flags: list[str]) -> None:
+        super().__init__(f"blocking flags require a waiver: {flags}")
+        self.flags = flags
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class QuoteService:
+    """The only writer of quote state. The API is a thin shell over this."""
+
+    def __init__(
+        self,
+        *,
+        store: QuoteStore,
+        facade: MemoryFacade,
+        settings: Settings,
+        seller_block: dict[str, Any],
+        pipeline: Pipeline = quote_from_text,
+    ) -> None:
+        self.store = store
+        self.facade = facade
+        self.settings = settings
+        self.seller_block = seller_block
+        self.pipeline = pipeline
+
+    # --- persistence helpers ---
+    def _load(self, quote_id: str) -> dict[str, Any]:
+        stored = self.store.get_quote(quote_id)
+        if stored is None:
+            raise QuoteNotFoundError(quote_id)
+        return stored
+
+    def _transition(
+        self,
+        record: QuoteRecord,
+        target: Status,
+        actor: Actor,
+        event: str,
+        payload: dict[str, Any] | None = None,
+        **columns: Any,
+    ) -> QuoteRecord:
+        assert_transition(record.status, target)  # FR-080: illegal transitions raise
+        record.status = target
+        record.updated_at = _now()
+        record.actor_last = actor.name or actor.kind
+        self.store.put_quote(record, **columns)
+        self.store.append_audit(record.quote_id, actor=actor, event=event, payload_json=payload)
+        return record
+
+    # --- intake (FR-020, FR-022, FR-024) ---
+    def submit(
+        self,
+        *,
+        text: str,
+        channel: Channel = Channel.PASTE,
+        filename: str | None = None,
+        customer_hint: str | None = None,
+        email_meta: EmailMeta | None = None,
+        source_uri: str | None = None,
+        on_date: date_type | None = None,
+    ) -> tuple[QuoteRecord, bool]:
+        """Register an RFQ -> (record, created). A re-post of the same bytes is not a new quote."""
+        digest = payload_hash(text)
+        existing_id = self.store.get_idempotency(digest)
+        if existing_id is not None:  # FR-024
+            return self._load(existing_id)["record"], False
+
+        intake = classify(text=text, filename=filename, email_meta=email_meta)
+        today = on_date or date_type.today()
+        sequence = self.store.next_sequence(today.year)  # FR-062: atomic per-year counter
+
+        record = QuoteRecord(
+            quote_id=new_ulid(),
+            quote_number=format_quote_number(today.year, sequence),
+            status=Status.RECEIVED,
+            channel=channel,
+            source_uri=source_uri,
+            language=intake.language,
+            sha256_payload=digest,
+            actor_last="system",
+        )
+        self.store.put_quote(record, source_text=text)
+        self.store.put_idempotency(digest, record.quote_id)
+        self.store.append_audit(
+            record.quote_id,
+            actor=SYSTEM,
+            event="intake.received",
+            payload_json={
+                "channel": channel.value,
+                "doc_type": intake.doc_type.value,
+                "language": intake.language.value,
+                "urgency": intake.urgency.value,
+                "customer_hint": customer_hint,
+            },
+        )
+        return record, True
+
+    # --- the pipeline, persisted stage by stage ---
+    async def process(
+        self,
+        record: QuoteRecord,
+        text: str,
+        *,
+        customer_hint: str | None = None,
+        customer_email: str | None = None,
+        on_date: date_type | None = None,
+    ) -> QuoteRecord:
+        """Run the pipeline, persisting each stage. Ends at pending_approval or a failure state."""
+        record = self._transition(record, Status.PARSING, PIPELINE, "pipeline.parsing")
+        _, sequence = parse_quote_number(record.quote_number)
+
+        try:
+            result = await self.pipeline(
+                text,
+                settings=self.settings,
+                facade=self.facade,
+                seller_block=self.seller_block,
+                sequence=sequence,
+                on_date=on_date,
+                customer_email=customer_email,
+                customer_hint=customer_hint,
+            )
+        except Exception as exc:  # noqa: BLE001 - any pipeline failure must land in a durable state
+            return self._transition(
+                record,
+                Status.FAILED_PARSE,
+                SYSTEM,
+                "pipeline.failed",
+                {"error": f"{type(exc).__name__}: {exc}"},
+            )
+
+        if result.clarification_reasons:  # FR-034
+            return self._transition(
+                record,
+                Status.NEEDS_CLARIFICATION,
+                PIPELINE,
+                "pipeline.needs_clarification",
+                {"reasons": result.clarification_reasons},
+            )
+
+        if result.resolution is not None and result.resolution.profile is not None:
+            record.customer_id = result.resolution.profile.customer_id
+
+        record = self._transition(
+            record,
+            Status.MATCHING,
+            PIPELINE,
+            "pipeline.matched",
+            {
+                "matches": [
+                    {"line": m.line_ref, "sku": m.sku, "status": m.status.value}
+                    for m in result.matches
+                ]
+            },
+        )
+        quote = result.quote
+        critic = result.critic
+        assert quote is not None and critic is not None  # guaranteed when there are no reasons
+
+        quote_json = quote.model_dump_json()
+        record = self._transition(
+            record,
+            Status.PRICING,
+            PIPELINE,
+            "pipeline.priced",
+            {"subtotal_vnd": quote.subtotal_vnd, "total_vnd": quote.total_vnd},
+        )
+        record = self._transition(record, Status.DRAFTING, PIPELINE, "pipeline.drafted")
+        record = self._transition(record, Status.VALIDATING, PIPELINE, "pipeline.validating")
+
+        record.flags = [*critic.blocking, *critic.non_blocking]
+        record.totals_json = totals_of(quote_json)
+
+        # FR-070: a recompute mismatch is a hard failure - the arithmetic did not survive an
+        # independent check, so the draft is rejected outright. Policy flags (FR-071) are different:
+        # they still reach the human, who may waive them explicitly at the gate (FR-083).
+        if critic.recompute_diffs:
+            return self._transition(
+                record,
+                Status.CRITIC_FAILED,
+                PIPELINE,
+                "critic.failed",
+                {"diffs": [diff.model_dump(mode="json") for diff in critic.recompute_diffs]},
+                quote_json=quote_json,
+                critic_json=critic.model_dump_json(),
+                html=result.html,
+            )
+
+        return self._transition(
+            record,
+            Status.PENDING_APPROVAL,
+            PIPELINE,
+            "pipeline.pending_approval",
+            {
+                "total_vnd": quote.total_vnd,
+                "blocking": critic.blocking,  # the human must waive these to approve
+                "non_blocking": critic.non_blocking,
+            },
+            quote_json=quote_json,
+            critic_json=critic.model_dump_json(),
+            html=result.html,
+        )
+
+    # --- review payload (FR-082) ---
+    def review(self, quote_id: str) -> dict[str, Any]:
+        """Everything the reviewer needs on one screen."""
+        stored = self._load(quote_id)
+        record: QuoteRecord = stored["record"]
+        payload: dict[str, Any] = {
+            "record": record.model_dump(mode="json"),
+            "status": record.status.value,
+            "flags": record.flags,
+            "totals": record.totals_json,
+        }
+        for key in ("quote_json", "critic_json"):
+            if key in stored:
+                payload[key.removesuffix("_json")] = json.loads(stored[key])
+        payload["audit"] = [
+            event.model_dump(mode="json") for event in self.store.list_audit(quote_id)
+        ]
+        return payload
+
+    def queue(self, status: Status | None = None, limit: int = 50) -> list[QuoteRecord]:
+        """API-02."""
+        return self.store.list_quotes(status=status, limit=limit)
+
+    def stale_pending(self, hours: int = PENDING_REMINDER_HOURS) -> list[QuoteRecord]:
+        """FR-085: quotes that have been waiting on a human for too long."""
+        cutoff = _now() - timedelta(hours=hours)
+        return [
+            record
+            for record in self.store.list_quotes(status=Status.PENDING_APPROVAL, limit=200)
+            if record.updated_at < cutoff
+        ]
+
+    # --- the human gate (FR-083, FR-084) ---
+    def approve(
+        self,
+        quote_id: str,
+        *,
+        comment: str | None = None,
+        waive_flags: list[str] | None = None,
+        reason: str | None = None,
+    ) -> QuoteRecord:
+        """FR-083. Blocking flags must be waived explicitly, and the waiver is audited."""
+        stored = self._load(quote_id)
+        record: QuoteRecord = stored["record"]
+
+        blocking: list[str] = []
+        if "critic_json" in stored:
+            critic = CriticReport.model_validate_json(stored["critic_json"])
+            blocking = critic.blocking
+        waived = set(waive_flags or [])
+        unwaived = [flag for flag in blocking if flag not in waived]
+        if unwaived:
+            raise ApprovalBlockedError(unwaived)
+
+        payload: dict[str, Any] = {"comment": comment}
+        if waived:
+            payload["waived_flags"] = sorted(waived)
+            payload["waiver_reason"] = reason
+        return self._transition(record, Status.APPROVED, HUMAN, "human.approved", payload)
+
+    def reject(self, quote_id: str, *, comment: str | None = None) -> QuoteRecord:
+        record: QuoteRecord = self._load(quote_id)["record"]
+        return self._transition(
+            record, Status.REJECTED, HUMAN, "human.rejected", {"comment": comment}
+        )
+
+    async def revise(
+        self, quote_id: str, *, instruction: str, on_date: date_type | None = None
+    ) -> QuoteRecord:
+        """FR-084: re-run honouring the instruction. After MAX_REVISIONS it goes to a human."""
+        stored = self._load(quote_id)
+        record: QuoteRecord = stored["record"]
+        record = self._transition(
+            record, Status.REVISING, HUMAN, "human.revise", {"instruction": instruction}
+        )
+
+        record.revision += 1
+        if record.revision > MAX_REVISIONS:  # FR-064
+            return self._transition(
+                record,
+                Status.NEEDS_MANUAL,
+                SYSTEM,
+                "revision.limit_reached",
+                {"revision": record.revision},
+            )
+
+        source_text = stored.get("source_text", "")
+        revised_text = f"{source_text}\n\n[Yêu cầu chỉnh sửa / Revision instruction]\n{instruction}"
+        _, sequence = parse_quote_number(record.quote_number)
+        result = await self.pipeline(
+            revised_text,
+            settings=self.settings,
+            facade=self.facade,
+            seller_block=self.seller_block,
+            sequence=sequence,
+            on_date=on_date,
+        )
+        if result.quote is None or result.critic is None:
+            return self._transition(
+                record,
+                Status.NEEDS_MANUAL,
+                SYSTEM,
+                "revision.failed",
+                {"reasons": result.clarification_reasons},
+            )
+
+        record = self._transition(record, Status.DRAFTING, PIPELINE, "revision.drafted")
+        record = self._transition(record, Status.VALIDATING, PIPELINE, "revision.validating")
+        record.flags = [*result.critic.blocking, *result.critic.non_blocking]
+        record.totals_json = totals_of(result.quote.model_dump_json())
+        return self._transition(
+            record,
+            Status.PENDING_APPROVAL,
+            PIPELINE,
+            "revision.pending_approval",
+            {"revision": record.revision, "total_vnd": result.quote.total_vnd},
+            quote_json=result.quote.model_dump_json(),
+            critic_json=result.critic.model_dump_json(),
+            html=result.html,
+        )
