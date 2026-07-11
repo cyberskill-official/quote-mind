@@ -45,7 +45,12 @@ SOPS: list[SOPSnippet] = [
         topic=SopTopic.PAYMENT,
         text=BilingualText(
             vi="Bản quyền phần mềm và dịch vụ triển khai: thanh toán 100% trước khi kích hoạt.",
-            en=("Software licences and implementation services: paid in full before activation."),
+            # "paid in full" is a perfectly good translation of "thanh toán 100%" and it is *wrong*
+            # here: it drops the digit. FR-072 compares the numbers in the vi and en halves of every
+            # bilingual field and blocks the quote when they disagree - and it caught this, live, on
+            # the first server quote after FR-048 shipped. The guardrail does not care that a human
+            # wrote the text. See test_every_seeded_sop_survives_the_bilingual_number_check.
+            en="Software licences and implementation services: 100% payment before activation.",
         ),
     ),
     # --- delivery ---

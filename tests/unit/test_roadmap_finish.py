@@ -223,6 +223,31 @@ def test_the_terms_come_from_the_sop_tenant(monkeypatch: pytest.MonkeyPatch) -> 
     assert "payment=default" in applied
 
 
+def test_every_seeded_sop_survives_the_bilingual_number_check() -> None:
+    """FR-072 applies to the text a human wrote, exactly as it applies to the text a model wrote.
+
+    This is not hypothetical. The first server quote after FR-048 shipped came back BLOCKED, live,
+    with `BILINGUAL_NUMBER_MISMATCH` - because one seeded snippet said "thanh toán 100%" in
+    Vietnamese and "paid in full" in English. That is a good translation and a bad *quote*: the
+    number vanished. The critic could not tell that a human had written it, and it was right not to
+    care.
+
+    Terms are retrieved into real quotes now, so the seed data is production content. It gets the
+    same gate.
+    """
+    import re  # noqa: PLC0415
+
+    from quotemind.seed.sop import SOPS  # noqa: PLC0415
+
+    digits = re.compile(r"\d+")
+    for sop in SOPS:
+        assert digits.findall(sop.text.vi) == digits.findall(sop.text.en), (
+            f"the {sop.topic.value} snippet has different numbers in its two languages, so any "
+            f"quote that retrieves it is blocked by FR-072."
+            f"\n  vi: {sop.text.vi}\n  en: {sop.text.en}"
+        )
+
+
 def test_a_quote_still_has_terms_when_the_memory_store_is_down(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
