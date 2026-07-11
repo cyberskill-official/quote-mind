@@ -67,3 +67,6 @@ deploy-frontend:
 proof:
 	python -m quotemind.cloud.alibaba_proof
 
+
+smoke:  ## live end-to-end check against the deployment (DEMO_API_TOKEN required)
+	python deploy/smoke.py

@@ -1392,3 +1392,30 @@ usably by handing the URL back.
 
 Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **350 passed**, pricing branch coverage
 100%.
+
+### The check that would have caught it, checked in
+
+The live suite that found the `Content-Disposition` P0 was a script in `/tmp`. That is not a check,
+it is an anecdote: nobody else can run it, CI does not know it exists, and nothing stops Function
+Compute quietly putting the header back. It is now `deploy/smoke.py` (`make smoke`), it runs against
+the **deployment** rather than the code, and its first assertion is that `/` and `/eval` send no
+`Content-Disposition` at all.
+
+Writing it surfaced a second bug of exactly the same family, this time in my own tooling. The old
+script posted a **fixed** RFQ string. Intake is idempotent on the source text (FR-024) - so from its
+second run onward it was never exercising the pipeline. It was handed back the quote the *previous*
+run had left behind, and asserted against that. It passed, every time, and it was testing nothing:
+`cancel` was even "failing" because the quote it re-fetched had already been cancelled an hour
+earlier, which is the system behaving perfectly. Every run now posts an RFQ the system has genuinely
+never seen, and the pipeline block went from re-reading a cached answer to running end to end.
+
+One more, smaller: the smoke test verifies TLS against a **shipped** CA bundle (`certifi`), not
+whatever the machine happens to trust. A macOS framework Python has no root store until someone runs
+`Install Certificates.command`, so the naive version failed on a perfectly valid certificate - and a
+check that cries wolf on a good deployment is worse than no check, because it teaches you to ignore
+it. It still fails on a bad certificate.
+
+Three bugs, one shape: **a check is worth exactly what it would have caught.**
+
+Live, over HTTPS, against a pipeline run from scratch: **16/16**.
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **350 passed**, pricing branch 100%.
