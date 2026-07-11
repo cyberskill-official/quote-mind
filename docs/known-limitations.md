@@ -26,6 +26,36 @@ the platform genuinely cannot answer differently.
 
 **What a reviewer actually loses:** a few seconds. Wait for the gate, then cancel.
 
+## FR-133 — structured output is not used on the vision path
+
+`structured_model=` is wired at the text parser, the matcher and the eval baseline: the model is
+handed a schema and the SDK guarantees the shape. The vision path parses `qwen-vl-ocr`'s JSON by
+hand, because **`qwen-vl-ocr` is an OCR model, not a tool-calling one** — it has no structured-output
+mode to use. This is not an unfinished corner; it is the model's capability boundary, and the frozen
+registry (§12) names that model.
+
+The hand-parse is defensive, and the critic recomputes every number that comes out of it regardless,
+so a malformed OCR response produces a flagged quote, not a wrong one.
+
+## FR-036 — one document is one quote
+
+The spec allows splitting a single document containing several unrelated RFQs into several quotes.
+We do not. P2, and out of scope for the demo: an RFQ that is really two RFQs is a document-triage
+problem, and solving it badly (splitting when you should not have) produces two wrong quotes instead
+of one right question.
+
+## FR-074 — there is no auto-fix loop, deliberately
+
+The spec allows the critic to hand a failing quote back to the drafter to repair itself. We route
+every defect to a human instead.
+
+This is the one non-goal worth arguing for rather than apologising for. **An autopilot that quietly
+repairs its own defects is the exact thing this product exists to argue against.** The measured
+result is that the single-agent baseline gets the money wrong on 60% of quotes and never notices; a
+self-repair loop is that same confidence, wearing a seatbelt. When the critic and the drafter
+disagree about a price, the interesting information is *that they disagree*, and it belongs in front
+of the person whose name goes on the invoice.
+
 ## FR-091 — the PDF route hands back a signed URL, it does not redirect
 
 The spec allows a 302 to the object. We return the URL in JSON instead, and the docstring on

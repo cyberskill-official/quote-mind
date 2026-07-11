@@ -1480,3 +1480,30 @@ never seen all the way to the approval gate, on every deploy. A broken deploy is
 
 That is the whole argument for the smoke test existing, made twice in one afternoon - once by the
 bug, once by the pipeline that shipped it.
+
+### The backlog is done
+
+Every FR in QM-SPEC-001 is in `docs/traceability.csv` - 85 of 85, none missing, none invented.
+
+    P0   65 / 66
+    P1   23 / 24
+    P2    0 / 2
+
+Four items are open, and not one of them is unfinished work:
+
+  * **FR-133** (P0, partial) - `structured_model=` is wired at the text parser, the matcher and the
+    baseline. The vision path hand-parses JSON because `qwen-vl-ocr` is an OCR model, not a
+    tool-calling one. It has no structured-output mode. That is the model's boundary, not ours, and
+    the critic recomputes every number that comes out of it anyway.
+  * **FR-134** (P1, partial by design) - the cancel decision. The 409 stays.
+  * **FR-036** (P2) - one document is one quote.
+  * **FR-074** (P2) - no auto-fix loop, and this is the non-goal worth arguing for rather than
+    apologising for. An autopilot that quietly repairs its own defects is the exact thing this
+    product exists to argue against. The baseline gets the money wrong on 60% of quotes and never
+    notices; a self-repair loop is that same confidence wearing a seatbelt. When the critic and the
+    drafter disagree about a price, the interesting information is *that they disagree*.
+
+All four are now in `docs/known-limitations.md`. A limitation you have written down is a decision;
+one you have not is a bug you have not met yet.
+
+What is left is Stephen's voice on the demo, and the submission.
