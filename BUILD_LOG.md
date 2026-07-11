@@ -336,3 +336,50 @@ feed AssemblyLine, and unknown_customer feeds the critic's non-blocking flag.
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (48 files), import-linter 4/4 kept,
 pytest 114 passed.
+## 2026-07-11 - EP-06 quote assembly (branch feat/FR-060-assemble)
+
+FR-060, the keystone that turns matched, priced lines into a Quote (DM-10) and ties the whole
+deterministic chain together: pricing -> assembly -> critic -> render.
+
+Delivered (src/quotemind/quote/assemble.py):
+- AssemblyLine: one resolved RFQ line (CatalogProduct + qty + tier + line discount + optional NL
+  overrides for description/unit/note + source). Description/unit default to the catalog values, so
+  assembly is usable without the drafter and the drafter can override later.
+- assemble_quote(...): for each line applies unit_price (FR-051 tiered), vat_rate_for (FR-052,
+  telecom forced to 10%), line_total and vat_amount, then quote_totals for subtotal / per-rate VAT /
+  grand total, amount_in_words_vi for the bang chu, to_usd for the optional USD reference, and
+  margin/blended_margin for MarginInfo. Every number is engine-produced; the LLM only supplies the
+  NL fields, which arrive as inputs. Sets quote flags VAT_EXCLUDED_CATEGORY (any telecom line) and
+  LEAD_TIME (any out-of-stock line).
+- Exported from quote/__init__.py.
+- Tests (3): a two-line dealer+project quote whose numbers are checked against the engine, then the
+  end-to-end proof - run_critic returns zero recompute diffs and passed=True (assembly and the
+  critic agree by construction), and render_html shows the grand total and quote number; the
+  VAT_EXCLUDED_CATEGORY/LEAD_TIME flags; and NL fields defaulting to the catalog.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (47 files), import-linter 4/4 kept,
+pytest 106 passed.
+## 2026-07-11 - PR-4 live close + memory search metadata fix (branch fix/memory-search-metadata)
+
+OSS was activated and the three offline PRs (EP-03, EP-07, EP-06/09) merged to main. Resumed with
+the live provision + catalog round-trip that had been blocked.
+
+Live verification (Mac .venv against real ap-southeast-1 cloud):
+- deploy/provision.py: created quotemind-inbox and quotemind-artifacts (both private); Tablestore
+  tables/indexes initialized at vector dim 1024; exit 0. Re-run is idempotent (FR-004 AC).
+- Catalog round-trip: embedded 3 products with text-embedding-v4 (dim 1024), put_catalog, then
+  get_catalog (equal round-trip) and search_catalog_vector - top hit DELL-LAT-5450 @ 0.85 for a
+  "laptop Dell doanh nghiep i5 16GB" query, correctly ranked ahead of the monitor and switch, with
+  byte-exact Vietnamese reconstructed. full_text_search returned the two Dell items.
+
+Bug found and fixed (store.py): the SDK's vector_search / full_text_search return DocumentHit
+documents with metadata = {} unless meta_data_to_get is passed, so _parse could not find
+payload_json and _hits dropped every result (search returned 0 while get_document worked). Fixed all
+four search methods (search_catalog_vector, search_catalog_text, search_episodic, search_sop) to
+pass meta_data_to_get=[payload_json]. This is the value of the live round-trip - a real
+result-mapping bug the mocked unit test (which returns a canned Response with metadata) could not
+catch. No unit test asserts call kwargs, so the fix is transparent to the suite.
+
+Verification (Python 3.10 sandbox, rebuilt after session reset): ruff clean, mypy clean (47 files),
+import-linter 4/4 kept, pytest 103 passed. Live: catalog vector + text search now return
+reconstructed models.

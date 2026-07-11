@@ -122,7 +122,10 @@ class MemoryFacade:
         self, query_vector: list[float], top_k: int = 10
     ) -> list[tuple[CatalogProduct, float]]:
         response = self.knowledge.vector_search(
-            query_vector=query_vector, top_k=top_k, tenant_id=TENANT_CATALOG
+            query_vector=query_vector,
+            top_k=top_k,
+            tenant_id=TENANT_CATALOG,
+            meta_data_to_get=[_PAYLOAD],
         )
         return _hits(response, CatalogProduct)
 
@@ -130,7 +133,7 @@ class MemoryFacade:
         self, query: str, limit: int = 10
     ) -> list[tuple[CatalogProduct, float]]:
         response = self.knowledge.full_text_search(
-            query=query, tenant_id=TENANT_CATALOG, limit=limit
+            query=query, tenant_id=TENANT_CATALOG, limit=limit, meta_data_to_get=[_PAYLOAD]
         )
         return _hits(response, CatalogProduct)
 
@@ -171,7 +174,10 @@ class MemoryFacade:
         self, customer_id: str, query_vector: list[float], top_k: int = 5
     ) -> list[tuple[EpisodicQuoteMemory, float]]:
         response = self.knowledge.vector_search(
-            query_vector=query_vector, top_k=top_k, tenant_id=episodic_tenant(customer_id)
+            query_vector=query_vector,
+            top_k=top_k,
+            tenant_id=episodic_tenant(customer_id),
+            meta_data_to_get=[_PAYLOAD],
         )
         return _hits(response, EpisodicQuoteMemory)
 
@@ -192,7 +198,10 @@ class MemoryFacade:
         self, query_vector: list[float], top_k: int = 5
     ) -> list[tuple[SOPSnippet, float]]:
         response = self.knowledge.vector_search(
-            query_vector=query_vector, top_k=top_k, tenant_id=TENANT_SOP
+            query_vector=query_vector,
+            top_k=top_k,
+            tenant_id=TENANT_SOP,
+            meta_data_to_get=[_PAYLOAD],
         )
         return _hits(response, SOPSnippet)
 

@@ -13,12 +13,13 @@ FR-052,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/vat.py,tests/unit/test_va
 FR-053,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (margin),tests/unit/test_pricing.py,implemented
 FR-054,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (to_usd/format),tests/unit/test_pricing.py,implemented
 FR-055,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/words_vi.py,tests/unit/test_words_vi.py,implemented
-FR-004,P0,PR-4,feat/PR-4-memory,deploy/provision.py,,written (live-run pending creds)
-FR-040,P0,PR-4,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented
+FR-004,P0,PR-4,fix/memory-search-metadata,deploy/provision.py,,live-verified (2 buckets + tables, ap-southeast-1)
+FR-040,P0,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented; live vector+text search verified (meta_data_to_get fix)
 E.1,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified
 E.2,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (live DashScope)
 E.3,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (AgentScope structured output)
 MEM-live,-,PR-4,feat/PR-4-memory,src/quotemind/memory/store.py,live Tablestore init_tables + put/get round-trip,verified
+MEM-vector,-,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,live embed(text-embedding-v4) + put_catalog + vector/text search,verified
 FR-046,P0,EP-04,feat/EP-04-forgetting,src/quotemind/memory/episodic.py + gc.py,tests/unit/test_episodic_scoring.py + test_gc.py,implemented
 FR-049,P1,EP-04,feat/EP-04-forgetting,src/quotemind/memory/budget.py,tests/unit/test_budget.py,implemented
 FR-033,P0,EP-03,feat/FR-033-excel-parser,src/quotemind/parsing/excel.py,tests/unit/test_excel_parser.py,implemented
@@ -30,3 +31,4 @@ FR-062,P0,EP-06,feat/FR-090-render,src/quotemind/quote/numbering.py,tests/unit/t
 FR-090,P0,EP-09,feat/FR-090-render,src/quotemind/quote/render/ (quote.html.j2 + __init__.py),tests/unit/test_render.py,implemented (HTML offline; WeasyPrint PDF live)
 FR-042,P0,EP-04,feat/FR-042-matcher,src/quotemind/tools/matching.py,tests/unit/test_matching.py,implemented (fusion+banding; LLM-select injected)
 FR-043,P0,EP-04,feat/FR-042-matcher,src/quotemind/tools/customer.py,tests/unit/test_customer.py,implemented
+FR-060,P0,EP-06,feat/FR-060-assemble,src/quotemind/quote/assemble.py,tests/unit/test_assemble.py,implemented (deterministic; NL fields injected)
