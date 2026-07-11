@@ -95,6 +95,28 @@ def test_revise_returns_202_and_bumps_the_revision() -> None:
         _teardown()
 
 
+def test_approve_triggers_dispatch_and_pdf_redirects_to_a_presigned_url() -> None:
+    store = FakeStore()
+    client = _client(store)
+    try:
+        quote_id = client.post("/api/rfq", json=_RFQ, headers=_AUTH).json()["quote_id"]
+
+        approved = client.post(f"/api/quotes/{quote_id}/approve", json={}, headers=_AUTH)
+        assert approved.status_code == 200
+        # FR-083: approval triggers dispatch; TestClient drains background tasks before returning.
+        review = client.get(f"/api/quotes/{quote_id}", headers=_AUTH).json()
+        assert review["status"] == Status.SENT.value
+        events = [event["event"] for event in review["audit"]]
+        assert "dispatch.sent_stub" in events  # FR-093
+
+        # API-09 / FR-091: 302 to a fresh presigned GET, not the bytes themselves.
+        pdf = client.get(f"/api/quotes/{quote_id}/pdf", headers=_AUTH, follow_redirects=False)
+        assert pdf.status_code == 302
+        assert pdf.headers["location"].startswith("https://signed.example/quotes/")
+    finally:
+        _teardown()
+
+
 def test_unsupported_upload_is_rejected() -> None:
     store = FakeStore()
     client = _client(store)

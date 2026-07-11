@@ -93,7 +93,7 @@
     <p><b>The deterministic core is complete and proven end to end.</b> An RFQ can be parsed (Excel),
        matched and banded against the catalog, the customer and tier resolved, priced in exact Decimal
        dong, assembled into a Quote, independently re-checked by the critic (zero diffs), and rendered
-       to bilingual HTML - all offline-tested, 146 tests green.</p>
+       to bilingual HTML - all offline-tested, 156 tests green.</p>
     <p><b>The cloud plane is live.</b> OSS buckets provisioned, Tablestore knowledge store seeded,
        and catalog vector + full-text search verified against real ap-southeast-1 (a real result-mapping
        bug was found and fixed there).</p>
@@ -105,8 +105,12 @@
        counter, run to pending_approval, and can then be approved by a <i>different process</i> that
        simply loads it from Tablestore - with a verified hash-chained audit trail. Blocking flags
        cannot be approved without an audited waiver.</p>
-    <p><b>Next:</b> WeasyPrint PDF + OSS artifact + email dispatch, the OSS drop channel, then the
-       dashboard, observability and the evaluation harness.</p>
+    <p><b>The quote ships.</b> On approval the PDF is rendered by WeasyPrint, stored privately in OSS,
+       fetched back over a V4 presigned URL (verified: HTTP 200, real PDF bytes, diacritics intact),
+       and the bilingual email is dispatched - stub transport writes the same message to the OSS
+       outbox. An RFQ dropped into oss://quotemind-inbox/rfq/ also runs the whole path by itself.</p>
+    <p><b>Next:</b> the review dashboard, OTel observability and cost accounting, then the evaluation
+       harness and the deployment proof.</p>
   </div>
 
   <div class="legend">
@@ -128,8 +132,8 @@
 const EPICS = [
   { id: "EP-01", name: "Repository, infrastructure, scaffolding", active: false, note: "Seed command live. Remaining: s.yaml deploy descriptor, deployment proof, model bootstrap check.",
     frs: [["001","done"],["002","done"],["003","todo"],["004","done","live"],["005","todo"],["006","done"],["007","done"],["008","done"],["009","done"],["010","done"],["011","done","live"],["012","todo"]] },
-  { id: "EP-02", name: "Intake and channels", active: false, note: "POST /api/rfq, deterministic classification, idempotency and upload guards all live. OSS drop trigger remains.",
-    frs: [["020","done","live"],["021","todo"],["022","done"],["023","done"],["024","done","live"],["025","done"]] },
+  { id: "EP-02", name: "Intake and channels", active: false, note: "POST /api/rfq, the OSS drop channel, deterministic classification, idempotency and upload guards - all live.",
+    frs: [["020","done","live"],["021","done","live"],["022","done"],["023","done"],["024","done","live"],["025","done"]] },
   { id: "EP-03", name: "Document parsing and extraction", active: true, note: "Excel parser + validation gate done. Text parser live. Vision + PDF rasterisation remain.",
     frs: [["030","done","live"],["031","todo"],["032","todo"],["033","done"],["034","done"],["035","partial"],["036","todo"]] },
   { id: "EP-04", name: "Catalog, customers and memory", active: true, note: "Store, embeddings, hybrid matching and customer resolution all live-verified. Episodic read/write pending.",
@@ -142,8 +146,8 @@ const EPICS = [
     frs: [["070","done"],["071","partial"],["072","done"],["073","todo"],["074","todo"]] },
   { id: "EP-08", name: "Human-in-the-loop approval", active: false, note: "Durable pause/resume proven: a fresh process loads the quote from Tablestore and approves it. Waivers audited.",
     frs: [["080","done"],["081","done","live"],["082","done"],["083","done","live"],["084","done"],["085","partial"]] },
-  { id: "EP-09", name: "Document generation and dispatch", active: false, note: "Hash-chained audit trail live. WeasyPrint PDF, OSS artifact + presigned URL and email dispatch remain.",
-    frs: [["090","partial"],["091","todo"],["092","todo"],["093","todo"],["094","done","live"]] },
+  { id: "EP-09", name: "Document generation and dispatch", active: false, note: "PDF rendered, stored privately in OSS, fetched over a presigned URL, and dispatched. Brand TTFs still to drop in.",
+    frs: [["090","done","live"],["091","done","live"],["092","done"],["093","done","live"],["094","done","live"]] },
   { id: "EP-10", name: "Review dashboard (frontend)", active: false, note: "Not started.",
     frs: [["100","todo"],["101","todo"],["102","todo"],["103","todo"],["104","todo"],["105","todo"],["106","todo"]] },
   { id: "EP-11", name: "Observability and reasoning trace", active: false, note: "Structured logging exists (FR-008). OTel spans, trace doc, cost accounting pending.",
@@ -160,8 +164,9 @@ const PHASES = [
   { s: "done", t: "Cloud plane live", d: "OSS buckets provisioned, Tablestore tables + vector index, catalog embed/put/search verified on ap-southeast-1." },
   { s: "done", t: "Agent / live-model layer", d: "Model client, embedding pipeline, text parser, LLM catalog select with SKU whitelist, orchestrator - proven live end to end." },
   { s: "done", t: "Intake, persistence and the human gate", d: "POST /api/rfq, qm_quotes/qm_audit/qm_counters, idempotency, state machine, durable pause/resume, approve/reject/revise, hash-chained audit." },
-  { s: "now",  t: "PDF, dispatch and the OSS drop channel", d: "WeasyPrint PDF, OSS artifact + presigned URL, DirectMail dispatch with stub fallback, the quotemind-inbox trigger." },
-  { s: "next", t: "Dashboard, observability, eval", d: "Review UI, OTel GenAI spans and cost accounting, labeled dataset + metrics runner vs single-agent baseline, deployment proof." },
+  { s: "done", t: "PDF, dispatch and the OSS drop channel", d: "WeasyPrint PDF, private OSS artifact + V4 presigned URL, bilingual DirectMail dispatch with stub fallback, the quotemind-inbox trigger." },
+  { s: "now",  t: "Dashboard and observability", d: "Review UI (queue, detail, actions, trace panel), OTel GenAI spans, persisted trace document, cost accounting." },
+  { s: "next", t: "Evaluation and deployment proof", d: "Labeled dataset + metrics runner vs the single-agent baseline, CI smoke eval, golden PDF snapshot, s.yaml + deployment proof." },
 ];
 
 const LABEL = { done: "Done", partial: "Partial", todo: "To do" };
@@ -197,7 +202,7 @@ document.getElementById("overallCounts").innerHTML = `
   <span><b style="color:#b98c06">${P}</b> partial</span>
   <span><b style="color:var(--muted)">${T}</b> to do</span>
   <span style="margin-left:auto;color:var(--muted)">
-    ${Math.round(((D + P * 0.5) / TOTAL) * 100)}% weighted complete - 146 tests green</span>`;
+    ${Math.round(((D + P * 0.5) / TOTAL) * 100)}% weighted complete - 156 tests green</span>`;
 
 document.getElementById("phases").innerHTML = PHASES.map((p, i) => `
   <div class="phase ${p.s}">

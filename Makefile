@@ -1,8 +1,8 @@
 .PHONY: setup setup-all dev test lint type verify eval eval-smoke eval-baseline seed demo gc diagrams deploy deploy-frontend proof
 
-## setup: install the package + offline-gate deps (agents + memory + parse; Python 3.12)
+## setup: install the package + offline-gate deps (needs pango/cairo for WeasyPrint)
 setup:
-	pip install -e .[agents,memory,parse,dev]
+	pip install -e .[agents,memory,parse,cloud,pdf,dev]
 
 ## setup-all: install the full runtime stack + dev toolchain
 setup-all:
