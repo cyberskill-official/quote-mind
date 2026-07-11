@@ -1217,3 +1217,34 @@ old terms, because it landed on a warm Function Compute instance 14 seconds afte
 env-var `git_sha` on `/health` had already flipped - config updates before code does. That is the
 "green deploy shipped the wrong code" failure I built the CD guard for, in miniature, and it means
 the guard needs to check *behaviour*, not a version string. Noted for the next round.
+
+### The live URL has never rendered in a browser
+
+Found while trying to screenshot the site for the demo video, which is a humbling way to find it.
+
+Function Compute injects `Content-Disposition: attachment` on **every** response from its default
+`*.fcapp.run` domain. We do not set it; it is not configurable. `curl` and `fetch` ignore it - which
+is why the API, the integration tests and every live check in this log pass - but **a browser obeys
+it**, and a browser is exactly what a judge uses. Open the URL and you get `download.html`.
+
+So the dashboard and `/eval` have never been viewable by anyone. Three separate browsers failed to
+screenshot the page during this session and I read each failure as a browser problem. The third one
+put a **Save As** dialog on screen with `download (3).html` in it, and I still did not see it.
+
+It is the same restriction that broke the PDF route (`ExternalRedirectForbidden` on a cross-domain
+302). The default FC domain is deliberately crippled for browser use in two different ways, and we
+have now been bitten by both.
+
+OSS static hosting is not an escape: Block Public Access is set at the **account** level on this
+account (`Put public bucket acl is not allowed`), which is the correct setting and should stay - the
+artifacts bucket holds customer quote PDFs.
+
+The fix is a custom domain, it takes about fifteen minutes, and it needs Stephen's DNS. Written up
+step by step in `docs/deploy/custom-domain.md`, including the two things to change in the repo once
+it works - the live URL in the README, and the FR-091 302, whose comment already says "restore the
+302 the day a custom domain is bound."
+
+**The lesson is not about Function Compute.** Every check in this project asserts against `curl`, and
+`curl` is not the client. The audit that found eight bugs asked *"does the API return the right
+JSON?"* over and over, and never once asked *"does the page open?"* A test that never uses the thing
+the way a user uses it is a test that can pass forever while the product is unusable.
