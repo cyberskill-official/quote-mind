@@ -21,7 +21,7 @@ from fastapi.testclient import TestClient
 
 from quotemind.api.app import app, get_service
 from quotemind.memory.quotes import PAYLOAD_COLUMNS, QuoteStore
-from quotemind.models import Status
+from quotemind.models import Channel, Language, QuoteRecord, Status
 
 from .test_service import FakeStore, _service
 
@@ -34,26 +34,57 @@ def _client(service: Any) -> TestClient:
 
 
 # --- the allowlists that drifted ---
-def test_every_column_put_quote_writes_is_a_column_get_quote_reads() -> None:
-    """The bug, made structurally impossible.
+def test_put_quote_writes_exactly_the_columns_get_quote_reads() -> None:
+    """The bug, made structurally impossible - on the second attempt.
 
-    `put_quote` gained `plan_json` and `episodic_json`; `get_quote` did not. The plan and the
-    memories were persisted on every single quote and read back by nobody, and the two dashboard
-    panels built on them were empty in production while every test passed.
+    There were THREE lists of payload columns: a keyword-only signature on `put_quote`, an inline
+    tuple in its body that did the actual writing, and `PAYLOAD_COLUMNS` on the read side.
 
-    Relying on a human to remember two lists is not a control. This is.
+    `plan_json` and `episodic_json` were added to the first two and forgotten in the third: written
+    to Tablestore, read back by nobody, two dashboard panels empty in production, 310 tests green.
+    The fix added the name to the signature and to PAYLOAD_COLUMNS and asserted *those two* agreed -
+    and the very next column, `extraction_json`, was dropped by the inline tuple the test did not
+    know about. Live. Twice. The same shape.
+
+    So the other two lists are gone. This asserts the one that is left is the one that writes.
     """
-    import inspect  # noqa: PLC0415 - only this test needs to introspect the signature
+    written: list[tuple[str, str]] = []
 
-    written = {
-        name
-        for name, param in inspect.signature(QuoteStore.put_quote).parameters.items()
-        if param.kind is inspect.Parameter.KEYWORD_ONLY
-    }
-    assert written == set(PAYLOAD_COLUMNS), (
-        "put_quote writes a payload column that get_quote will never read back "
-        f"(or vice versa). written={sorted(written)} read={sorted(PAYLOAD_COLUMNS)}"
+    class _Client:
+        def update_row(self, _table: str, row: Any, _cond: Any) -> None:
+            written.extend(row.attribute_columns["PUT"])
+
+    store = QuoteStore.__new__(QuoteStore)
+    store.client = _Client()  # type: ignore[assignment]
+    record = QuoteRecord(
+        quote_id="01J",
+        quote_number="QM-2026-0001",
+        status=Status.RECEIVED,
+        channel=Channel.PASTE,
+        language=Language.VI,
     )
+    store.put_quote(record, **{name: f"<{name}>" for name in PAYLOAD_COLUMNS})
+
+    reached_tablestore = {name for name, _ in written}
+    for name in PAYLOAD_COLUMNS:
+        assert name in reached_tablestore, (
+            f"{name} is in PAYLOAD_COLUMNS - so get_quote will look for it - but put_quote never "
+            "wrote it. It will be empty in production and green in CI."
+        )
+
+
+def test_put_quote_refuses_a_column_it_cannot_persist() -> None:
+    """Raise, do not drop. A silent drop is what left a green suite and an empty panel."""
+    store = QuoteStore.__new__(QuoteStore)
+    record = QuoteRecord(
+        quote_id="01J",
+        quote_number="QM-2026-0001",
+        status=Status.RECEIVED,
+        channel=Channel.PASTE,
+        language=Language.VI,
+    )
+    with pytest.raises(ValueError, match="not a persisted quote column"):
+        store.put_quote(record, invented_json="{}")
 
 
 # --- a quote nobody asked us to send is not a failed dispatch ---
