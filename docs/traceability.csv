@@ -23,3 +23,6 @@ FR-046,P0,EP-04,feat/EP-04-forgetting,src/quotemind/memory/episodic.py + gc.py,t
 FR-049,P1,EP-04,feat/EP-04-forgetting,src/quotemind/memory/budget.py,tests/unit/test_budget.py,implemented
 FR-033,P0,EP-03,feat/FR-033-excel-parser,src/quotemind/parsing/excel.py,tests/unit/test_excel_parser.py,implemented
 FR-034,P0,EP-03,feat/FR-033-excel-parser,src/quotemind/parsing/validate.py,tests/unit/test_excel_parser.py,implemented
+FR-070,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (recompute_diffs),tests/unit/test_critic.py,implemented
+FR-071,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (policy_flags),tests/unit/test_critic.py,implemented (subset; VAT-category deferred to pricing/agent)
+FR-072,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (bilingual/mojibake),tests/unit/test_critic.py,implemented
