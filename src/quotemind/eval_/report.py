@@ -1,6 +1,6 @@
 """FR-104: the eval report page - the headline claim, rendered from the run that produced it.
 
-The submission says the pipeline gets the money right on 97% of quotes and a single agent gets it
+The submission says the pipeline gets the money right on 93% of quotes and a single agent gets it
 right on 40%. That is the whole argument of this project, and until now the only way to check it was
 to read a JSON file in a directory nobody clones. So it is a page on the deployed site instead, and
 it is public - the same reasoning as `/health`: a claim a judge cannot verify without a credential
@@ -132,7 +132,7 @@ def _grid(data: dict[str, Any]) -> str:
         ok = case["pipeline_price_exact"]
         base_ok = case["baseline_price_exact"]
         # The interesting cell is the one where we are right and the single agent is not - that is
-        # the +57 points, one case at a time.
+        # the +53 points, one case at a time.
         cls = "won" if ok and not base_ok else ("ok" if ok else "bad")
         title = (
             f"{case['case_id']} - QuoteMind: {'price exact' if ok else 'wrong'}; "

@@ -87,6 +87,19 @@ def _context_columns(result: PipelineResult) -> dict[str, str]:
     # are not kept, and for a file drop `source_text` is only a placeholder - so if the extraction
     # is not written down here, there is nothing left to amend later.
     columns: dict[str, str] = {"extraction_json": result.extraction.model_dump_json()}
+
+    # FR-042. The matcher's decision *and its reason*, kept - including when the decision was to
+    # refuse. This used to be thrown away on the refusal path, which is precisely the path where it
+    # was needed: the system would work out that a customer had asked for a 64GB machine we do not
+    # sell, decline to substitute a 32GB one, and then tell the reviewer "no quote was produced".
+    # The reason was computed, was excellent, was bilingual, and was discarded. The human then had
+    # to re-read the email and the catalogue by hand - which is the entire job the autopilot exists
+    # to do.
+    if result.matches:
+        columns["matches_json"] = json.dumps(
+            [match.model_dump(mode="json") for match in result.matches]
+        )
+
     if result.plan is not None:
         columns["plan_json"] = result.plan.model_dump_json()
     if result.episodic:
@@ -272,6 +285,10 @@ class QuoteService:
         trace_json = self._persist_trace(record, result)
 
         if result.clarification_reasons:  # FR-034
+            # A refusal is a decision, and a decision the reviewer has to act on. It gets the same
+            # context every other outcome gets - the extraction, the matches, the reasons - because
+            # "no quote was produced" is not an answer, it is the absence of one.
+            record.flags = list(result.clarification_reasons)
             return self._transition(
                 record,
                 Status.NEEDS_CLARIFICATION,
@@ -279,6 +296,7 @@ class QuoteService:
                 "pipeline.needs_clarification",
                 {"reasons": result.clarification_reasons},
                 trace_json=trace_json,
+                **_context_columns(result),
             )
 
         if result.resolution is not None and result.resolution.profile is not None:
@@ -385,9 +403,11 @@ class QuoteService:
             "flags": record.flags,
             "totals": record.totals_json,
         }
-        for key in ("quote_json", "critic_json", "plan_json", "episodic_json"):
+        for key in ("quote_json", "critic_json", "plan_json", "episodic_json", "matches_json"):
             if key in stored:
                 payload[key.removesuffix("_json")] = json.loads(stored[key])
+        if "extraction_json" in stored:  # what the customer actually asked for, line by line
+            payload["extraction"] = json.loads(stored["extraction_json"])
         payload["audit"] = [
             event.model_dump(mode="json") for event in self.store.list_audit(quote_id)
         ]

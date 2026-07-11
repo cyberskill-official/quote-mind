@@ -57,6 +57,7 @@ class CounterContentionError(RuntimeError):
 PAYLOAD_COLUMNS = (
     "source_text",
     "extraction_json",  # FR-064: what a revision re-drafts from
+    "matches_json",  # FR-042: what the matcher decided, and why - including when it refused
     "quote_json",
     "critic_json",
     "trace_json",

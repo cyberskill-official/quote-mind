@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-07-11T06:59:58.113372+00:00",
+  "generated_at": "2026-07-11T19:03:20.376000+00:00",
   "pipeline": {
     "cases": 30,
     "skipped": 0,
     "line_extraction": {
       "precision": 1.0,
-      "recall": 0.9851,
-      "f1": 0.9925,
-      "tp": 66,
+      "recall": 0.9701,
+      "f1": 0.9848,
+      "tp": 65,
       "fp": 0,
-      "fn": 1
+      "fn": 2
     },
     "sku_top1_accuracy": 1.0,
-    "price_exactness": 0.9667,
-    "task_success": 0.9667,
-    "human_intervention_rate": 0.0667,
+    "price_exactness": 0.9333,
+    "task_success": 0.9333,
+    "human_intervention_rate": 0.1,
     "errors": 0,
     "latency_ms": {
-      "p50": 23006,
-      "p95": 39577
+      "p50": 30639,
+      "p95": 41651
     },
     "tokens": {
-      "in": 217536,
-      "out": 23240
+      "in": 248869,
+      "out": 28665
     },
     "cost_usd": {
-      "total": "0.309398",
-      "per_quote": "0.010313"
+      "total": "0.379114",
+      "per_quote": "0.012637"
     }
   },
   "baseline": {
@@ -46,16 +46,16 @@
     "human_intervention_rate": 0.0,
     "errors": 5,
     "latency_ms": {
-      "p50": 22755,
-      "p95": 30883
+      "p50": 18833,
+      "p95": 24657
     },
     "tokens": {
-      "in": 176858,
-      "out": 19365
+      "in": 174176,
+      "out": 20109
     },
     "cost_usd": {
-      "total": "0.328419",
-      "per_quote": "0.010947"
+      "total": "0.329665",
+      "per_quote": "0.010989"
     }
   },
   "cases": [
@@ -391,7 +391,7 @@
         "text",
         "vi"
       ],
-      "pipeline_price_exact": true,
+      "pipeline_price_exact": false,
       "pipeline_error": null,
       "baseline_price_exact": true,
       "baseline_error": null

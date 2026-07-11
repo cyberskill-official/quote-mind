@@ -32,12 +32,20 @@ same catalog and the same 30 labelled RFQs, five of them real scans:
 
 | | task success | **price exact** | flagged the problem |
 |---|---|---|---|
-| QuoteMind | **97%** | **97%** | 7% |
+| QuoteMind | **93%** | **93%** | 10% |
 | single agent | 40% | **40%** | **0%** |
 
-The single agent reads and matches almost as well. It gets the **money wrong on 60% of quotes - and
-never notices.** That is a system that mails a customer a wrong price with total confidence. Taking
-arithmetic away from the model, and putting a critic behind it, is worth **+57 points**.
+The single agent reads and matches almost as well - its SKU accuracy is within two points of ours. It
+gets the **money wrong on 60% of quotes, and never notices.** That is a system that mails a customer
+a wrong price with total confidence. Taking arithmetic away from the model, and putting a critic
+behind it, is worth **+53 points**.
+
+The two points we lose are worth naming, because we chose not to buy them back. One adversarial case
+asks for a laptop configuration the catalog does not sell - 64GB RAM, 2TB SSD. The matcher is shown
+the closest thing we do sell, a 32GB machine, and refuses to substitute it. The label expects the
+substitution; the system asks a human instead. We could have relabelled the case. Quietly selling
+someone a 32GB laptop when they asked for 64GB is not a rounding error, and a system that stops
+rather than guesses should not be penalised for stopping.
 
 ## It remembers, and it plans
 
