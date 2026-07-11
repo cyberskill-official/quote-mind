@@ -113,16 +113,31 @@
        traced with real provider token counts, priced, and persisted to OSS; the dashboard renders it
        as a step-by-step panel beside the quote. Approving a flagged quote raises a waiver modal, and
        the waiver lands verbatim on the hash-chained audit.</p>
-    <p><b>The multi-agent gain is measured, not asserted.</b> 30 labelled RFQ cases against a 61-SKU
-       catalog, scored against a single-agent baseline running the same models on the same inputs.
-       See eval/reports/ for the numbers, including the ones that did not go our way.</p>
+    <p><b>Scans are read, not skipped.</b> Scanned RFQs are rasterised at 200 DPI and read by
+       qwen-vl-ocr. The parser never repairs malformed JSON and never guesses an unreadable quantity -
+       a parser that guesses at a price is worse than one that refuses. This unblocked the last 5 eval
+       cases, so the denominator is now the real 30.</p>
+    <p><b>The multi-agent gain is measured, not asserted.</b> All 30 labelled cases now run - including
+       5 real OCR scans - against a 61-SKU catalog and a single-agent baseline on the same models and
+       inputs. <b>97% task success and 97% price-exact, against 40% and 40%</b>: a +57 point gap. The
+       baseline got <i>worse</i> as scans were added (48% &rarr; 40%) - more documents mean more
+       arithmetic, and it does the arithmetic in the model. It flags a problem 0% of the time.
+       Confidently wrong, silently, is the failure mode the architecture exists to prevent. See
+       eval/reports/ for the numbers, including the ones that did not go our way.</p>
     <p><b>The Alibaba proof is a file you can run.</b> <code>make proof</code> exercises DashScope
        (chat + 1024-dim embedding), OSS (put &rarr; presigned GET &rarr; byte-compare &rarr; delete) and
        Tablestore (put &rarr; get &rarr; delete, diacritics byte-exact) against the real Singapore region:
-       8/8 checks pass. <code>deploy/s.yaml</code> ships both Function Compute functions, and the
-       cold-start check verifies every frozen model id and reports any substitution on /health.</p>
-    <p><b>Next:</b> deploy, paste the endpoint into the README, rehearse and shoot the demo. Then vision
-       OCR (FR-032), which unblocks the last 5 eval cases.</p>
+       8/8 checks pass.</p>
+    <p><b>It is deployed, and you can click it.</b>
+       <a href="https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run/">The dashboard</a> and
+       <a href="https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run/health">/health</a> are live
+       on Function Compute 3.0 in ap-southeast-1. /health reports <code>unverified: []</code> and
+       <code>substitutions: {}</code> - not a hardcoded banner: the function probes every frozen model
+       id from inside FC, and both lists being empty means each one answered live. Getting there cost
+       four 502s; the honest part is that the first three were guesses, and the fix only came once the
+       function was made to log what FC actually passes it. See api/fc.py and BUILD_LOG.</p>
+    <p><b>Next:</b> rehearse and shoot the demo video. Then bilingual NL drafting (FR-061), episodic
+       memory (FR-044/045), planner handoff (FR-131).</p>
   </div>
 
   <div class="legend">
@@ -142,11 +157,11 @@
 
 <script>
 const EPICS = [
-  { id: "EP-01", name: "Repository, infrastructure, scaffolding", active: false, note: "Complete. s.yaml deploys two FC functions; the Alibaba proof passes 8/8 live; the cold-start model check verifies all four frozen ids with no substitutions.",
+  { id: "EP-01", name: "Repository, infrastructure, scaffolding", active: false, note: "Complete and DEPLOYED. The API is live on FC 3.0 in ap-southeast-1; the Alibaba proof passes 8/8; /health probes every frozen model id from inside the function and reports 0 unverified, 0 substitutions.",
     frs: [["001","done"],["002","done"],["003","done"],["004","done","live"],["005","done","live"],["006","done"],["007","done"],["008","done"],["009","done"],["010","done"],["011","done","live"],["012","done","live"]] },
   { id: "EP-02", name: "Intake and channels", active: false, note: "POST /api/rfq, the OSS drop channel, deterministic classification, idempotency and upload guards - all live.",
     frs: [["020","done","live"],["021","done","live"],["022","done"],["023","done"],["024","done","live"],["025","done"]] },
-  { id: "EP-03", name: "Document parsing and extraction", active: true, note: "Text, Excel and digital-PDF RFQs all run the same pipeline. Scanned PDFs need vision OCR (FR-032) - the 5 eval cases waiting on it are declared, not hidden.",
+  { id: "EP-03", name: "Document parsing and extraction", active: false, note: "Complete. Text, Excel, digital-PDF and scanned-PDF RFQs all run the same pipeline; scans are rasterised at 200 DPI and read by qwen-vl-ocr. The 5 eval cases that were declared as blocked now run.",
     frs: [["030","done","live"],["031","done","live"],["032","todo"],["033","done"],["034","done"],["035","done","live"],["036","todo"]] },
   { id: "EP-04", name: "Catalog, customers and memory", active: true, note: "Store, embeddings, hybrid matching and customer resolution all live-verified. Episodic read/write pending.",
     frs: [["040","done","live"],["041","done","live"],["042","done","live"],["043","done"],["044","todo"],["045","todo"],["046","done"],["047","todo"],["048","todo"],["049","done"]] },
@@ -160,7 +175,7 @@ const EPICS = [
     frs: [["080","done"],["081","done","live"],["082","done"],["083","done","live"],["084","done"],["085","partial"]] },
   { id: "EP-09", name: "Document generation and dispatch", active: false, note: "PDF rendered, stored privately in OSS, fetched over a presigned URL, and dispatched. Brand TTFs still to drop in.",
     frs: [["090","done","live"],["091","done","live"],["092","done"],["093","done","live"],["094","done","live"]] },
-  { id: "EP-10", name: "Review dashboard (frontend)", active: true, note: "Queue, detail, approve/reject/revise with waiver, and the reasoning-trace panel all ship in one file. Realtime push (FR-104) still polls.",
+  { id: "EP-10", name: "Review dashboard (frontend)", active: false, note: "Live at the deployed endpoint. Queue, detail, approve/reject/revise with waiver and the reasoning-trace panel ship in one file, served same-origin by the API - OSS static hosting was refused by Block Public Access, and that bucket holds customer PDFs, so it stays private. Realtime push (FR-104) still polls.",
     frs: [["100","done"],["101","done"],["102","done"],["103","done"],["104","partial"],["105","done"],["106","done"]] },
   { id: "EP-11", name: "Observability and reasoning trace", active: false, note: "Every model/tool/memory step is traced with real provider token counts, priced, and persisted to OSS. Prompt bodies excluded unless TRACE_CONTENT=1.",
     frs: [["110","done"],["111","done"],["112","done"],["113","done"]] },
@@ -180,8 +195,9 @@ const PHASES = [
   { s: "done", t: "Dashboard and observability", d: "Review UI (queue, detail, actions, trace panel), OTel GenAI spans, persisted trace document, cost accounting from real provider token counts." },
   { s: "done", t: "Evaluation harness", d: "30 labelled cases against a 61-SKU catalog, metrics runner, single-agent baseline, CI cassettes, golden PDF. The multi-agent gain is now measured." },
   { s: "done", t: "Deployment proof and submission artifacts", d: "s.yaml (FC 3.0, two functions), the Alibaba proof module (8/8 live), the FR-012 cold-start model check, architecture diagram, demo script, submission text." },
-  { s: "now",  t: "Deploy and rehearse", d: "s deploy, paste the endpoint into the README, run the demo rehearsal (EV-08), shoot the video." },
-  { s: "next", t: "Remaining P1 surface", d: "Vision OCR for scans (FR-032, unblocks 5 eval cases), bilingual NL drafting (FR-061), episodic memory (FR-044/045), planner handoff (FR-131)." },
+  { s: "done", t: "Vision OCR and the live endpoint", d: "FR-031/032 (200 DPI raster + qwen-vl-ocr, 5/5 scanned cases quoted); the eval complete at 30/30 - 97% vs 40% task success against the baseline; the API deployed and verified on FC 3.0, dashboard served same-origin, /health reporting 0 unverified models." },
+  { s: "now",  t: "Rehearse and shoot the demo", d: "Run the EV-08 rehearsal against the live endpoint and record the video (docs/demo-script.md)." },
+  { s: "next", t: "Remaining P1 surface", d: "Bilingual NL drafting (FR-061), episodic memory (FR-044/045), planner handoff (FR-131), realtime push (FR-104)." },
 ];
 
 const LABEL = { done: "Done", partial: "Partial", todo: "To do" };

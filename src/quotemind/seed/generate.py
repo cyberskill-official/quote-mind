@@ -10,8 +10,10 @@ phantom SKUs would score the matcher against a target it could never hit.
 Composition per FR-120:
     10 vi text · 5 en text · 5 xlsx (3 vi / 2 en) · 5 vi scan · 3 en digital PDF · 2 adversarial
 
-The scanned-PDF cases are declared but carry `blocked_on: FR-032` - vision OCR is not built yet, so
-the runner skips them and says so in the report rather than quietly shrinking the denominator.
+The scanned cases are *actually scanned*: rendered, rasterised at 200 DPI, skewed a degree or so,
+given sensor noise and JPEG artefacts, then re-wrapped with no text layer. A "scan" fixture that
+still carried extractable text would quietly take the digital-PDF path, the vision model would never
+be called, and the OCR score would be the text parser's score wearing a hat.
 """
 
 from __future__ import annotations
@@ -288,29 +290,77 @@ _PDF_DIGITAL: list[Case] = [
     ),
 ]
 
-# FR-032 (vision OCR) is not built, so these are declared and skipped, not silently dropped.
+def _cong_van(sender: str, email: str, rows: list[tuple[str, int, str]]) -> str:
+    """A Vietnamese công văn as a human would send it - letterhead, table, signature block."""
+    items = "\n".join(
+        f"{index}. {description} - số lượng: {qty} {unit}"
+        for index, (description, qty, unit) in enumerate(rows, start=1)
+    )
+    return (
+        "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\n"
+        "Độc lập - Tự do - Hạnh phúc\n\n"
+        f"{sender}\n\n"
+        "V/v: Đề nghị báo giá thiết bị công nghệ thông tin\n\n"
+        "Kính gửi: Quý công ty,\n\n"
+        "Chúng tôi đề nghị Quý công ty báo giá các mặt hàng sau:\n\n"
+        f"{items}\n\n"
+        "Đề nghị báo giá đã bao gồm thuế GTGT. Giao hàng tại TP.HCM.\n\n"
+        f"Liên hệ: {email}\n\n"
+        "Trân trọng,\nTRƯỞNG PHÒNG MUA HÀNG"
+    )
+
+
+# FR-031/032: these are real scans - rendered, rasterised, rotated and noised - not text PDFs with a
+# "scanned" label. A fixture that still had a text layer would pass the vision path without ever
+# exercising OCR, and the eval would be measuring nothing.
 _PDF_SCAN: list[Case] = [
     Case(
-        f"vi_scan_{index:03d}", "pdf_scan", "vi",
-        "Đơn hàng scan - cần OCR để đọc.",
-        lines,
-        customer_id=customer,
-        blocked_on="FR-032",
-    )
-    for index, (lines, customer) in enumerate(
-        [
-            ([("Laptop Dell Latitude 5450 Core i5", "DELL-LAT-5450", 20),
-              ("Màn hình Dell P2723DE 27 inch", "DELL-P2723DE", 20)], "cust_thanhcong"),
-            ([("Laptop HP ProBook 450 G10", "HP-PROBOOK-450", 15),
-              ("Dock Dell WD19S", "DELL-WD19S", 15)], "cust_anphat"),
-            ([("Switch Cisco Catalyst 9200L 24 cổng PoE+", "CISCO-C9200L-24P", 2)],
-             "cust_hoabinh"),
-            ([("Máy chủ Dell PowerEdge R650", "DELL-R650", 1),
-              ("Synology DS1522+", "SYN-DS1522", 2)], "cust_minhlong"),
-            ([("Bản quyền Microsoft 365 Business Premium", "MS-M365-BP", 50)], "cust_daiviet"),
-        ],
-        start=1,
-    )
+        "vi_scan_001", "pdf_scan", "vi",
+        _cong_van("CÔNG TY TNHH THÀNH CÔNG", "mua.hang@thanhcong.vn", [
+            ("Laptop Dell Latitude 5450, Core i5, RAM 16GB, SSD 512GB", 20, "cái"),
+            ("Màn hình Dell P2723DE 27 inch", 20, "cái"),
+        ]),
+        [("Laptop Dell Latitude 5450 Core i5", "DELL-LAT-5450", 20),
+         ("Màn hình Dell P2723DE 27 inch", "DELL-P2723DE", 20)],
+        customer_id="cust_thanhcong",
+    ),
+    Case(
+        "vi_scan_002", "pdf_scan", "vi",
+        _cong_van("CÔNG TY CỔ PHẦN AN PHÁT", "kinhdoanh@anphat.com.vn", [
+            ("Laptop HP ProBook 450 G10, Core i5, RAM 16GB", 15, "cái"),
+            ("Dock Dell WD19S 130W USB-C", 15, "cái"),
+        ]),
+        [("Laptop HP ProBook 450 G10", "HP-PROBOOK-450", 15),
+         ("Dock Dell WD19S", "DELL-WD19S", 15)],
+        customer_id="cust_anphat",
+        tags=["demo"],  # the vetted demo scan (UJ-02)
+    ),
+    Case(
+        "vi_scan_003", "pdf_scan", "vi",
+        _cong_van("TẬP ĐOÀN XÂY DỰNG HÒA BÌNH", "it@hoabinh-corp.vn", [
+            ("Switch Cisco Catalyst 9200L 24 cổng PoE+", 2, "cái"),
+        ]),
+        [("Switch Cisco Catalyst 9200L 24 cổng PoE+", "CISCO-C9200L-24P", 2)],
+        customer_id="cust_hoabinh",
+    ),
+    Case(
+        "vi_scan_004", "pdf_scan", "vi",
+        _cong_van("CÔNG TY TNHH MINH LONG", "ketoan@minhlong.vn", [
+            ("Máy chủ Dell PowerEdge R650", 1, "cái"),
+            ("Thiết bị lưu trữ Synology DS1522+", 2, "cái"),
+        ]),
+        [("Máy chủ Dell PowerEdge R650", "DELL-R650", 1),
+         ("Synology DS1522+", "SYN-DS1522", 2)],
+        customer_id="cust_minhlong",
+    ),
+    Case(
+        "vi_scan_005", "pdf_scan", "vi",
+        _cong_van("CÔNG TY TNHH ĐẠI VIỆT", "contact@daiviet.net.vn", [
+            ("Bản quyền Microsoft 365 Business Premium (1 năm)", 50, "license"),
+        ]),
+        [("Bản quyền Microsoft 365 Business Premium", "MS-M365-BP", 50)],
+        customer_id="cust_daiviet",
+    ),
 ]
 
 _ADVERSARIAL: list[Case] = [
@@ -353,11 +403,65 @@ def _write_xlsx(case: Case, path: Path) -> None:
     workbook.save(path)
 
 
-def _write_pdf(case: Case, path: Path) -> None:
+def _render_pdf_bytes(case: Case, *, serif: bool = False) -> bytes:
     from weasyprint import HTML  # noqa: PLC0415 - optional heavy dep, only needed here
 
+    font = "Times New Roman, serif" if serif else "sans-serif"
     body = "".join(f"<p>{line}</p>" for line in case.body.splitlines() if line.strip())
-    HTML(string=f"<html><body style='font-family:sans-serif'>{body}</body></html>").write_pdf(path)
+    style = f"font-family:{font};font-size:13pt;line-height:1.6"
+    pdf = HTML(string=f"<html><body style='{style}'>{body}</body></html>").write_pdf()
+    assert pdf is not None
+    return pdf
+
+
+def _write_pdf(case: Case, path: Path) -> None:
+    path.write_bytes(_render_pdf_bytes(case))
+
+
+def _write_scan(case: Case, path: Path, *, seed: int) -> None:
+    """A real scan: rasterise the page, skew it, add sensor noise, and re-wrap as an image-only PDF.
+
+    The result has no text layer at all - which is the point. A "scan" fixture that still carried
+    extractable text would sail through the digital-PDF path and the vision model would never be
+    called, so the OCR metric would be measuring the text parser and reporting it as OCR.
+    """
+    import io  # noqa: PLC0415
+    import random  # noqa: PLC0415
+
+    import pypdfium2  # noqa: PLC0415
+    from PIL import Image  # noqa: PLC0415
+
+    document = pypdfium2.PdfDocument(_render_pdf_bytes(case, serif=True))
+    try:
+        image = document[0].render(scale=200 / 72).to_pil().convert("L")
+    finally:
+        document.close()
+
+    rng = random.Random(seed)  # noqa: S311 - fixture generation, not cryptography
+    image = image.rotate(
+        rng.uniform(-1.2, 1.2), resample=Image.Resampling.BICUBIC, expand=False, fillcolor=255
+    )
+
+    # Gaussian-ish sensor noise, deterministic per case so the fixture is reproducible.
+    pixels = image.load()
+    assert pixels is not None
+    for y in range(image.height):
+        for x in range(image.width):
+            value = pixels[x, y] + int(rng.gauss(0, 9))
+            pixels[x, y] = max(0, min(255, value))
+
+    buffer = io.BytesIO()
+    image.convert("RGB").save(buffer, format="JPEG", quality=72)  # JPEG artefacts, like a real scan
+
+    pdf = pypdfium2.PdfDocument.new()
+    page_image = pypdfium2.PdfImage.new(pdf)
+    page_image.load_jpeg(io.BytesIO(buffer.getvalue()))
+    width, height = image.size
+    page = pdf.new_page(width / 200 * 72, height / 200 * 72)
+    page_image.set_matrix(pypdfium2.PdfMatrix().scale(page.get_width(), page.get_height()))
+    page.insert_obj(page_image)
+    page.gen_content()
+    pdf.save(str(path))
 
 
 def build_case(case: Case) -> EvalCase:
@@ -404,11 +508,11 @@ def main() -> None:
         path = DATASET / _filename(case)
         if case.kind == "xlsx":
             _write_xlsx(case, path)
-            written += 1
         elif case.kind == "pdf_digital":
             _write_pdf(case, path)
-            written += 1
-        # pdf_scan inputs need a rasteriser and a vision parser (FR-032); declared, not generated.
+        else:  # pdf_scan
+            _write_scan(case, path, seed=abs(hash(case.case_id)) % 10_000)
+        written += 1
 
     labels = DATASET / "labels.json"
     labels.write_text(
@@ -418,7 +522,7 @@ def main() -> None:
     runnable = [case for case in ALL_CASES if case.blocked_on is None]
     print(f"dataset: {len(ALL_CASES)} cases labelled -> {labels}")
     print(f"dataset: {written} input files written; {len(runnable)} runnable, "
-          f"{len(ALL_CASES) - len(runnable)} blocked on FR-032 (vision OCR)")
+          f"{len(ALL_CASES) - len(runnable)} blocked")
 
 
 if __name__ == "__main__":

@@ -14,7 +14,8 @@ from pydantic import BaseModel, Field
 
 from .agents.matcher import select_sku
 from .agents.parser import extract_text_rfq
-from .config.models import MODEL_EMBED, MODEL_PARSER_TEXT, MODEL_PLANNER
+from .agents.vision import extract_scanned_rfq
+from .config.models import MODEL_EMBED, MODEL_PARSER_TEXT, MODEL_PARSER_VISION, MODEL_PLANNER
 from .config.settings import Settings
 from .memory.embedding import embed_text
 from .memory.store import MemoryFacade
@@ -30,10 +31,10 @@ from .models import (
     RFQExtraction,
     new_ulid,
 )
-from .obs.otel import OP_EMBEDDINGS, OP_EXECUTE_TOOL
+from .obs.otel import OP_CHAT, OP_EMBEDDINGS, OP_EXECUTE_TOOL
 from .obs.trace import TraceDocument, Tracer
 from .parsing import parse_excel, validation_reasons
-from .parsing.pdf import extract_pdf_text
+from .parsing.pdf import extract_pdf_text, is_scanned
 from .pricing import vat_policy_note
 from .quote import AssemblyLine, assemble_quote, format_quote_number, run_critic
 from .quote.render import render_html
@@ -233,12 +234,36 @@ async def quote_from_pdf(
     with_usd: bool = False,
     tracer: Tracer | None = None,
 ) -> PipelineResult:
-    """FR-031 + FR-130: a born-digital PDF. Text is lifted out, then the normal text path runs.
+    """FR-031/032 + FR-130: a PDF, digital or scanned.
 
-    A scanned PDF raises ScannedPdfError rather than being parsed into an empty quote; it needs
-    vision OCR (FR-032).
+    Digital: the text layer is lifted out and the normal text path runs - no model, no cost.
+    Scanned: the pages are rasterised and read by the vision model. Same RFQExtraction either way,
+    so everything downstream is identical and neither channel can develop its own idea of a price.
     """
     trace = tracer or Tracer(quote_id="")
+
+    # A scanned PDF has pages but no text layer. Handing it to the text parser would produce a
+    # confidently empty quote, so the two are routed apart here rather than papered over.
+    if is_scanned(data):
+        with trace.step(
+            "DocumentParser", "parse", model=MODEL_PARSER_VISION, operation=OP_CHAT
+        ) as step:
+            extraction = await extract_scanned_rfq(data, settings, usage=step)
+            step.note(f"OCR read {len(extraction.lines)} line(s) from the scan")
+
+        return await quote_from_extraction(
+            extraction,
+            settings=settings,
+            facade=facade,
+            seller_block=seller_block,
+            sequence=sequence,
+            on_date=on_date,
+            customer_email=customer_email,
+            customer_hint=customer_hint,
+            with_usd=with_usd,
+            tracer=trace,
+        )
+
     with trace.step("DocumentParser", "extract", tool="extract_pdf_text") as step:
         text = extract_pdf_text(data)
         step.note(f"{len(text)} characters of embedded text")

@@ -50,9 +50,10 @@ gc:
 ## diagrams: render the architecture Mermaid to PNG (SUB-03).
 diagrams:
 	npx -y @mermaid-js/mermaid-cli -i docs/architecture.mmd -o docs/architecture.png -b transparent
-## deploy: push both Function Compute functions (FR-003). Reads .env for the secrets.
+## deploy: build the bundle, then push both Function Compute functions (FR-003).
+## Build first: FC uploads the code dir as-is, so a source-only bundle crashes at cold start.
 deploy:
-	cd deploy && s deploy -y
+	cd deploy && s build && s deploy -y
 ## deploy-frontend: publish the dashboard to OSS static hosting (FR-106).
 deploy-frontend:
 	python deploy/upload_site.py --api-base $(API_BASE)

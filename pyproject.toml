@@ -23,6 +23,7 @@ dependencies = [
     "python-ulid>=3.0",
     "PyYAML>=6",
     "jinja2>=3.1",
+    "a2wsgi>=1.10",  # FC serves HTTP functions over WSGI; FastAPI is ASGI (see api/fc.py)
 ]
 
 [project.optional-dependencies]
@@ -65,8 +66,13 @@ where = ["src"]
 # FR-090 render assets ship inside the wheel (Jinja2 template + bundled fonts for WeasyPrint).
 [tool.setuptools.package-data]
 "quotemind.quote.render" = ["*.j2", "fonts/*"]
+# FR-106: the dashboard is served by the API itself, so it must travel with the code.
+"quotemind.web" = ["*.html"]
 
 [tool.ruff]
+# `s build` vendors every runtime dependency into python/ for the FC bundle. It is build output,
+# not source, and linting someone else's pinned wheels is noise.
+exclude = ["python", ".s"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]

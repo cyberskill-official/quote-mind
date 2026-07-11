@@ -1,0 +1,33 @@
+# What must not be uploaded to Function Compute.
+#
+# `code: ../` in deploy/s.yaml points at the repo root, so without this file the bundle would carry
+# the virtualenv, the git history, the eval dataset and every report - hundreds of megabytes of
+# things the function will never import. FC has an upload size limit, and even under it, a fat
+# bundle is a slow cold start on every single request.
+
+.venv/
+venv/
+.git/
+.github/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+.coverage*
+htmlcov/
+
+# The eval dataset and its reports are evidence, not runtime. The deployed function never reads them.
+eval/
+tests/
+docs/
+node_modules/
+
+# NOT excluded: src/quotemind/web/. The dashboard used to live in a top-level web/ directory and this
+# file excluded it - correctly, when it was uploaded to OSS separately. It is now served by the API
+# (FR-106), so it must travel in the bundle, and a bare `web/` pattern here would match it at any
+# depth and strip it right back out. The dashboard would 500 on a missing file, in production only.
+
+# Never ship secrets into a function bundle - the values arrive as environment variables instead.
+.env
+.env.*

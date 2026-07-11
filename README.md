@@ -49,12 +49,33 @@ Each check asserts on the *content* that came back, not merely on the absence of
 embedding check that only asserted "no error" would happily accept a wrong-width vector and corrupt
 retrieval silently.
 
-**Deployed endpoint:** `<paste the Function Compute URL after `make deploy`>` — `GET /health` returns
-the version, the git SHA, and the model ids actually in use (including any fallback substitution,
-per FR-012).
+### It is deployed, and you can check it yourself
 
-Deployment descriptor: [`deploy/s.yaml`](deploy/s.yaml) — Function Compute 3.0, two functions
-(`quotemind-api` on an HTTP trigger, `quotemind-ingest` on an OSS object-created trigger).
+**https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run** — live on Function Compute 3.0 in
+`ap-southeast-1` (Singapore).
+
+| Open this | And you get |
+|---|---|
+| [`/`](https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run/) | the operator dashboard: approval queue, quote detail, reasoning trace, waiver modal (FR-100..106) |
+| [`/health`](https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run/health) | version, git SHA, and the model ids actually in use — probed live at boot |
+| `/api/*` | `401` without `Authorization: Bearer $DEMO_API_TOKEN` (FR-010) |
+
+`/health` currently reports `"unverified": []` and `"substitutions": {}`. That is not a hardcoded
+banner: on first need, the function probes every frozen model id from inside Function Compute
+(FR-012), and those two empty lists mean each one answered and no documented fallback was needed. If
+Alibaba retired `qwen-vl-ocr` tomorrow, `/health` would say so, name the substitute it switched to,
+and keep serving.
+
+Deployment descriptor: [`deploy/s.yaml`](deploy/s.yaml) — two functions, because they have genuinely
+different shapes: `quotemind-api` on an HTTP trigger, and `quotemind-ingest` on an OSS
+object-created trigger over `quotemind-inbox/rfq/`. They share one codebase and one pipeline; an
+ingest path with its own copy of the quoting logic would be a second system that could disagree with
+the first about the price.
+
+The FC entry point is [`src/quotemind/api/fc.py`](src/quotemind/api/fc.py), and its docstring is
+worth reading if you ever have to deploy FastAPI on Function Compute: FC 3.0 does *not* hand an HTTP
+function a WSGI environ on the `fcapp.run` endpoint. It hands it an event envelope and expects one
+back. Every wrong guess about that produces the same symptom — a 502 with no stack trace.
 
 ## The measured result
 

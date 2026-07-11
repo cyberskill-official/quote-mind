@@ -24,3 +24,7 @@ frontend/node_modules/
 frontend/dist/
 docs/openapi.json
 .DS_Store
+
+# Function Compute build output (`s build`): the vendored runtime dependencies and the s cache.
+python/
+.s/

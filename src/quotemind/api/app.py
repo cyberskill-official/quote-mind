@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -29,6 +30,7 @@ from ..memory.store import MemoryFacade
 from ..models import Channel, EmailMeta, Status
 from ..obs.log import log_event
 from ..service import ApprovalBlockedError, QuoteNotFoundError, QuoteService
+from ..web import dashboard_html
 from .auth import require_bearer
 
 app = FastAPI(title="QuoteMind API", version=__version__)
@@ -96,27 +98,86 @@ async def _http_exception_handler(_request: Any, exc: StarletteHTTPException) ->
     )
 
 
-# FR-012: filled by the cold-start probe. Empty until initialize() runs, which is the honest state -
-# /health then reports the frozen constants and says they are unverified rather than implying a
-# check happened that did not.
+# FR-012. Filled by the probe, which runs once per process - the first time anything needs to know
+# what the models are.
+#
+# It deliberately does NOT depend on Function Compute's initializer. It used to, and the initializer
+# silently never ran: `initializer:` / `initializationTimeout:` is the FC *2.0* spelling, Serverless
+# Devs accepted the keys, dropped them, and deployed a function with no initializer at all. The only
+# visible symptom was /health reporting every model as unverified - which is precisely what that
+# field is for, and it was telling the truth.
+#
+# Correcting the YAML is necessary but not sufficient. A probe that only runs from a platform hook
+# is one config typo away from silently not running again, and FR-012's whole purpose is to know,
+# before quoting, whether a frozen model id has been retired. So the probe runs on first need, and
+# the initializer merely gets it out of the way before the first request arrives: a warm-up, not a
+# correctness dependency.
 _MODEL_STATUS: list[ModelStatus] = []
+_PROBE_ATTEMPTED = False
+_PROBE_LOCK = threading.Lock()
+
+
+def model_status() -> list[ModelStatus]:
+    """The FR-012 probe result, running the probe once per process if it has not run yet.
+
+    Never raises. A boot check that can take the API down is a liability, not a safeguard - and a
+    failed probe is not retried per-request, because a DashScope outage must not turn every /health
+    into a slow call.
+    """
+    global _MODEL_STATUS, _PROBE_ATTEMPTED
+    if _PROBE_ATTEMPTED:
+        return _MODEL_STATUS
+    with _PROBE_LOCK:
+        if _PROBE_ATTEMPTED:  # another thread got here first
+            return _MODEL_STATUS
+        try:
+            _MODEL_STATUS = check_models(get_settings())
+            log_event(
+                "model_probe_complete",
+                probed=len(_MODEL_STATUS),
+                unverified=health_models(_MODEL_STATUS)["unverified"],
+            )
+        except Exception as exc:  # noqa: BLE001 - a failed probe must not stop the function booting
+            log_event(
+                "model_bootstrap_failed",
+                level=logging.WARNING,
+                error=f"{type(exc).__name__}: {exc}",
+            )
+            _MODEL_STATUS = []
+        finally:
+            _PROBE_ATTEMPTED = True
+    return _MODEL_STATUS
 
 
 def initialize(_context: Any = None) -> None:
-    """FC initializer (FR-003) / FR-012. Probes every frozen model id once per cold start.
+    """FC initializer (FR-003). Warms the FR-012 probe before the first request arrives."""
+    model_status()
 
-    Never raises. A boot check that can take the API down is a liability, not a safeguard.
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def dashboard() -> HTMLResponse:
+    """FR-106: the operator dashboard, served by the API that backs it.
+
+    The original plan was OSS static website hosting. That plan is still in `deploy/upload_site.py`,
+    and it does not work on this account: the artifacts bucket has Block Public Access enabled, so
+    OSS refuses `Put public object acl`. The right response is not to switch that off. The bucket
+    holds customer quote PDFs, which are handed out as 10-minute presigned URLs precisely because
+    they must not be world-readable - a bucket configured to host a public dashboard is a bucket
+    that would just as happily serve someone else's quote.
+
+    Serving the page from the API instead costs one route, adds no infrastructure, and makes the
+    dashboard same-origin with the API it calls, so the CORS allowance above becomes belt-and-braces
+    rather than load-bearing.
+
+    The demo token is embedded in the page. That is deliberate, and it is exactly the exposure the
+    OSS plan already had: a public page must carry a credential to be usable at all. It is what
+    section 3.2 means by demo-grade, and it is bounded - every write path still stops at the human
+    approval gate (FR-070), the token is one rotatable value, and a production tenant would put this
+    behind the identity provider section 3.2 also calls for.
     """
-    global _MODEL_STATUS
-    try:
-        _MODEL_STATUS = check_models(get_settings())
-    except Exception as exc:  # noqa: BLE001 - a failed probe must not stop the function booting
-        log_event(
-            "model_bootstrap_failed",
-            level=logging.WARNING,
-            error=f"{type(exc).__name__}: {exc}",
-        )
-        _MODEL_STATUS = []
+    page = dashboard_html()
+    page = page.replace("__API_BASE__", "").replace("__API_TOKEN__", get_settings().demo_api_token)
+    return HTMLResponse(page)
 
 
 @app.get("/health")
@@ -127,11 +188,14 @@ def health() -> dict[str, Any]:
         "version": __version__,
         "git_sha": os.getenv("GIT_SHA", "dev"),
     }
-    if _MODEL_STATUS:
-        body.update(health_models(_MODEL_STATUS))  # includes any fallback substitution, visibly
+    statuses = model_status()
+    if statuses:
+        body.update(health_models(statuses))  # includes any fallback substitution, visibly
     else:
+        # The probe could not run. Report the frozen constants and say they are unchecked, rather
+        # than implying a verification that did not happen.
         body["models"] = MODEL_CONSTANTS
-        body["unverified"] = sorted(MODEL_CONSTANTS)  # no probe has run; say so
+        body["unverified"] = sorted(MODEL_CONSTANTS)
     return body
 
 

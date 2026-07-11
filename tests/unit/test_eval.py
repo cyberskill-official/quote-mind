@@ -53,11 +53,12 @@ def test_the_catalog_is_big_enough_for_the_metric_to_mean_something() -> None:
     assert {"DELL-LAT-5450", "DELL-LAT-5450-I7", "DELL-LAT-5440", "DELL-LAT-7450"} <= set(BY_SKU)
 
 
-def test_blocked_cases_are_declared_not_hidden() -> None:
+def test_nothing_is_blocked_now_that_vision_ocr_exists() -> None:
+    # The 5 scanned cases waited on FR-032. They no longer do, so the whole 30 are scored and the
+    # denominator is the real one. If a case ever *is* blocked again, it must be declared here
+    # rather than quietly dropped - a shrinking denominator is the easiest way to flatter an eval.
     built = [build_case(case) for case in ALL_CASES]
-    blocked = [case for case in built if blocked_on(case)]
-    assert len(blocked) == 5  # the scanned PDFs
-    assert all(blocked_on(case) == "FR-032" for case in blocked)
+    assert [case.case_id for case in built if blocked_on(case)] == []
 
 
 def test_the_generator_is_deterministic() -> None:
