@@ -51,28 +51,22 @@ retrieval silently.
 
 ### It is deployed, and you can check it yourself
 
-**https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run** — live on Function Compute 3.0 in
-`ap-southeast-1` (Singapore).
+**https://quotemind.cyberskill.world** — live on Function Compute 3.0 in `ap-southeast-1`
+(Singapore), behind a custom domain with a Let's Encrypt certificate.
 
-> **⚠️ Read this before you click.** Function Compute injects `Content-Disposition: attachment` on
-> every response from its default `*.fcapp.run` domain — it is a debugging endpoint, and Alibaba do
-> not want it used to host pages. `curl` ignores that header; **a browser obeys it**, so the two HTML
-> pages below *download* instead of rendering. This is a property of the endpoint, not of the app: a
-> custom domain removes it in about fifteen minutes
-> ([`docs/deploy/custom-domain.md`](docs/deploy/custom-domain.md)), and it is the next thing being
-> done.
->
-> **Everything below is verifiable with `curl` right now**, and that is the point of the table.
-
-| Check | What it proves |
+| Open this | And you get |
 |---|---|
-| `curl -s .../health` | version, the deployed git SHA, and the model ids actually in use — probed live from inside FC (FR-012) |
-| `curl -s .../eval` | the 93%-vs-40% benchmark page, rendered from a committed snapshot (FR-104). Public, deliberately: a claim you cannot check is a claim you have to take on faith |
-| `curl -s .../api/quotes` | `401` — every `/api/*` route requires `Authorization: Bearer $DEMO_API_TOKEN` (FR-010) |
-| `curl -s .../` | the operator dashboard: approval queue, quote detail, the critic's verdict beside the model's note, reasoning trace, waiver modal (FR-100..106). Save it and open the file, or bind the domain |
+| [`/`](https://quotemind.cyberskill.world/) | the operator dashboard: approval queue, quote detail, the critic's verdict beside the model's note, reasoning trace, waiver modal (FR-100..106) |
+| [`/eval`](https://quotemind.cyberskill.world/eval) | the 93%-vs-40% benchmark, rendered from a committed snapshot (FR-104). Public, deliberately: a claim you cannot check is a claim you have to take on faith |
+| [`/health`](https://quotemind.cyberskill.world/health) | version, the deployed git SHA, and the model ids actually in use — probed live from inside FC (FR-012) |
+| `/api/*` | `401` without `Authorization: Bearer $DEMO_API_TOKEN` (FR-010) |
 
-To see the dashboard as a page today: `python deploy/demo_shots.py` renders it from the live API, and
-[`.demo/quotemind-demo.mp4`](docs/demo-narration.md) is a 96-second walkthrough of it.
+The custom domain is not cosmetic. Function Compute injects `Content-Disposition: attachment` on
+every response from its default `*.fcapp.run` endpoint — a debugging endpoint Alibaba do not want
+used to host pages. `curl` ignores that header; **a browser obeys it**, so for a while the dashboard
+*downloaded* instead of rendering, for everyone, while every API check passed. The whole story, and
+the two scripts that fix it end to end, are in
+[`docs/deploy/custom-domain.md`](docs/deploy/custom-domain.md).
 
 `/health` currently reports `"unverified": []` and `"substitutions": {}`. That is not a hardcoded
 banner: on first need, the function probes every frozen model id from inside Function Compute
@@ -126,6 +120,7 @@ reproduce with `make eval && make eval-snapshot`.
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — the system, and the one idea it is built around
+- [`docs/known-limitations.md`](docs/known-limitations.md) — what we know is imperfect, and why we left it
 - [`docs/roadmap.html`](docs/roadmap.html) — live FR-by-FR progress
 - [`docs/demo-script.md`](docs/demo-script.md) — the ~3-minute demo
 - [`docs/submission-description.md`](docs/submission-description.md) — the submission text

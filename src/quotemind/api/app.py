@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
 from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -34,6 +35,9 @@ from ..obs.log import log_event
 from ..service import ApprovalBlockedError, QuoteNotFoundError, QuoteService
 from ..web import dashboard_html
 from .auth import require_bearer
+
+# ACME tokens are base64url. Anything else is not a challenge, it is someone probing.
+_ACME_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]{16,128}")
 
 app = FastAPI(title="QuoteMind API", version=__version__)
 
@@ -185,6 +189,32 @@ def dashboard() -> HTMLResponse:
     page = dashboard_html()
     page = page.replace("__API_BASE__", "").replace("__API_TOKEN__", get_settings().demo_api_token)
     return HTMLResponse(page)
+
+
+@app.get("/.well-known/acme-challenge/{token}", include_in_schema=False)
+def acme_challenge(token: str) -> PlainTextResponse:
+    """Let's Encrypt's HTTP-01 challenge, so the site can have a certificate.
+
+    The custom domain is bound over HTTP - which is what removed Function Compute's forced
+    `Content-Disposition: attachment` and made the dashboard a page instead of a download. HTTPS
+    needs a certificate, a certificate needs domain validation, and the cheapest honest validation
+    is: prove you control what the domain serves. This route is how.
+
+    The answer is read from OSS rather than from an environment variable, and that is the point of
+    doing it this way: an env var means a redeploy per challenge, and a redeploy inside an ACME
+    validation window is a race nobody should have to run. Renewal is a `put_object` and a `curl`.
+
+    It serves exactly one shape of thing - an ACME key authorization, under a token ACME chose - and
+    it can leak nothing else: the key is prefixed, the value is a string Let's Encrypt itself gave
+    us, and there is no path traversal to be had from a token that has to match a base64url charset.
+    """
+    if not _ACME_TOKEN_RE.fullmatch(token):
+        raise _error(404, "not_found", "no such challenge")
+    try:
+        answer = get_service().artifacts.get_acme_challenge(token)
+    except Exception as exc:  # noqa: BLE001 - an unissued challenge is a 404, not a 500
+        raise _error(404, "not_found", "no such challenge") from exc
+    return PlainTextResponse(answer)
 
 
 @app.get("/eval", response_class=HTMLResponse, include_in_schema=False)
@@ -413,19 +443,26 @@ def quote_pdf(service: ServiceDep, quote_id: str) -> dict[str, Any]:
 
     FR-091 says *302 to* that URL. This returns it instead, and the reason is not a preference.
 
-    Two independent things make the redirect unusable here, and both of them only appear in
-    production:
+    Two independent things made the redirect unusable, and only one of them was about the platform:
 
       1. Function Compute's default `fcapp.run` domain refuses to emit a cross-domain 302 -
          `ExternalRedirectForbidden: The external redirect is forbidden, please use custom domain
          endpoint`. The route worked under uvicorn and returned 400 the moment it was deployed.
-      2. This route is bearer-guarded, and the dashboard linked to it with a plain `<a href>`, which
-         sends no Authorization header. So even with the redirect allowed, the button would have
-         401'd. It had, in fact, never worked once.
+         **This one is gone.** The custom domain is bound (quotemind.cyberskill.world), which is
+         exactly the endpoint that error was asking for.
+      2. This route is bearer-guarded, and a 302 is only useful to a client that can *follow a
+         link*. A plain `<a href>` carries no Authorization header, so it would 401 - which is
+         why the PDF button had never worked once, on any domain. A custom domain changes
+         nothing about that.
 
-    What FR-091 exists to guarantee - the PDF stays a private object, and access is a short-lived
-    signed URL rather than a public one - is fully preserved. The client fetches this with its token
-    and opens the URL it gets back. Restore the 302 the day a custom domain is bound.
+    So the note that used to sit here - "restore the 302 the day a custom domain is bound" - was
+    wrong, and it is worth saying why rather than quietly deleting it. It treated the platform
+    objection as the whole reason, when the *client* objection is the one that decides. The redirect
+    is now merely possible; it was never the better shape.
+
+    What FR-091 exists to guarantee - the PDF stays a private object, reached by a short-lived
+    signed URL rather than a public one - is fully preserved, and preserved more usably: the
+    client fetches this with its token and opens the URL it gets back.
     """
     try:
         return {"url": service.pdf_url(quote_id), "expires_in": PRESIGNED_TTL_SECONDS}

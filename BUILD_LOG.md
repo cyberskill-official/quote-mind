@@ -1344,3 +1344,78 @@ we nearly matched it to, and why that was not good enough.**
 
 Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **349 passed**, pricing branch coverage
 100%.
+
+## Batch: the site is a site (feat/https)
+
+`https://quotemind.cyberskill.world` — a page, in a browser, with a real certificate.
+
+**The CNAME landed, and then FC said no twice, each time usefully.**
+
+First: `DomainNameNotResolved`. Function Compute will not create a custom domain until the CNAME
+*already* points at it - which is why DNS is genuinely step one and not something a script can do for
+you. Alibaba's own resolver (223.5.5.5) saw the record before Cloudflare's did.
+
+Then: `CertConfig is required but not provided`. FC will not accept `HTTPS` in `protocol` without a
+certificate - it is not optional there. And a certificate needs domain validation, which cannot
+begin until the domain resolves *somewhere*. So the order is forced: bind HTTP, prove the page
+renders, then come back with a cert. An `http://` URL for an hour is better than a download for
+another day.
+
+**The certificate, without a single manual step.** Let's Encrypt's HTTP-01 challenge asks one
+question - *does this domain serve what you say it serves?* - and once the domain was bound over
+HTTP we were in a position to answer it. `deploy/issue_cert.py` orders the certificate, writes the
+key authorization to OSS, waits until it can fetch the challenge back through the live site (never
+hand a token to a CA before you can serve it yourself), tells Let's Encrypt to validate, and hands
+the certificate to FC.
+
+The challenge lives in **OSS, not an environment variable**, and that is the one design decision here
+worth defending: an env var means a function redeploy per challenge, and a redeploy inside an ACME
+validation window is a race nobody should have to run. Renewal is now a `put_object` and a `curl`.
+
+Staging CA first, and it caught a bug (a cosmetic API that does not exist in this `acme` version)
+before it could burn a production rate limit.
+
+**And FR-091 does not get its 302 back.** The comment in `quote_pdf` said "restore the 302 the day a
+custom domain is bound." That day arrived and the comment was **wrong**, which is worth saying rather
+than quietly deleting. Two things made the redirect unusable, and the domain only fixes one:
+
+  1. `ExternalRedirectForbidden` on the default domain. **Gone** - the custom domain is precisely the
+     endpoint that error asked for.
+  2. The route is bearer-guarded, and a 302 is only useful to a client that can *follow a link*. A
+     plain `<a href>` carries no Authorization header. **Nothing about a domain changes that**, and
+     it is why the PDF button had never worked once, anywhere.
+
+The note treated the platform objection as the whole reason when the *client* objection is the one
+that decides. The redirect is now merely possible; it was never the better shape. FR-091's actual
+guarantee - private object, short-lived signed URL - is preserved either way, and preserved more
+usably by handing the URL back.
+
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **350 passed**, pricing branch coverage
+100%.
+
+### The check that would have caught it, checked in
+
+The live suite that found the `Content-Disposition` P0 was a script in `/tmp`. That is not a check,
+it is an anecdote: nobody else can run it, CI does not know it exists, and nothing stops Function
+Compute quietly putting the header back. It is now `deploy/smoke.py` (`make smoke`), it runs against
+the **deployment** rather than the code, and its first assertion is that `/` and `/eval` send no
+`Content-Disposition` at all.
+
+Writing it surfaced a second bug of exactly the same family, this time in my own tooling. The old
+script posted a **fixed** RFQ string. Intake is idempotent on the source text (FR-024) - so from its
+second run onward it was never exercising the pipeline. It was handed back the quote the *previous*
+run had left behind, and asserted against that. It passed, every time, and it was testing nothing:
+`cancel` was even "failing" because the quote it re-fetched had already been cancelled an hour
+earlier, which is the system behaving perfectly. Every run now posts an RFQ the system has genuinely
+never seen, and the pipeline block went from re-reading a cached answer to running end to end.
+
+One more, smaller: the smoke test verifies TLS against a **shipped** CA bundle (`certifi`), not
+whatever the machine happens to trust. A macOS framework Python has no root store until someone runs
+`Install Certificates.command`, so the naive version failed on a perfectly valid certificate - and a
+check that cries wolf on a good deployment is worse than no check, because it teaches you to ignore
+it. It still fails on a bad certificate.
+
+Three bugs, one shape: **a check is worth exactly what it would have caught.**
+
+Live, over HTTPS, against a pipeline run from scratch: **16/16**.
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **350 passed**, pricing branch 100%.

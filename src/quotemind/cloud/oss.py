@@ -63,6 +63,24 @@ class ArtifactStore:
             inbox=_bucket(settings, settings.oss_bucket_inbox),
         )
 
+    # --- ACME (the certificate that makes the site https) ---
+    #
+    # Kept in OSS rather than in an environment variable on purpose. An env var means a function
+    # redeploy per challenge, and a redeploy inside an ACME validation window is a race. This way a
+    # renewal is a put_object and a curl, and it works while the function is serving traffic.
+    def put_acme_challenge(self, token: str, key_authorization: str) -> None:
+        self.artifacts.put_object(
+            f"acme/{token}",
+            key_authorization.encode("utf-8"),
+            headers={"Content-Type": "text/plain"},
+        )
+
+    def get_acme_challenge(self, token: str) -> str:
+        return str(self.artifacts.get_object(f"acme/{token}").read().decode("utf-8"))
+
+    def delete_acme_challenge(self, token: str) -> None:
+        self.artifacts.delete_object(f"acme/{token}")
+
     # --- artifacts (FR-091, FR-093) ---
     def put_pdf(self, quote_number: str, data: bytes) -> str:
         key = artifact_key(quote_number)
