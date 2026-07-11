@@ -522,3 +522,67 @@ demo default is stub); brand TTFs; FR-085's log event and badge.
 
 Verification: ruff clean, mypy clean (59 files), import-linter 4/4 kept, pytest 155 passed, pricing
 branch coverage 100%. CI now installs pango/cairo before the pdf extra so WeasyPrint runs there too.
+
+## Batch: observability + review dashboard (EP-11, EP-10) - feat/observability-dashboard
+
+FR-110/111/112/113 + FR-100/101/102/103/105/106. The demo's money shot: the reviewer can see not
+just the quote, but every step that produced it, priced.
+
+- obs/otel.py (FR-110): GenAI semantic conventions - `chat qwen3-max`, `execute_tool vector_search`,
+  `gen_ai.provider.name` / `gen_ai.operation.name` / `gen_ai.request.model` / `gen_ai.usage.*`. The
+  OTel SDK is optional: with no exporter installed the span is a no-op, so nothing on the quote path
+  depends on a collector being up. The name/attribute builders are pure, so the convention itself is
+  unit-tested rather than asserted in a comment.
+- obs/trace.py (FR-111): every model call, tool call and memory read on a quote's path becomes an
+  ordered TraceStep (DM-14) with tokens, cost and duration. Written to
+  oss://quotemind-artifacts/traces/{quote_id}.json and served by API-05. Prompt and response bodies
+  are excluded by default - an RFQ carries a real customer's details and a trace is not the place to
+  leak them; TRACE_CONTENT=1 turns them on for debugging.
+- obs/cost.py + config/model_prices.yaml (FR-112): token counts times a checked-in price table, in
+  Decimal. Two decisions worth stating plainly. First, the token counts are the provider's own,
+  read off ChatResponse.usage via a DashScopeChatModel subclass - not estimated, because a
+  fabricated cost number in an eval report is worse than none. Second, the prices are Alibaba's
+  published *list* prices for the International (Singapore) endpoint, dated in the file; batch
+  inference, context caching and the free quota all discount them, so what QuoteMind reports is an
+  honest upper bound, not a bill.
+- obs/errors.py (FR-113): the taxonomy plus a retry policy with one load-bearing rule - only model
+  and tool calls are retried (1s, then 4s). Deterministic steps are never retried, because if
+  pricing or the critic recompute failed, the input was wrong and running the arithmetic again just
+  produces the same wrong answer more slowly, while hiding the bug.
+- service.py: the trace is persisted next to the quote, and a trace write failure can never fail a
+  quote - it lands as a `trace.persist_failed` audit event and the quote still reaches the human.
+  Observability that can take down the product is worse than no observability.
+- web/index.html (FR-100..103, FR-105): one self-contained file, no build step. Queue with status
+  filters and 5s polling; detail with the bilingual line table, confidence and flag chips, totals,
+  margin and amount-in-words; an action bar whose approve button opens a waiver modal *only* when
+  the critic raised a blocking flag (and a 409 from the server if a waiver is skipped); and the
+  collapsible reasoning-trace panel showing each step with its tokens, cost and duration. CDS
+  Umber/Ochre, light theme.
+- deploy/upload_site.py (FR-106): substitutes the API base and token at upload time and publishes
+  the page as the only public object in the artifacts bucket. Quotes, traces and outbox messages
+  stay private behind presigned URLs. The API gained CORS for exactly this reason - the token, not
+  the origin, is the security boundary.
+
+Deferred: FR-104 (realtime push) polls at 5s instead of using SSE/WebSocket - a demo-scale choice,
+and honest about it in the roadmap.
+
+Live (real cloud, `python deploy/smoke_trace.py`): a two-line Vietnamese RFQ ran to
+pending_approval producing a 9-step trace - parse (qwen-plus, 1262->428 tok), then per line: embed
+(text-embedding-v4), vector_search, full_text_search, select (qwen3-max, ~2000 tok in). Totals:
+5,345 -> 833 real provider tokens, **$0.008320 per quote**, 22.4s wall. The document was written to
+oss://quotemind-artifacts/traces/{quote_id}.json (2,526 bytes) and read back byte-for-byte, and
+`contents` was empty - TRACE_CONTENT is off, so no customer prose left the process. That per-quote
+cost is now a real number the eval (EP-12) can put against the single-agent baseline.
+
+The dashboard was then driven in a real browser against that live API, not just unit-tested:
+QM-2026-0004 rendered its bilingual line table, totals, VN amount-in-words and the full 9-step trace
+panel with per-step tokens and dollars. QM-2026-0003 (margin 4.8%, below the 5% floor) showed its
+blocking flag, and pressing Approve raised the waiver modal rather than approving silently. The
+waiver was submitted with a Vietnamese comment, the quote moved to `dispatching`, dropped out of the
+pending queue, and the hash-chained audit recorded it verbatim at seq 8:
+`human.approved {"comment": "Duyệt ngoại lệ: khách chiến lược FPT, chấp nhận biên 4.8%",
+"waived_flags": ["MARGIN_BELOW_FLOOR"]}` - diacritics intact through the browser, the API, and
+Tablestore. Screenshot at docs/dashboard.png.
+
+Verification: ruff clean, mypy clean (63 files), import-linter 4/4 kept, pytest 175 passed, pricing
+branch coverage 100%.

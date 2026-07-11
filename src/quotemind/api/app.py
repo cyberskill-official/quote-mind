@@ -11,6 +11,7 @@ import os
 from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
@@ -27,6 +28,15 @@ from ..service import ApprovalBlockedError, QuoteNotFoundError, QuoteService
 from .auth import require_bearer
 
 app = FastAPI(title="QuoteMind API", version=__version__)
+
+# FR-106: the dashboard is a static page on OSS, so it calls this API cross-origin. Every route is
+# bearer-guarded, so the origin is not the security boundary - the token is.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
 
 # The demo seller identity; real deployments read this from tenant config.
 SELLER_BLOCK: dict[str, Any] = {
@@ -217,6 +227,15 @@ def get_audit(service: ServiceDep, quote_id: str) -> dict[str, Any]:
     """API-04 / FR-094: the hash-chained audit trail."""
     events = service.store.list_audit(quote_id)
     return {"events": [event.model_dump(mode="json") for event in events]}
+
+
+@app.get("/api/quotes/{quote_id}/trace", dependencies=[Depends(require_bearer)])
+def get_trace(service: ServiceDep, quote_id: str) -> dict[str, Any]:
+    """API-05 / FR-111: the persisted reasoning trace (steps, tokens, cost, durations)."""
+    try:
+        return service.trace(quote_id)
+    except QuoteNotFoundError as exc:
+        raise _error(404, "not_found", f"no quote {quote_id}") from exc
 
 
 @app.post("/api/quotes/{quote_id}/approve", dependencies=[Depends(require_bearer)])

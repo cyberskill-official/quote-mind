@@ -141,3 +141,22 @@ def test_auth_and_not_found() -> None:
         assert missing.json()["error"]["code"] == "not_found"
     finally:
         _teardown()
+
+
+def test_trace_endpoint_returns_the_reasoning_steps() -> None:
+    store = FakeStore()
+    client = _client(store)
+    try:
+        quote_id = client.post("/api/rfq", json=_RFQ, headers=_AUTH).json()["quote_id"]
+
+        trace = client.get(f"/api/quotes/{quote_id}/trace", headers=_AUTH)  # API-05
+        assert trace.status_code == 200
+        body: dict[str, Any] = trace.json()
+        assert body["quote_id"] == quote_id
+        assert [step["agent"] for step in body["steps"]] == ["DocumentParser", "CatalogMatcher"]
+        assert body["total_cost_usd"] is not None
+
+        assert client.get(f"/api/quotes/{quote_id}/trace").status_code == 401  # FR-010
+        assert client.get("/api/quotes/nope/trace", headers=_AUTH).status_code == 404
+    finally:
+        _teardown()

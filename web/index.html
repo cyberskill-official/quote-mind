@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuoteMind - Bảng duyệt báo giá</title>
+<style>
+  /* FR-105 CDS styling: Umber/Ochre, sentence-case headings, light theme only. */
+  :root {
+    --umber: #45210E; --ochre: #F4BA17; --ink: #1c140d; --muted: #6f6055;
+    --bg: #FBF8F5; --card: #fff; --line: #e7ddd3;
+    --ok: #2E7D32; --warn: #B26A00; --bad: #B3261E; --info: #0F6FC5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  header { background: var(--umber); color: #fff; padding: 14px 22px;
+    border-bottom: 3px solid var(--ochre); display: flex; align-items: center; gap: 16px; }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  header .sp { flex: 1; }
+  header .env { font-size: 12px; color: #d8c6b6; }
+  main { display: grid; grid-template-columns: 380px 1fr; gap: 16px; padding: 16px;
+    max-width: 1500px; margin: 0 auto; align-items: start; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  .card > h2 { margin: 0; padding: 12px 14px; font-size: 13px; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--muted); border-bottom: 1px solid var(--line); }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 14px;
+    border-bottom: 1px solid var(--line); }
+  .filters button { border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+  .filters button.on { background: var(--umber); color: #fff; border-color: var(--umber); }
+  .queue { list-style: none; margin: 0; padding: 0; max-height: 72vh; overflow: auto; }
+  .queue li { padding: 11px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .queue li:hover { background: #faf6f2; }
+  .queue li.sel { background: #fff8e6; border-left: 3px solid var(--ochre); }
+  .queue .num { font-weight: 600; }
+  .queue .meta { font-size: 12px; color: var(--muted); margin-top: 2px;
+    display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px;
+    background: #efe7df; color: #5b4c3f; }
+  .chip.ok { background: #e6f2e7; color: var(--ok); }
+  .chip.warn { background: #fdf1dc; color: var(--warn); }
+  .chip.bad { background: #fbe6e4; color: var(--bad); }
+  .chip.info { background: #e4eff9; color: var(--info); }
+  .pane { padding: 14px; }
+  .empty { padding: 40px 14px; text-align: center; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 7px 8px; border-bottom: 1px solid #f1eae3; vertical-align: top; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .en { color: var(--muted); font-size: 12.5px; font-style: italic; }
+  .totals { margin-top: 12px; margin-left: auto; width: 320px; }
+  .totals .row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .totals .grand { font-weight: 700; background: rgba(244,186,23,.28); padding: 6px 8px;
+    border-radius: 4px; }
+  .bar { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line);
+    flex-wrap: wrap; align-items: center; }
+  button.act { border: 0; border-radius: 6px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; }
+  button.approve { background: var(--ok); color: #fff; }
+  button.reject { background: #fff; color: var(--bad); border: 1px solid var(--bad); }
+  button.revise { background: var(--ochre); color: #4a3b0a; }
+  button.act:disabled { opacity: .45; cursor: not-allowed; }
+  details.trace { margin-top: 14px; }
+  details.trace > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--umber);
+    padding: 8px 0; }
+  .step { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid #f1eae3; }
+  .step .seq { color: var(--muted); font-size: 12px; }
+  .step .what { font-size: 13px; }
+  .step .what b { color: var(--umber); }
+  .step .sub { color: var(--muted); font-size: 12px; }
+  .step .nums { text-align: right; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .rollup { display: flex; gap: 14px; font-size: 12.5px; color: var(--muted); padding: 8px 0; }
+  .rollup b { color: var(--ink); }
+  dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: 460px; }
+  dialog h3 { margin: 0; padding: 12px 14px; font-size: 14px; border-bottom: 1px solid var(--line); }
+  dialog .body { padding: 14px; }
+  dialog textarea, dialog input { width: 100%; border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px; font: inherit; }
+  dialog .foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 14px;
+    border-top: 1px solid var(--line); }
+  .flagbox { background: #fbe6e4; border: 1px solid var(--bad); border-radius: 6px; padding: 8px 10px;
+    font-size: 13px; margin-bottom: 10px; }
+  .toast { position: fixed; right: 16px; bottom: 16px; background: var(--umber); color: #fff;
+    padding: 10px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; }
+  .toast.on { opacity: 1; }
+  a.pdf { color: var(--info); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>QuoteMind - bảng duyệt báo giá</h1>
+  <span class="sp"></span>
+  <span class="env" id="env"></span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Hàng đợi / Queue</h2>
+    <div class="filters" id="filters"></div>
+    <ul class="queue" id="queue"><li class="empty">Đang tải…</li></ul>
+  </section>
+
+  <section class="card" id="detailCard">
+    <h2>Chi tiết / Detail</h2>
+    <div class="pane" id="detail"><div class="empty">Chọn một báo giá / select a quote</div></div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <h3 id="dlgTitle"></h3>
+  <div class="body">
+    <div id="dlgFlags"></div>
+    <label id="dlgLabel" style="font-size:13px;color:#6f6055"></label>
+    <textarea id="dlgText" rows="3"></textarea>
+  </div>
+  <div class="foot">
+    <button class="act" onclick="document.getElementById('dlg').close()">Huỷ / Cancel</button>
+    <button class="act approve" id="dlgOk">Xác nhận / Confirm</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// FR-106: both are replaced at upload time by deploy/upload_site.py.
+const API_BASE = "__API_BASE__".startsWith("__") ? "http://127.0.0.1:9000" : "__API_BASE__";
+const API_TOKEN = "__API_TOKEN__".startsWith("__") ? "" : "__API_TOKEN__";
+
+const STATUSES = ["", "pending_approval", "approved", "sent", "needs_clarification",
+                  "critic_failed", "rejected"];
+const STATUS_CHIP = {
+  pending_approval: "warn", approved: "info", sent: "ok", rejected: "bad",
+  critic_failed: "bad", failed_dispatch: "bad", needs_clarification: "warn",
+};
+let filter = "pending_approval";
+let selected = null;
+let queue = [];
+
+const $ = (id) => document.getElementById(id);
+const vnd = (n) => (n === null || n === undefined) ? "-" :
+  new Intl.NumberFormat("vi-VN").format(n).replace(/,/g, ".") + " đ";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function api(path, options = {}) {
+  const res = await fetch(API_BASE + path, {
+    ...options,
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + API_TOKEN,
+               ...(options.headers || {}) },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const err = new Error(body?.error?.message || res.statusText);
+    err.status = res.status;
+    err.details = body?.error?.details;
+    throw err;
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function toast(message) {
+  const el = $("toast");
+  el.textContent = message;
+  el.classList.add("on");
+  setTimeout(() => el.classList.remove("on"), 2600);
+}
+
+function renderFilters() {
+  $("filters").innerHTML = STATUSES.map((s) =>
+    `<button class="${s === filter ? "on" : ""}" data-s="${s}">${s || "tất cả / all"}</button>`
+  ).join("");
+  $("filters").querySelectorAll("button").forEach((b) =>
+    b.onclick = () => { filter = b.dataset.s; renderFilters(); loadQueue(); });
+}
+
+// FR-100: queue view, polled every 5s.
+async function loadQueue() {
+  try {
+    const data = await api("/api/quotes?limit=50" + (filter ? "&status=" + filter : ""));
+    queue = data.items;
+  } catch (exc) { $("queue").innerHTML = `<li class="empty">${esc(exc.message)}</li>`; return; }
+
+  $("queue").innerHTML = queue.length === 0
+    ? '<li class="empty">Không có báo giá / no quotes</li>'
+    : queue.map((q) => `
+      <li data-id="${q.quote_id}" class="${q.quote_id === selected ? "sel" : ""}">
+        <div class="num">${esc(q.quote_number)}</div>
+        <div class="meta">
+          <span class="chip ${STATUS_CHIP[q.status] || ""}">${esc(q.status)}</span>
+          <span>${esc(q.customer_id || "khách mới")}</span>
+          <span>${vnd(q.totals?.total_vnd)}</span>
+          ${(q.flags || []).map((f) => `<span class="chip bad">${esc(f)}</span>`).join("")}
+        </div>
+      </li>`).join("");
+
+  $("queue").querySelectorAll("li[data-id]").forEach((li) =>
+    li.onclick = () => { selected = li.dataset.id; loadQueue(); loadDetail(); });
+}
+
+// FR-101 + FR-102 + FR-103
+async function loadDetail() {
+  if (!selected) return;
+  let review, trace;
+  try {
+    [review, trace] = await Promise.all([
+      api("/api/quotes/" + selected),
+      api("/api/quotes/" + selected + "/trace").catch(() => ({ steps: [] })),
+    ]);
+  } catch (exc) { $("detail").innerHTML = `<div class="empty">${esc(exc.message)}</div>`; return; }
+
+  const quote = review.quote;
+  const critic = review.critic;
+  const blocking = critic?.blocking || [];
+
+  const lines = (quote?.lines || []).map((l) => `
+    <tr>
+      <td class="num">${l.idx}</td>
+      <td>${esc(l.description?.vi)}<div class="en">${esc(l.description?.en)}</div>
+          ${l.note ? `<div class="chip warn">${esc(l.note.vi)}</div>` : ""}</td>
+      <td>${esc(l.sku || "-")}</td>
+      <td class="num">${l.qty}</td>
+      <td class="num">${vnd(l.unit_price_vnd)}</td>
+      <td class="num">${vnd(l.line_total_vnd)}</td>
+    </tr>`).join("");
+
+  const vat = (quote?.vat_breakdown || []).map((v) =>
+    `<div class="row"><span>Thuế GTGT ${v.rate}% / VAT ${v.rate}%</span>
+     <span>${vnd(v.amount)}</span></div>`).join("");
+
+  const steps = (trace.steps || []).map((s) => `
+    <div class="step">
+      <div class="seq">${s.seq}</div>
+      <div>
+        <div class="what"><b>${esc(s.agent)}</b> · ${esc(s.action)}
+          ${s.tool ? `<span class="chip">${esc(s.tool)}</span>` : ""}
+          ${s.model ? `<span class="chip info">${esc(s.model)}</span>` : ""}</div>
+        <div class="sub">${esc(s.summary)}</div>
+      </div>
+      <div class="nums">${s.duration_ms} ms
+        ${s.tokens_in || s.tokens_out ? `<br>${s.tokens_in}&rarr;${s.tokens_out} tok` : ""}
+        ${Number(s.cost_usd) ? `<br>$${Number(s.cost_usd).toFixed(6)}` : ""}</div>
+    </div>`).join("");
+
+  const canAct = review.status === "pending_approval";
+  $("detail").innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <b style="font-size:16px">${esc(review.record.quote_number)}</b>
+      <span class="chip ${STATUS_CHIP[review.status] || ""}">${esc(review.status)}</span>
+      ${(review.flags || []).map((f) => `<span class="chip ${blocking.includes(f) ? "bad" : "warn"}">${esc(f)}</span>`).join("")}
+      <span class="sp" style="flex:1"></span>
+      <a class="pdf" href="${API_BASE}/api/quotes/${selected}/pdf" target="_blank">PDF ↗</a>
+    </div>
+    <div class="sub" style="color:#6f6055;font-size:13px;margin:4px 0 12px">
+      ${esc(quote?.customer_block?.name || "")}</div>
+
+    ${quote ? `
+    <table>
+      <thead><tr><th class="num">STT</th><th>Mô tả / Description</th><th>SKU</th>
+        <th class="num">SL</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead>
+      <tbody>${lines}</tbody>
+    </table>
+    <div class="totals">
+      <div class="row"><span>Cộng tiền hàng / Subtotal</span><span>${vnd(quote.subtotal_vnd)}</span></div>
+      ${vat}
+      <div class="row grand"><span>TỔNG CỘNG / TOTAL</span><span>${vnd(quote.total_vnd)}</span></div>
+      <div class="row" style="color:#6f6055;font-size:12.5px">
+        <span>Biên lợi nhuận / Margin (nội bộ)</span><span>${(quote.margin?.blended_pct ?? 0).toFixed(1)}%</span></div>
+    </div>
+    <div style="clear:both;font-style:italic;margin-top:8px">Bằng chữ: ${esc(quote.total_in_words_vi)}</div>
+    ` : `<div class="empty">Chưa có báo giá / no quote yet: ${esc((review.record.flags || []).join(", "))}</div>`}
+
+    ${critic?.note ? `<div style="margin-top:12px" class="chip ${blocking.length ? "bad" : "ok"}">
+      ${esc(critic.note.vi)}</div>` : ""}
+
+    <details class="trace" open>
+      <summary>Dấu vết suy luận / Reasoning trace (${(trace.steps || []).length} bước)</summary>
+      <div class="rollup">
+        <span>Tokens: <b>${trace.total_tokens_in ?? 0} &rarr; ${trace.total_tokens_out ?? 0}</b></span>
+        <span>Chi phí / cost: <b>$${Number(trace.total_cost_usd ?? 0).toFixed(6)}</b></span>
+        <span>Thời gian: <b>${trace.total_duration_ms ?? 0} ms</b></span>
+      </div>
+      ${steps || '<div class="empty">Chưa có dấu vết / no trace</div>'}
+    </details>`;
+
+  $("detailCard").querySelector(".bar")?.remove();
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.innerHTML = `
+    <button class="act approve" id="bApprove" ${canAct ? "" : "disabled"}>Duyệt / Approve</button>
+    <button class="act reject"  id="bReject"  ${canAct ? "" : "disabled"}>Từ chối / Reject</button>
+    <button class="act revise"  id="bRevise"  ${canAct ? "" : "disabled"}>Sửa / Revise</button>
+    ${blocking.length ? `<span class="chip bad">Cần miễn trừ / needs waiver: ${blocking.join(", ")}</span>` : ""}`;
+  $("detailCard").appendChild(bar);
+
+  $("bApprove").onclick = () => openDialog("approve", blocking);
+  $("bReject").onclick = () => openDialog("reject", []);
+  $("bRevise").onclick = () => openDialog("revise", []);
+}
+
+function openDialog(kind, blocking) {
+  const titles = { approve: "Duyệt báo giá / Approve", reject: "Từ chối / Reject",
+                   revise: "Yêu cầu sửa / Revise" };
+  const labels = { approve: "Ghi chú (tuỳ chọn) / comment",
+                   reject: "Lý do / reason",
+                   revise: "Hướng dẫn sửa (vi hoặc en) / instruction" };
+  $("dlgTitle").textContent = titles[kind];
+  $("dlgLabel").textContent = labels[kind];
+  $("dlgText").value = "";
+  // FR-102: the waiver modal appears only when the critic raised blocking flags.
+  $("dlgFlags").innerHTML = (kind === "approve" && blocking.length)
+    ? `<div class="flagbox"><b>Cờ chặn / blocking flags:</b> ${blocking.join(", ")}<br>
+       Duyệt sẽ ghi nhận miễn trừ có kiểm toán / approving records an audited waiver.</div>`
+    : "";
+  $("dlgOk").onclick = () => submitAction(kind, blocking);
+  $("dlg").showModal();
+}
+
+async function submitAction(kind, blocking) {
+  const text = $("dlgText").value.trim();
+  try {
+    if (kind === "approve") {
+      await api(`/api/quotes/${selected}/approve`, { method: "POST",
+        body: JSON.stringify({ comment: text || null,
+          waive_flags: blocking.length ? blocking : null,
+          reason: blocking.length ? (text || "waived at review") : null }) });
+      toast("Đã duyệt / approved");
+    } else if (kind === "reject") {
+      await api(`/api/quotes/${selected}/reject`, { method: "POST",
+        body: JSON.stringify({ comment: text || null }) });
+      toast("Đã từ chối / rejected");
+    } else {
+      if (!text) { toast("Cần hướng dẫn sửa / instruction required"); return; }
+      await api(`/api/quotes/${selected}/revise`, { method: "POST",
+        body: JSON.stringify({ instruction: text }) });
+      toast("Đang sửa / revising");
+    }
+    $("dlg").close();
+    await loadQueue();
+    await loadDetail();
+  } catch (exc) {
+    if (exc.status === 409) {  // FR-083: server refused without a waiver
+      toast("Bị chặn / blocked: " + (exc.details?.flags || []).join(", "));
+    } else {
+      toast(exc.message);
+    }
+  }
+}
+
+$("env").textContent = API_BASE;
+renderFilters();
+loadQueue();
+setInterval(() => { loadQueue(); if (selected) loadDetail(); }, 5000);  // FR-100: poll every 5s
+</script>
+</body>
+</html>

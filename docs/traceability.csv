@@ -53,3 +53,13 @@ FR-090,P0,EP-09,feat/dispatch,src/quotemind/quote/render/ (render_pdf),tests/uni
 FR-091,P0,EP-09,feat/dispatch,src/quotemind/cloud/oss.py (put_pdf + presigned_get),tests/unit/test_api_quotes.py,implemented (live: HTTP 200 via presigned URL)
 FR-092,P0,EP-09,feat/dispatch,src/quotemind/dispatch.py,tests/unit/test_dispatch.py,implemented (smtp path untested against DirectMail)
 FR-093,P0,EP-09,feat/dispatch,src/quotemind/dispatch.py (stub),tests/unit/test_dispatch.py,implemented (live: .eml in OSS outbox)
+FR-110,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/otel.py,tests/unit/test_obs.py,implemented (span names + attributes; exporter optional)
+FR-111,P0,EP-11,feat/observability-dashboard,src/quotemind/obs/trace.py + service.py (_persist_trace) + api (API-05),tests/unit/test_obs.py + tests/unit/test_service.py,implemented
+FR-112,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/cost.py + config/model_prices.yaml,tests/unit/test_obs.py,implemented (real provider token counts; list prices)
+FR-113,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/errors.py,tests/unit/test_obs.py,implemented (model/tool calls only; 1s/4s backoff)
+FR-100,P0,EP-10,feat/observability-dashboard,web/index.html (queue),,implemented (5s polling; status filters)
+FR-101,P0,EP-10,feat/observability-dashboard,web/index.html (detail),,implemented (bilingual lines, flags, totals, margin)
+FR-102,P0,EP-10,feat/observability-dashboard,web/index.html (action bar + waiver modal),,implemented
+FR-103,P0,EP-10,feat/observability-dashboard,web/index.html (trace panel),,implemented (steps, tokens, cost, duration)
+FR-105,P1,EP-10,feat/observability-dashboard,web/index.html (CDS styling),,implemented (Umber/Ochre; light theme)
+FR-106,P1,EP-10,feat/observability-dashboard,deploy/upload_site.py,,implemented (OSS static hosting; API base injected)

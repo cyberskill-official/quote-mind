@@ -19,6 +19,7 @@ from ..config.settings import Settings
 
 ARTIFACT_PREFIX = "quotes/"
 OUTBOX_PREFIX = "outbox/"
+TRACE_PREFIX = "traces/"
 INBOX_PREFIX = "rfq/"
 PRESIGNED_TTL_SECONDS = 600  # FR-091
 
@@ -31,6 +32,11 @@ def artifact_key(quote_number: str) -> str:
 def outbox_key(quote_number: str) -> str:
     """oss://quotemind-artifacts/outbox/{quote_number}.eml"""
     return f"{OUTBOX_PREFIX}{quote_number}.eml"
+
+
+def trace_key(quote_id: str) -> str:
+    """oss://quotemind-artifacts/traces/{quote_id}.json (FR-111)"""
+    return f"{TRACE_PREFIX}{quote_id}.json"
 
 
 def _bucket(settings: Settings, name: str) -> Any:
@@ -66,6 +72,14 @@ class ArtifactStore:
     def put_eml(self, quote_number: str, data: bytes) -> str:
         key = outbox_key(quote_number)
         self.artifacts.put_object(key, data, headers={"Content-Type": "message/rfc822"})
+        return key
+
+    def put_trace(self, quote_id: str, document_json: str) -> str:
+        """FR-111: persist the reasoning trace next to the quote artifacts."""
+        key = trace_key(quote_id)
+        self.artifacts.put_object(
+            key, document_json.encode("utf-8"), headers={"Content-Type": "application/json"}
+        )
         return key
 
     def presigned_get(self, key: str, expires: int = PRESIGNED_TTL_SECONDS) -> str:

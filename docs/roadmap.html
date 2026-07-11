@@ -148,10 +148,10 @@ const EPICS = [
     frs: [["080","done"],["081","done","live"],["082","done"],["083","done","live"],["084","done"],["085","partial"]] },
   { id: "EP-09", name: "Document generation and dispatch", active: false, note: "PDF rendered, stored privately in OSS, fetched over a presigned URL, and dispatched. Brand TTFs still to drop in.",
     frs: [["090","done","live"],["091","done","live"],["092","done"],["093","done","live"],["094","done","live"]] },
-  { id: "EP-10", name: "Review dashboard (frontend)", active: false, note: "Not started.",
-    frs: [["100","todo"],["101","todo"],["102","todo"],["103","todo"],["104","todo"],["105","todo"],["106","todo"]] },
-  { id: "EP-11", name: "Observability and reasoning trace", active: false, note: "Structured logging exists (FR-008). OTel spans, trace doc, cost accounting pending.",
-    frs: [["110","todo"],["111","todo"],["112","todo"],["113","todo"]] },
+  { id: "EP-10", name: "Review dashboard (frontend)", active: true, note: "Queue, detail, approve/reject/revise with waiver, and the reasoning-trace panel all ship in one file. Realtime push (FR-104) still polls.",
+    frs: [["100","done"],["101","done"],["102","done"],["103","done"],["104","partial"],["105","done"],["106","done"]] },
+  { id: "EP-11", name: "Observability and reasoning trace", active: false, note: "Every model/tool/memory step is traced with real provider token counts, priced, and persisted to OSS. Prompt bodies excluded unless TRACE_CONTENT=1.",
+    frs: [["110","done"],["111","done"],["112","done"],["113","done"]] },
   { id: "EP-12", name: "Evaluation harness", active: false, note: "Labeled dataset, metrics runner, baseline and CI smoke eval pending - the Track-3 measurable gain.",
     frs: [["120","todo"],["121","todo"],["122","todo"],["123","todo"],["124","todo"]] },
   { id: "EP-13", name: "Orchestration", active: true, note: "Orchestrator live: one RFQ text runs the whole path end to end. Planner/handoff (FR-131) pending.",
@@ -165,8 +165,9 @@ const PHASES = [
   { s: "done", t: "Agent / live-model layer", d: "Model client, embedding pipeline, text parser, LLM catalog select with SKU whitelist, orchestrator - proven live end to end." },
   { s: "done", t: "Intake, persistence and the human gate", d: "POST /api/rfq, qm_quotes/qm_audit/qm_counters, idempotency, state machine, durable pause/resume, approve/reject/revise, hash-chained audit." },
   { s: "done", t: "PDF, dispatch and the OSS drop channel", d: "WeasyPrint PDF, private OSS artifact + V4 presigned URL, bilingual DirectMail dispatch with stub fallback, the quotemind-inbox trigger." },
-  { s: "now",  t: "Dashboard and observability", d: "Review UI (queue, detail, actions, trace panel), OTel GenAI spans, persisted trace document, cost accounting." },
-  { s: "next", t: "Evaluation and deployment proof", d: "Labeled dataset + metrics runner vs the single-agent baseline, CI smoke eval, golden PDF snapshot, s.yaml + deployment proof." },
+  { s: "done", t: "Dashboard and observability", d: "Review UI (queue, detail, actions, trace panel), OTel GenAI spans, persisted trace document, cost accounting from real provider token counts." },
+  { s: "now",  t: "Evaluation and deployment proof", d: "Labeled dataset + metrics runner vs the single-agent baseline, CI smoke eval, golden PDF snapshot, s.yaml + deployment proof." },
+  { s: "next", t: "Remaining P1 surface", d: "Vision/PDF parsing (FR-031/032), bilingual NL drafting (FR-061), episodic memory read/write (FR-044/045), planner handoff (FR-131)." },
 ];
 
 const LABEL = { done: "Done", partial: "Partial", todo: "To do" };

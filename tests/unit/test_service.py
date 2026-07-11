@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 
+from quotemind.config.models import MODEL_PARSER_TEXT
 from quotemind.models import (
     Actor,
     AuditEvent,
@@ -27,6 +28,7 @@ from quotemind.models import (
     verify_chain,
 )
 from quotemind.models.audit import GENESIS_HASH, make_event
+from quotemind.obs.trace import Tracer
 from quotemind.orchestrator import DEFAULT_NOTES, DEFAULT_TERMS, PipelineResult
 from quotemind.quote import AssemblyLine, assemble_quote, format_quote_number, run_critic
 from quotemind.service import ApprovalBlockedError, QuoteService
@@ -48,6 +50,7 @@ class _Settings:
     directmail_smtp_port = 465
     directmail_user = None
     directmail_password = None
+    trace_content = False  # FR-111: prompt bodies stay out of the trace by default
 
 
 class FakeStore:
@@ -165,8 +168,19 @@ def _result(sequence: int, *, thin_margin: bool = False) -> PipelineResult:
 def _service(
     store: FakeStore, *, thin_margin: bool = False, artifacts: Any = None
 ) -> QuoteService:
-    async def pipeline(_text: str, *, sequence: int, **_kwargs: Any) -> PipelineResult:
-        return _result(sequence, thin_margin=thin_margin)
+    async def pipeline(
+        _text: str, *, sequence: int, tracer: Tracer | None = None, **_kwargs: Any
+    ) -> PipelineResult:
+        result = _result(sequence, thin_margin=thin_margin)
+        if tracer is None:
+            return result
+        # Mimic what the real pipeline records, so the service's trace handling is exercised.
+        with tracer.step("DocumentParser", "parse", model=MODEL_PARSER_TEXT) as step:
+            step.usage(tokens_in=1200, tokens_out=300)
+            step.note("extracted 1 line")
+        with tracer.step("CatalogMatcher", "retrieve", tool="vector_search") as step:
+            step.memory(["DELL-LAT-5450"])
+        return result.model_copy(update={"trace": tracer.document()})
 
     return QuoteService(
         store=store,  # type: ignore[arg-type]
@@ -303,3 +317,36 @@ def test_revise_reruns_and_counts_revisions() -> None:
     assert revised.revision == 1
     names = [event.event for event in store.list_audit(final.quote_id)]
     assert "human.revise" in names and names[-1] == "revision.pending_approval"
+
+
+# --- FR-111: the trace is persisted alongside the quote, and never load-bearing ---
+
+
+def test_the_trace_is_written_to_oss_and_stored_on_the_quote() -> None:
+    store = FakeStore()
+    artifacts = FakeArtifacts()
+    service = _service(store, artifacts=artifacts)
+    record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
+    final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
+
+    assert f"traces/{final.quote_id}.json" in artifacts.traces  # FR-111 key layout
+
+    document = service.trace(final.quote_id)  # API-05
+    assert document["quote_id"] == final.quote_id
+    assert [step["seq"] for step in document["steps"]] == [1, 2]
+    assert document["steps"][0]["model"] == MODEL_PARSER_TEXT
+    assert document["total_tokens_in"] == 1200
+    assert Decimal(document["total_cost_usd"]) > 0  # FR-112: real tokens, priced
+    assert document["contents"] == []  # TRACE_CONTENT is off, so no prompt bodies
+
+
+def test_a_trace_write_failure_does_not_fail_the_quote() -> None:
+    store = FakeStore()
+    service = _service(store, artifacts=FakeArtifacts(trace_fails=True))
+    record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
+    final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
+
+    # Observability is never load-bearing: the quote still reaches the human.
+    assert final.status == Status.PENDING_APPROVAL
+    names = [event.event for event in store.list_audit(final.quote_id)]
+    assert "trace.persist_failed" in names  # but the failure is on the record, not swallowed
