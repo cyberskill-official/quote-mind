@@ -1,0 +1,159 @@
+{#- FR-090 bilingual quote layout (normative: Appendix C). Vietnamese primary, English secondary.
+    All numbers arrive pre-formatted from the pricing engine; this template never computes money. -#}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>{{ q.quote_number }}</title>
+<style>
+  @page { size: A4; margin: 18mm; @bottom-center { content: element(pagefooter); } }
+  @font-face { font-family: "Be Vietnam Pro"; font-weight: 400;
+    src: url("fonts/BeVietnamPro-Regular.ttf"); }
+  @font-face { font-family: "Be Vietnam Pro"; font-weight: 600;
+    src: url("fonts/BeVietnamPro-SemiBold.ttf"); }
+  @font-face { font-family: "Be Vietnam Pro"; font-weight: 700;
+    src: url("fonts/BeVietnamPro-Bold.ttf"); }
+  :root { --umber: #45210E; --ochre: #F4BA17; --umber-tint: rgba(69, 33, 14, 0.04); }
+  * { box-sizing: border-box; }
+  body { font-family: "Be Vietnam Pro", sans-serif; font-size: 10.5pt; color: #1c140d; margin: 0; }
+  .en { font-style: italic; color: #6b5a4a; }
+  .band { background: var(--umber); color: #fff; padding: 12px 16px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2pt solid var(--ochre); }
+  .band .seller-name { font-weight: 700; font-size: 15pt; }
+  .band .doc { text-align: right; }
+  .band .doc .title { font-weight: 700; font-size: 14pt; letter-spacing: 0.5px; }
+  .parties { display: flex; gap: 16px; margin-top: 14px; }
+  .party { flex: 1; border: 0.5pt solid #d8ccc0; border-radius: 4px; padding: 10px 12px; }
+  .party .label { font-weight: 600; color: var(--umber); }
+  .meta { margin: 12px 0; padding: 8px 12px; background: var(--umber-tint); border-radius: 4px; }
+  table.lines { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.lines thead th { background: var(--umber); color: #fff; font-weight: 600;
+    padding: 6px 8px; text-align: left; font-size: 9.5pt; }
+  table.lines tbody td { padding: 6px 8px; border-bottom: 0.5pt solid #e7ddd3;
+    vertical-align: top; }
+  table.lines tbody tr:nth-child(odd) td { background: var(--umber-tint); }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  tr.note td { border-left: 2pt solid var(--ochre); font-size: 9pt; color: #6b5a4a;
+    background: #fff !important; padding-left: 18px; }
+  tr.line td { page-break-inside: avoid; }
+  .totals { width: 46%; margin-left: auto; margin-top: 10px; }
+  .totals .row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .totals .grand { font-weight: 700; background: rgba(244, 186, 23, 0.28);
+    padding: 6px 8px; border-radius: 3px; }
+  .in-words { font-style: italic; margin: 8px 0; }
+  .terms { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .terms .cell { border: 0.5pt solid #d8ccc0; border-radius: 4px; padding: 8px 10px; }
+  .bank { margin-top: 12px; padding: 8px 12px; border: 0.5pt solid var(--ochre); border-radius: 4px; }
+  .sign { display: flex; justify-content: space-between; margin-top: 22px; }
+  .sign .box { width: 45%; text-align: center; }
+  .sign .space { height: 46px; }
+  #pagefooter { position: running(pagefooter); font-size: 8pt; color: #8a7968;
+    border-top: 0.5pt solid #e7ddd3; padding-top: 4px; }
+  .label { font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="band">
+    <div>
+      <div class="seller-name">{{ seller.name }}</div>
+      <div class="en">{{ seller.tagline | default("", true) }}</div>
+    </div>
+    <div class="doc">
+      <div class="title">BÁO GIÁ / QUOTATION</div>
+      <div><span class="label">Số / No.:</span> {{ q.quote_number }}</div>
+      <div><span class="label">Ngày / Date:</span> {{ q.date }}</div>
+    </div>
+  </div>
+
+  <div class="parties">
+    <div class="party">
+      <div class="label">Bên bán / Seller</div>
+      <div>{{ seller.name }}</div>
+      <div>{{ seller.address }}</div>
+      <div>MST: {{ seller.mst }}</div>
+      <div>{{ seller.phone }} · {{ seller.email }}</div>
+    </div>
+    <div class="party">
+      <div class="label">Bên mua / Customer</div>
+      <div>{{ customer.name }}</div>
+      <div>{{ customer.address | default("", true) }}</div>
+      {% if customer.mst %}<div>MST: {{ customer.mst }}</div>{% endif %}
+      <div>{{ customer.contact | default("", true) }} {{ customer.email | default("", true) }}</div>
+    </div>
+  </div>
+
+  <div class="meta">
+    <span class="label">Hiệu lực / Validity:</span> {{ q.validity_days }} ngày / days
+    &nbsp;·&nbsp; <span class="label">Tiền tệ / Currency:</span> VND{% if usd %} (USD ref @ {{ usd.rate }}){% endif %}
+  </div>
+
+  <table class="lines">
+    <thead>
+      <tr>
+        <th class="num">STT<br><span class="en">No.</span></th>
+        <th>Mô tả hàng hóa, dịch vụ<br><span class="en">Description</span></th>
+        <th>ĐVT<br><span class="en">Unit</span></th>
+        <th class="num">SL<br><span class="en">Qty</span></th>
+        <th class="num">Đơn giá (VNĐ)<br><span class="en">Unit price</span></th>
+        <th class="num">Thành tiền (VNĐ)<br><span class="en">Amount</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr class="line">
+        <td class="num">{{ line.idx }}</td>
+        <td>{{ line.desc_vi }}<br><span class="en">{{ line.desc_en }}</span>
+          {% if line.sku %}<div class="en">SKU: {{ line.sku }}</div>{% endif %}</td>
+        <td>{{ line.unit_vi }}<br><span class="en">{{ line.unit_en }}</span></td>
+        <td class="num">{{ line.qty }}</td>
+        <td class="num">{{ line.unit_price }}</td>
+        <td class="num">{{ line.amount }}</td>
+      </tr>
+      {% if line.has_note %}
+      <tr class="note"><td></td><td colspan="5">{{ line.note_vi }} / <span class="en">{{ line.note_en }}</span></td></tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="row"><span>Cộng tiền hàng / Subtotal</span><span>{{ subtotal }}</span></div>
+    {% for vat in vat_lines %}
+    <div class="row"><span>Thuế GTGT {{ vat.rate }}% / VAT {{ vat.rate }}%</span><span>{{ vat.amount }}</span></div>
+    {% endfor %}
+    <div class="row grand"><span>TỔNG CỘNG / TOTAL</span><span>{{ total }}</span></div>
+    {% if usd %}
+    <div class="row en"><span>USD reference (invoice in VND)</span><span>{{ usd.total }}</span></div>
+    {% endif %}
+  </div>
+  <div class="in-words"><span class="label">Bằng chữ / In words:</span> {{ q.total_in_words_vi }}</div>
+
+  <div class="terms">
+    <div class="cell"><span class="label">Thanh toán / Payment</span><div>{{ terms.payment_vi }}</div><div class="en">{{ terms.payment_en }}</div></div>
+    <div class="cell"><span class="label">Giao hàng / Delivery</span><div>{{ terms.delivery_vi }}</div><div class="en">{{ terms.delivery_en }}</div></div>
+    <div class="cell"><span class="label">Bảo hành / Warranty</span><div>{{ terms.warranty_vi }}</div><div class="en">{{ terms.warranty_en }}</div></div>
+    <div class="cell"><span class="label">Ghi chú / Notes</span><div>{{ notes_vi }}</div><div class="en">{{ notes_en }}</div></div>
+  </div>
+
+  <div class="bank">
+    <span class="label">Ngân hàng / Bank:</span> {{ bank.bank }}
+    &nbsp;·&nbsp; <span class="label">Chủ TK / Beneficiary:</span> {{ bank.beneficiary }}<br>
+    <span class="label">Số TK / Account:</span> {{ bank.account }}
+    &nbsp;·&nbsp; <span class="label">SWIFT:</span> {{ bank.swift }}
+  </div>
+
+  <div class="sign">
+    <div class="box"><div class="label">Người lập / Prepared by</div><div class="space"></div>
+      <div>{{ prepared_by }}{% if reviewer %} · {{ reviewer }}{% endif %}</div></div>
+    <div class="box"><div class="label">Đại diện bên bán / For the Seller</div><div class="space"></div>
+      <div class="en">(Ký, ghi rõ họ tên / Sign, full name)</div></div>
+  </div>
+
+  <div id="pagefooter">
+    {{ vat_note_vi }} / <span class="en">{{ vat_note_en }}</span>
+    {% if fx_note %}&nbsp;·&nbsp; {{ fx_note }}{% endif %}
+    &nbsp;·&nbsp; {{ q.quote_id[:8] }}
+  </div>
+</body>
+</html>
