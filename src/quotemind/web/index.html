@@ -291,6 +291,15 @@ kbd { font-family: var(--cs-font-family-mono); font-size: 11px; border: 1px soli
   <div class="cs-dialog__header"><h2 class="cs-dialog__title" id="dlgTitle"></h2></div>
   <div class="cs-dialog__body">
     <div id="dlgGate"></div>
+    <div class="cs-field" id="dlgTo" hidden style="margin-bottom:12px">
+      <label class="cs-field__label" for="dlgEmail">Gửi tới / Send to</label>
+      <input class="cs-field__control" id="dlgEmail" type="email"
+             placeholder="để trống = duyệt nhưng không gửi / blank = approve without sending">
+      <span class="cs-field__description">
+        Hồ sơ thả vào hộp thư không có người gửi. Để trống thì báo giá vẫn được duyệt, chỉ là chưa gửi đi.<br>
+        A file dropped into the inbox has no sender. Leave this blank and the quote is approved, just not sent.
+      </span>
+    </div>
     <div class="cs-field">
       <label class="cs-field__label" for="dlgText" id="dlgLabel"></label>
       <textarea class="cs-field__control" id="dlgText" rows="3"></textarea>
@@ -334,6 +343,7 @@ let filter = "pending_approval";
 let selected = null;
 let queue = [];
 let blocking = [];
+let recipient = null;
 let signature = "";
 
 const $ = (id) => document.getElementById(id);
@@ -456,6 +466,7 @@ async function loadDetail() {
   const quote = review.quote;
   const critic = review.critic;
   blocking = critic?.blocking || [];
+  recipient = quote?.customer_block?.email || null;
   const canAct = review.status === "pending_approval" && Boolean(quote);
 
   $("detail").innerHTML = `
@@ -466,7 +477,7 @@ async function loadDetail() {
         ${(review.flags || []).map((f) =>
           `<span class="chip ${blocking.includes(f) ? "bad" : "warn"}">${esc(f)}</span>`).join("")}
         <span style="flex:1"></span>
-        ${quote ? `<a class="chip info" href="${API_BASE}/api/quotes/${selected}/pdf" target="_blank" rel="noopener">PDF ↗</a>` : ""}
+        ${quote ? `<button class="chip info" id="bPdf" style="cursor:pointer">PDF ↗</button>` : ""}
       </div>
       <div style="color:var(--cs-color-text-muted);font-size:13px;margin:4px 0 14px">
         ${esc(quote?.customer_block?.name || review.record.customer_id || "")}</div>
@@ -478,6 +489,19 @@ async function loadDetail() {
     ${(review.episodic?.recalls || []).length ? memorySection(review.episodic) : ""}
     ${traceSection(trace)}
   `;
+
+  // The PDF is a private object in OSS. The API hands back a short-lived signed URL - it cannot
+  // 302 to it, because Function Compute's default domain forbids external redirects - so the token
+  // goes on this fetch, and the browser opens the signed URL, which needs no credential of its own.
+  const pdfButton = $("bPdf");
+  if (pdfButton) {
+    pdfButton.onclick = async () => {
+      try {
+        const { url } = await api(`/api/quotes/${selected}/pdf`);
+        window.open(url, "_blank", "noopener");
+      } catch (exc) { toast("Không mở được PDF / could not open the PDF: " + exc.message); }
+    };
+  }
 
   if (canAct) {
     $("bApprove").onclick = () => openDialog("approve");
@@ -693,6 +717,12 @@ function openDialog(kind) {
   $("dlgLabel").textContent = labels[kind];
   $("dlgText").value = "";
 
+  // An RFQ that arrived as a file in the inbox carries no sender - there is nobody to send the quote
+  // back to. That is not an error, and approving used to make it look like one: the dispatch failed
+  // and the approved quote landed in `failed_dispatch`. Now the reviewer can just say where it goes.
+  $("dlgTo").hidden = kind !== "approve";
+  $("dlgTo").querySelector("input").value = recipient || "";
+
   // FR-083: a waiver is not a checkbox to click past. It names what is being waived, and it lands
   // verbatim on the hash-chained audit trail against the approver.
   $("dlgGate").innerHTML = (kind === "approve" && blocking.length)
@@ -712,15 +742,19 @@ async function submitAction(kind) {
   const text = $("dlgText").value.trim();
   try {
     if (kind === "approve") {
-      await api(`/api/quotes/${selected}/approve`, {
+      const to = $("dlgEmail").value.trim() || null;
+      const res = await api(`/api/quotes/${selected}/approve`, {
         method: "POST",
         body: JSON.stringify({
           comment: text || null,
           waive_flags: blocking.length ? blocking : null,
           reason: blocking.length ? (text || "waived at review") : null,
+          recipient: to,
         }),
       });
-      toast("Đã duyệt / approved");
+      toast(res.dispatching_to
+        ? "Đã duyệt, đang gửi tới " + res.dispatching_to
+        : "Đã duyệt — chưa gửi (không có người nhận) / approved, not sent (no recipient)");
     } else if (kind === "reject") {
       await api(`/api/quotes/${selected}/reject`, { method: "POST", body: JSON.stringify({ comment: text || null }) });
       toast("Đã từ chối / rejected");

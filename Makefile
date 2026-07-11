@@ -50,7 +50,8 @@ gc:
 ## diagrams: render the architecture Mermaid to PNG (SUB-03).
 diagrams:
 	npx -y @mermaid-js/mermaid-cli -i docs/architecture.mmd -o docs/architecture.png -b transparent
-## deploy: build the bundle, then push both Function Compute functions (FR-003).
+## deploy: export GIT_SHA := $(shell git rev-parse --short HEAD)$(shell git diff --quiet || echo -dirty)
+deploy: build the bundle, then push both Function Compute functions (FR-003).
 ## Build first: FC uploads the code dir as-is, so a source-only bundle crashes at cold start.
 deploy:
 	cd deploy && s build && s deploy -y

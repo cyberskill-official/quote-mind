@@ -25,6 +25,7 @@ from .models import (
     BilingualText,
     CatalogProduct,
     CriticReport,
+    CustomerProfile,
     DocType,
     EpisodicRecall,
     LineSource,
@@ -375,9 +376,28 @@ async def quote_from_extraction(
         )
 
     # FR-043: candidates from the customers tenant, then the deterministic pick.
+    #
+    # Every signal we have is searched, and the results are unioned. This used to be an `or` chain -
+    # hint, else company name, else the email's domain - which meant the email was consulted *only*
+    # when there was no company name at all. A name that failed the fuzzy text search therefore
+    # shadowed an exact, unique email match, which is the strongest identifier on the document.
+    #
+    # It cost a real customer: "Cong ty Thanh Cong" resolved, "Thanh Cong" did not, from the same
+    # address. The quote was flagged UNKNOWN_CUSTOMER, priced at list instead of their dealer tier,
+    # and their own history was never recalled - because recall needs a resolved customer.
     email = customer_email or extraction.buyer.email
-    lookup = customer_hint or extraction.buyer.company or (email.split("@")[-1] if email else "")
-    candidates = [profile for profile, _ in facade.search_customers_text(lookup)] if lookup else []
+    lookups = [customer_hint, extraction.buyer.company, email.split("@")[-1] if email else None]
+
+    candidates: list[CustomerProfile] = []
+    seen: set[str] = set()
+    for lookup in lookups:
+        if not lookup:
+            continue
+        for found, _ in facade.search_customers_text(lookup):
+            if found.customer_id not in seen:
+                seen.add(found.customer_id)
+                candidates.append(found)
+
     resolution = resolve_customer(
         candidates, email=email, name=extraction.buyer.company, hint=customer_hint
     )

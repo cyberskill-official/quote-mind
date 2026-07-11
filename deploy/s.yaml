@@ -58,6 +58,10 @@ vars:
     OTEL_SEMCONV_STABILITY_OPT_IN: ${env('OTEL_SEMCONV_STABILITY_OPT_IN')}
     QM_ENV: fc
     REGION: ap-southeast-1
+    # /health reports this. Without it the endpoint says `git_sha: dev` and there is no way to answer
+    # "what code is actually running?" - which is exactly the question a live audit starts with, and
+    # for three weeks the honest answer was "I think it is main, but I deployed it by hand."
+    GIT_SHA: ${env('GIT_SHA')}
     # PYTHONPATH must lead with /code/python. That is where `s build` vendors every runtime
     # dependency, and it is only importable because the platform puts it on the path - so a
     # PYTHONPATH of our own *replaces* that default rather than adding to it.

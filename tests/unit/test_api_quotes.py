@@ -95,7 +95,7 @@ def test_revise_returns_202_and_bumps_the_revision() -> None:
         _teardown()
 
 
-def test_approve_triggers_dispatch_and_pdf_redirects_to_a_presigned_url() -> None:
+def test_approve_triggers_dispatch_and_pdf_hands_back_a_presigned_url() -> None:
     store = FakeStore()
     client = _client(store)
     try:
@@ -109,10 +109,14 @@ def test_approve_triggers_dispatch_and_pdf_redirects_to_a_presigned_url() -> Non
         events = [event["event"] for event in review["audit"]]
         assert "dispatch.sent_stub" in events  # FR-093
 
-        # API-09 / FR-091: 302 to a fresh presigned GET, not the bytes themselves.
+        # API-09 / FR-091: a fresh presigned GET on the private object - handed back, not
+        # redirected to. FC's default domain refuses a cross-domain 302 (ExternalRedirectForbidden),
+        # and a plain <a href> cannot carry this route's bearer token, so the redirect could never
+        # have worked from the dashboard. The object stays private either way; see api/app.py.
         pdf = client.get(f"/api/quotes/{quote_id}/pdf", headers=_AUTH, follow_redirects=False)
-        assert pdf.status_code == 302
-        assert pdf.headers["location"].startswith("https://signed.example/quotes/")
+        assert pdf.status_code == 200
+        assert pdf.json()["url"].startswith("https://signed.example/quotes/")
+        assert pdf.json()["expires_in"] == 600
     finally:
         _teardown()
 

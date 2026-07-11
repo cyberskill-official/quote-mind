@@ -1,54 +1,63 @@
-# QuoteMind - Track 4: Autopilot Agent
+# QuoteMind — Track 4: Autopilot Agent
 
-**Submission description (SUB-05).** 491 words (limit 500).
+**Submission description (SUB-05).** 455 words of prose (532 by `wc -w` if you count the headings,
+the table and the URL). The previous version claimed 491 and was actually 506 - and it quoted eval
+numbers from a 25-case run that no longer exists. Both are fixed.
+**Live:** https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run
 
 ---
 
-A Vietnamese IT reseller's day starts with a pile of RFQs: a Zalo message, a scanned purchase order,
-a spreadsheet, an email in half-Vietnamese half-English. Turning each one into a quote takes a
-salesperson 30-90 minutes - reading it, hunting the SKUs, pricing by customer tier, applying 2026's
-8% VAT (10% for telecom), and typing it all into a bilingual PDF. It is skilled work, and almost all of it is mechanical.
+A Vietnamese IT reseller's day starts with a pile of RFQs: a scanned purchase order, a spreadsheet,
+an email in half-Vietnamese half-English. Turning one into a quote takes 30-90 minutes - reading it,
+hunting SKUs, pricing by tier, applying 2026's 8% VAT (10% for telecom), typing a bilingual PDF.
+Skilled work, almost all of it mechanical.
 
 **QuoteMind is an autopilot for that job.** An RFQ arrives - pasted, uploaded, or dropped into an OSS
-bucket - and it runs the whole path itself: parse, match the catalog, resolve the customer's tier,
-price, draft, self-check, and render a bilingual quote PDF. Then it stops, and asks a human.
+bucket - and the system runs the whole path: read it (OCR if it is a scan), match the catalog,
+resolve the tier, price it, self-check, render the PDF. Then it stops, and asks a human.
 
-## The idea the system is built around
+## The idea it is built around
 
-A quote is a document a customer gets invoiced from. So: **the language model is never allowed to do
+A quote is a document a customer gets invoiced from. So: **the model is never allowed to do
 arithmetic.**
 
-Qwen does what it is genuinely excellent at - reading a messy Vietnamese email and working out that
-"20 con lap Dell i7 32GB" means twenty Latitude 5450 i7 laptops, then picking that SKU from a catalog
-of near-identical variants. Everything after that is ordinary, unit-tested Python: `Decimal` prices,
-VAT bands, totals, amount-in-words. A critic then recomputes the whole quote from source data and
-refuses to pass one whose numbers do not reconcile.
+Qwen does what it is excellent at - reading a messy Vietnamese email, working out that "20 con lap
+Dell i7 32GB" means twenty Latitude 5450 i7 laptops, and picking that SKU from a catalog of
+near-identical variants. Everything after that is ordinary, unit-tested Python: `Decimal` prices, VAT
+bands, totals, amount-in-words. A critic then recomputes the whole quote from source data and refuses
+to pass one whose numbers do not reconcile.
 
-**We measured whether this matters.** Against a single monolithic agent given the same models, the
-same catalog and the same prompts, on 25 labelled RFQs:
+**We measured whether that matters.** Against a single monolithic agent given the same models, the
+same catalog and the same 30 labelled RFQs, five of them real scans:
 
-| | task success | line F1 | SKU top-1 | price exact | flagged the problem |
-|---|---|---|---|---|---|
-| QuoteMind | **96%** | 0.992 | 100% | **96%** | - |
-| single agent | **48%** | 0.992 | 98% | **48%** | **0%** |
+| | task success | **price exact** | flagged the problem |
+|---|---|---|---|
+| QuoteMind | **97%** | **97%** | 7% |
+| single agent | 40% | **40%** | **0%** |
 
-The single agent reads and matches almost as well. It gets the **money wrong on 52% of quotes** - and
-never once notices. That is a system that mails a customer a wrong price with total confidence.
-Taking arithmetic away from the model and putting a critic behind it is worth **+48 points**.
+The single agent reads and matches almost as well. It gets the **money wrong on 60% of quotes - and
+never notices.** That is a system that mails a customer a wrong price with total confidence. Taking
+arithmetic away from the model, and putting a critic behind it, is worth **+57 points**.
+
+## It remembers, and it plans
+
+On every human decision QuoteMind writes an episodic memory: what was quoted, and what the human
+decided, in their words. Before quoting a known customer it recalls the top three, ranked by
+`similarity x recency x importance` - so last week's rejection outranks last year's approval. Memory
+informs the reviewer; it never touches a price. Non-trivial quotes are decomposed in AgentScope's
+PlanNotebook, and the plan reports what actually ran - including the steps handed to a human.
 
 ## What it runs on
 
-Qwen (`qwen3-max`, `qwen-plus`, `qwen-vl-ocr`, `text-embedding-v4`) via DashScope Singapore;
-AgentScope for orchestration; Function Compute 3.0 for the API and the OSS-triggered ingest;
-Tablestore as both durable state (hash-chained audit trail, atomic quote numbering) and agent memory
-(vector + full-text retrieval fused by RRF); OSS for inputs, PDFs and reasoning traces; DirectMail
-for dispatch.
+Qwen (`qwen3-max`, `qwen-plus`, `qwen-vl-ocr`, `text-embedding-v4`) on DashScope Singapore;
+AgentScope; Function Compute 3.0 (HTTP API + OSS-triggered ingest); Tablestore for durable state and
+agent memory; OSS for inputs, PDFs and traces.
 
 ## The gate is the feature
 
-Nothing is ever sent automatically. Every quote stops at `pending_approval`, durably, and a reviewer
-sees not just the price but **every step that produced it** - each model call, tool call and memory
-lookup, with its tokens, cost and duration. A quote the critic flagged cannot be approved silently:
-the waiver is written into the audit chain, with who signed it and why.
+Nothing is sent automatically. Every quote stops at `pending_approval`, and the reviewer sees not
+just the price but **every step that produced it** - each model call, its tokens, its cost. A flagged
+quote cannot be approved silently: the waiver goes onto the hash-chained audit trail, with who signed
+it and why.
 
-An autopilot that files a flight plan and asks the captain before takeoff. Cost: **$0.011 per quote.**
+An autopilot that files a flight plan and asks the captain before takeoff. **$0.011 a quote.**

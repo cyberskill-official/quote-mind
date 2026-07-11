@@ -51,6 +51,20 @@ class CounterContentionError(RuntimeError):
     """The quote counter could not be advanced within the retry budget."""
 
 
+# Every payload column on a quote row. `put_quote` writes these and `get_quote` reads them; the
+# two must not drift apart, and a test asserts they do not. A column written but not listed here
+# is a column that exists in Tablestore and reaches nobody.
+PAYLOAD_COLUMNS = (
+    "source_text",
+    "quote_json",
+    "critic_json",
+    "trace_json",
+    "html",
+    "plan_json",  # FR-131
+    "episodic_json",  # FR-045
+)
+
+
 def _columns(row: Any) -> dict[str, Any]:
     return {name: value for name, value, *_ in (row.attribute_columns or [])}
 
@@ -153,8 +167,14 @@ class QuoteStore:
         if record.sha256_payload:
             columns.append(("sha256", record.sha256_payload))
         # An allowlist, not **kwargs. A column named here is a column that reaches Tablestore; a
-        # payload the service invented but this list forgot would be silently dropped, and the
-        # reviewer would simply never see it - which is exactly what nearly happened to the plan.
+        # payload the service invented but this list forgot is silently dropped.
+        #
+        # There are TWO such lists - this one, and PAYLOAD_COLUMNS which reads them back - and they
+        # have to agree. They did not: `plan_json` and `episodic_json` were added here and
+        # forgotten there, so the plan and the recalled memories were written to Tablestore on every
+        # quote and read back by nobody. Every test passed; the two dashboard panels built on them
+        # were empty in production. A test now asserts the two lists match, because a human
+        # remembering to update both is not a control.
         for name, value in (
             ("source_text", source_text),
             ("quote_json", quote_json),
@@ -182,7 +202,7 @@ class QuoteStore:
         if not isinstance(raw_record, str):
             return None
         stored: dict[str, Any] = {"record": QuoteRecord.model_validate_json(raw_record)}
-        for key in ("source_text", "quote_json", "critic_json", "trace_json", "html"):
+        for key in PAYLOAD_COLUMNS:
             if key in columns:
                 stored[key] = columns[key]
         return stored

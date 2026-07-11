@@ -26,7 +26,7 @@ FR-035,P1,EP-03,feat/agents,src/quotemind/agents/parser.py,tests/unit/test_parse
 FR-040,P0,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented; live vector+text search verified (meta_data_to_get fix)
 FR-041,P0,EP-04,feat/agent-layer,src/quotemind/memory/embedding.py,tests/unit/test_embedding.py,implemented (live-verified)
 FR-042,P0,EP-04,feat/agent-layer,src/quotemind/tools/matching.py + src/quotemind/agents/matcher.py,tests/unit/test_matching.py + test_agents.py,implemented (fusion+banding+LLM select; live-verified)
-FR-043,P0,EP-04,feat/FR-042-matcher,src/quotemind/tools/customer.py,tests/unit/test_customer.py,implemented
+FR-043,P0,EP-04,fix/live-audit,src/quotemind/orchestrator.py,tests/unit/test_customer_resolution.py,implemented (LIVE fix: every signal searched and unioned; an unmatched name no longer shadows an exact email match)
 FR-044,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py,tests/unit/test_recall.py,implemented (LIVE: episode written on approve/reject; bilingual LLM summary)
 FR-045,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py + orchestrator.py,tests/unit/test_recall.py,implemented (LIVE: top-3 re-ranked by effective score, 1200-token budget, memory ids in the trace; memories inform the reviewer - never the price - see recall.py)
 FR-046,P0,EP-04,feat/memory-planner,src/quotemind/memory/episodic.py,tests/unit/test_recall.py,implemented (importance + decay now actually drive retrieval)
@@ -52,9 +52,9 @@ FR-083,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (approve/reject),tests
 FR-084,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (revise),tests/unit/test_service.py,implemented
 FR-085,P1,EP-08,feat/intake-hitl,src/quotemind/service.py (stale_pending),,partial (helper; log event + badge pending)
 FR-090,P0,EP-09,feat/dispatch,src/quotemind/quote/render/ (render_pdf),tests/unit/test_render_pdf.py,implemented (live; brand TTFs pending)
-FR-091,P0,EP-09,feat/dispatch,src/quotemind/cloud/oss.py (put_pdf + presigned_get),tests/unit/test_api_quotes.py,implemented (live: HTTP 200 via presigned URL)
+FR-091,P1,EP-12,fix/live-audit,src/quotemind/api/app.py,tests/unit/test_live_audit_regressions.py,implemented (returns the short-lived signed URL; FC's default domain forbids the 302 and an <a href> carries no bearer token)
 FR-092,P0,EP-09,feat/dispatch,src/quotemind/dispatch.py,tests/unit/test_dispatch.py,implemented (smtp path untested against DirectMail)
-FR-093,P0,EP-09,feat/dispatch,src/quotemind/dispatch.py (stub),tests/unit/test_dispatch.py,implemented (live: .eml in OSS outbox)
+FR-093,P1,EP-12,fix/live-audit,src/quotemind/service.py,tests/unit/test_live_audit_regressions.py,implemented (no recipient = dispatch.skipped, not failed_dispatch; the reviewer supplies an address at the gate)
 FR-094,P0,EP-09,feat/intake-hitl,src/quotemind/memory/quotes.py (append_audit),tests/unit/test_service.py,implemented (live; chain verified)
 FR-100,P0,EP-10,feat/observability-dashboard,web/index.html (queue),,implemented (5s polling; status filters)
 FR-101,P0,EP-10,feat/observability-dashboard,web/index.html (detail),,implemented (bilingual lines, flags, totals, margin)

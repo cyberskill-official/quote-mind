@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 
 from quotemind.config.models import MODEL_PARSER_TEXT
+from quotemind.memory.quotes import PAYLOAD_COLUMNS
 from quotemind.models import (
     Actor,
     AuditEvent,
@@ -67,6 +68,15 @@ class FakeStore:
         return self.counters[year]
 
     def put_quote(self, record: QuoteRecord, **payloads: Any) -> None:
+        # The real store keeps an explicit column allowlist, and this fake used to accept anything.
+        # That is how `plan_json` and `episodic_json` were written to Tablestore and read back by
+        # nobody while every test passed: the double was more permissive than the thing it doubled.
+        unknown = set(payloads) - set(PAYLOAD_COLUMNS)
+        assert not unknown, (
+            f"{sorted(unknown)} is not a column the real QuoteStore persists. "
+            "Add it to quotemind.memory.quotes.PAYLOAD_COLUMNS (and to put_quote) or it will be "
+            "silently dropped in production."
+        )
         row = self.rows.setdefault(record.quote_id, {})
         row["record"] = record.model_copy(deep=True)
         for key, value in payloads.items():
@@ -287,23 +297,36 @@ def test_dispatch_renders_stores_and_sends_then_marks_sent() -> None:
     assert verify_chain(store.list_audit(final.quote_id)) is True
 
 
-def test_dispatch_without_a_recipient_fails_durably() -> None:
+def test_dispatch_with_no_recipient_is_a_skip_not_a_failure() -> None:
+    """This test used to assert the opposite, and the opposite was a bug.
+
+    It required that a quote with nobody to send it to land in `failed_dispatch`. In production that
+    is what an RFQ dropped into the OSS inbox always looks like - a file has no sender - so a human
+    would approve a perfectly good quote and watch it turn red. Nothing had failed. Nobody had said
+    where to send it.
+
+    The approval stands, the quote stays `approved`, and the skip is recorded with its reason.
+    """
     store = FakeStore()
     service = _service(store)
     record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
     final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
     service.approve(final.quote_id)
 
-    # Strip the recipient the pipeline put on the quote.
+    # Strip the recipient the pipeline put on the quote: this is an OSS file drop.
     stored = store.rows[final.quote_id]
     quote = json.loads(stored["quote_json"])
     quote["customer_block"].pop("email")
     stored["quote_json"] = json.dumps(quote)
 
-    failed = service.dispatch(final.quote_id)
-    assert failed.status == Status.FAILED_DISPATCH
-    reason = [e for e in store.list_audit(final.quote_id) if e.event == "dispatch.failed"][0]
-    assert "no recipient" in reason.payload_json["error"]
+    after = service.dispatch(final.quote_id)
+    assert after.status == Status.APPROVED  # NOT failed_dispatch
+    skip = [e for e in store.list_audit(final.quote_id) if e.event == "dispatch.skipped"][0]
+    assert "no recipient" in skip.payload_json["reason"]
+
+    # And a recipient supplied later sends it, from the same approved state.
+    sent = service.dispatch(final.quote_id, recipient="chi.lan@thanhcong.vn")
+    assert sent.status == Status.SENT
 
 
 def test_revise_reruns_and_counts_revisions() -> None:

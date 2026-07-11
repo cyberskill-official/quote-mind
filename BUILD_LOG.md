@@ -1006,3 +1006,59 @@ An honest gap: I could not get a rendered screenshot in this environment (the br
 wedged and headless Chrome fought the updater), so the layout has been verified structurally and by
 the twelve dashboard tests, but not visually by me. A preview file with mock data ships alongside for
 a human to look at.
+
+## Batch: the live audit (fix/live-audit)
+
+Six bugs. Every one passed the whole test suite and failed the moment it met production - and that is
+the thread worth pulling: each lived in a seam the tests mocked away.
+
+**1. The plan and the memories were written and never read back.** `QuoteStore` keeps *two* column
+allowlists - `put_quote` writes, `get_quote` reads - and I updated one. So `plan_json` and
+`episodic_json` were persisted on every quote and read by nobody: the two dashboard panels I had just
+built an entire UI redesign around were **empty in production**, while 310 tests went green.
+
+The tests could not have caught it. `FakeStore.put_quote` took `**payloads` and stored anything handed
+to it - a test double kinder than the thing it doubles is a double that hides it. There is now one
+`PAYLOAD_COLUMNS`, a test asserting the two lists agree, and a fake that rejects any column the real
+store would silently drop. I caught this exact trap on the write side in the previous PR, wrote a
+comment about it, and then walked into its mirror.
+
+**2. Customer resolution: an unmatched name shadowed an exact email.** The candidate search was an
+`or` chain - hint, else company name, else the email's domain - so the email was consulted only when
+there was no name at all. Live, "Cong ty Thanh Cong" resolved and "Thanh Cong" did not, from the same
+address. The customer was flagged UNKNOWN_CUSTOMER, quoted at **list price instead of their dealer
+tier**, and their history was never recalled, because recall needs a resolved customer. Every signal
+is now searched and unioned.
+
+**3. The PDF button had never worked, for two independent reasons.** FR-091 specifies a 302 to a
+presigned OSS URL. Function Compute's default domain refuses cross-domain redirects
+(`ExternalRedirectForbidden`), so the route returned 400 once deployed - it passed under uvicorn. And
+the dashboard linked to it with a plain `<a href>`, which sends no Authorization header, so it would
+have 401'd anyway. The route now returns the signed URL; the client fetches it with its token and
+opens it. The object stays private and the URL short-lived, which is what FR-091 is *for*.
+
+**4. An approved quote could land in `failed_dispatch`.** An RFQ dropped as a file has no sender.
+Approval auto-dispatched, dispatch found no address, and a good approved quote turned red. Nothing had
+failed; nobody had said where to send it. Dispatch now writes `dispatch.skipped` with its reason and
+the quote stays `approved`. The old test asserted the old behaviour - it had encoded the bug as a
+requirement.
+
+**5. Approving twice returned 500.** An illegal transition is a conflict, not a server error. Now 409.
+
+**6. Nothing deployed on merge, and nothing said what was live.** There was no deploy workflow: every
+release went out because I remembered to run `s deploy` from a laptop, and `/health` said
+`git_sha: dev`. The honest answer to "what code is running?" was "probably main, I think". There is
+now a deploy workflow - which also sidesteps the Serverless Devs RAM timeout, GitHub's network not
+being Vietnam's - `/health` reports the deployed commit, and the workflow **fails if the live SHA is
+not the one it just pushed**. A green deploy that shipped the wrong code is worse than a red one,
+because nobody looks again.
+
+**Docs.** The submission description claimed 491 words, was 506, and quoted eval numbers from a
+25-case run that no longer exists. The demo script walked through a system that predated vision OCR,
+the autopilot loop, memory and the planner. Both rewritten; the architecture diagram gains the planner
+and episodic recall.
+
+Verification: ruff clean, mypy clean (81 files), import-linter 4/4, pytest 319 passed, pricing branch
+coverage 100%. Live after the fixes: a bare-name RFQ from Thanh Cong resolves to `cust_thanhcong` at
+dealer tier, recalls its own history (effective 0.719), the PDF downloads (30 KB via signed URL), an
+approved file-drop quote stays approved with `dispatch.skipped` audited, and a second approve is 409.

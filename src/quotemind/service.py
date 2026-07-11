@@ -493,21 +493,45 @@ class QuoteService:
         note = vat_policy_note(date_type.fromisoformat(quote.date))
         return render_pdf(quote, vat_policy_note=note)
 
+    def recipient_of(self, quote_id: str) -> str | None:
+        """Who this quote would be sent to, if anyone.
+
+        An RFQ dropped as a file into OSS carries no sender - there is no email on it, because
+        nobody attached one. That is a perfectly ordinary state, and the caller needs to know it
+        *before* approving rather than discovering it as a failure afterwards.
+        """
+        email = self.quote_of(quote_id).customer_block.get("email")
+        return email if isinstance(email, str) and email else None
+
     def dispatch(self, quote_id: str, *, recipient: str | None = None) -> QuoteRecord:
-        """FR-090..093: render, store privately, presign, and send. Every step is audited."""
+        """FR-090..093: render, store privately, presign, and send. Every step is audited.
+
+        A quote with no recipient is NOT dispatched and is NOT a failure. It used to be: approval
+        scheduled a dispatch, the dispatch found no address, and an approved quote landed in
+        `failed_dispatch` - which reads, to a human, as though the system broke. It had not:
+        nobody had told it where to send the thing. The approval stands, the quote stays `approved`,
+        and the skip goes on the audit trail with its reason, so a person can supply an address.
+        """
         stored = self._load(quote_id)
         record: QuoteRecord = stored["record"]
         quote = self.quote_of(quote_id)
+
+        to = recipient or quote.customer_block.get("email")
+        if not isinstance(to, str) or not to:
+            self.store.append_audit(
+                record.quote_id,
+                actor=SYSTEM,
+                event="dispatch.skipped",
+                payload_json={"reason": "no recipient on the quote; approval stands"},
+            )
+            return record
+
         record = self._transition(record, Status.DISPATCHING, SYSTEM, "dispatch.started")
 
         try:
             pdf = self._render(quote)
             key = self.artifacts.put_pdf(quote.quote_number, pdf)  # FR-091: private object
             link = self.artifacts.presigned_get(key)
-
-            to = recipient or quote.customer_block.get("email")
-            if not isinstance(to, str) or not to:
-                raise ValueError("no recipient email on the quote")
 
             result = send_quote(  # FR-092 / FR-093
                 quote,
