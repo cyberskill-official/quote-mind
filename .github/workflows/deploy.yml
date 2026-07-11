@@ -79,7 +79,12 @@ jobs:
           ALIBABA_CLOUD_ACCESS_KEY_ID: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_ID }}
           ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_CLOUD_ACCESS_KEY_SECRET }}
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-          DASHSCOPE_BASE_URL: ${{ vars.DASHSCOPE_BASE_URL || 'https://dashscope-intl.aliyuncs.com/api/v1' }}
+          # The OpenAI-COMPATIBLE base, not the native one. This line used to say /api/v1 and it took
+          # the site down for quoting the moment CD first ran: chat kept working, every embedding
+          # went to /api/v1/embeddings (404), and the matcher failed on every RFQ. Settings now
+          # normalizes either form, so this is belt and braces - but a fallback nobody has ever
+          # executed is a guess, and this one was wrong.
+          DASHSCOPE_BASE_URL: ${{ vars.DASHSCOPE_BASE_URL || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1' }}
           TABLESTORE_ENDPOINT: ${{ secrets.TABLESTORE_ENDPOINT }}
           TABLESTORE_INSTANCE: ${{ secrets.TABLESTORE_INSTANCE }}
           OSS_ENDPOINT: ${{ secrets.OSS_ENDPOINT }}

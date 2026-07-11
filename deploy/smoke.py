@@ -38,7 +38,10 @@ from typing import Any
 import certifi
 
 LIVE = "https://quotemind.cyberskill.world"
-SETTLED = {"pending_approval", "critic_failed", "needs_clarification", "needs_manual"}
+# Anything that is not one of these is a resting state - INCLUDING the failure states. Leaving
+# failed_parse out of this set is how a broken pipeline showed up as a 150-second timeout
+# instead of an error: the check sat there politely re-asking a question already answered.
+IN_FLIGHT = {"received", "parsing", "matching", "pricing", "drafting", "validating"}
 
 # Verify against a CA bundle we ship, not whatever the machine happens to trust. macOS framework
 # Pythons have no root store until someone runs `Install Certificates.command`, so the default here
@@ -86,7 +89,7 @@ def _settle(base: str, token: str, quote_id: str) -> str:
     for _ in range(25):
         time.sleep(6)
         status = str(_request(f"{base}/api/quotes/{quote_id}", token)["status"])
-        if status in SETTLED:
+        if status not in IN_FLIGHT:
             return status
     return "timed_out"
 
