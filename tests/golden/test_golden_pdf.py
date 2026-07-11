@@ -12,11 +12,16 @@ without absorbing a real layout change. Regenerate deliberately, never reflexive
 
 If a diff appears you did not intend, that is the test doing its job.
 
-A caveat, stated rather than hidden: the golden is only portable across machines that resolve the
-same fonts. Recorded on macOS it differs from Linux by ~25% of pixels - not a layout change, just a
-different font fallback - which would make this test fail wherever it was not recorded. So the
-golden is pinned to the CI platform (Linux) and the check is skipped elsewhere. Bundling the Be
-Vietnam Pro TTFs is what makes it truly portable, and that is still outstanding (FR-090).
+This golden used to be pinned to Linux, and that pin is gone - which is the whole point of FR-124.
+
+The old docstring said it plainly: "the golden is only portable across machines that resolve the
+same fonts... Bundling the Be Vietnam Pro TTFs is what makes it truly portable, and that is still
+outstanding." The TTFs are bundled now, WeasyPrint embeds all five faces into the PDF as TrueType
+subsets, and pdfium rasterises those embedded glyphs itself rather than asking the operating system
+for a font. So the same quote produces the same pixels on macOS and on CI, and the test runs
+everywhere instead of being skipped on the machine where the change is actually being made.
+
+A skipped test is a test that catches nothing. This one now runs where it can catch something.
 """
 
 from __future__ import annotations
@@ -36,7 +41,6 @@ from quotemind.seed.data import BY_SKU
 
 GOLDEN = Path(__file__).parent / "quote_golden.png"
 TOLERANCE = 0.02  # FR-124
-GOLDEN_PLATFORM = "linux"  # the golden is recorded on the CI platform; fonts differ elsewhere
 _ON = date(2026, 7, 11)
 
 _TERMS = QuoteTerms(
@@ -136,16 +140,52 @@ def _pixel_diff(left: bytes, right: bytes) -> float:
 
 
 @pytest.mark.skipif(not GOLDEN.exists(), reason="golden PNG not recorded")
-@pytest.mark.skipif(
-    not sys.platform.startswith(GOLDEN_PLATFORM),
-    reason="the golden is font-dependent and recorded on Linux (see the module docstring)",
-)
 def test_the_rendered_quote_still_looks_like_the_golden() -> None:
     ratio = _pixel_diff(render_png(), GOLDEN.read_bytes())
     assert ratio <= TOLERANCE, (
         f"{ratio:.1%} of pixels changed (tolerance {TOLERANCE:.0%}). "
         "If this was intentional, rerun with --update and eyeball the new PNG before committing it."
     )
+
+
+def test_the_pdf_carries_its_own_fonts() -> None:
+    """The reason the golden is portable at all - and the reason FR-124 was worth doing.
+
+    If WeasyPrint ever stops finding the bundled TTFs it falls back to a system face, silently: the
+    PDF still renders, the diacritics still come out right, and the only symptom is a warning on
+    stderr that nobody reads. The golden would then fail on CI and pass locally, or vice versa, and
+    the failure would look like a layout bug rather than a missing file.
+
+    So this asserts the actual property: the fonts are *inside* the PDF.
+    """
+    import io  # noqa: PLC0415
+
+    from pypdf import PdfReader  # noqa: PLC0415
+
+    from quotemind.quote.render import render_pdf  # noqa: PLC0415
+
+    pdf = render_pdf(
+        build_golden_quote(),  # type: ignore[arg-type]
+        vat_policy_note=vat_policy_note(_ON),
+    )
+    fonts = PdfReader(io.BytesIO(pdf)).pages[0]["/Resources"]["/Font"].get_object()  # type: ignore[index]
+    assert fonts, "the quote has no fonts at all"
+
+    for key in fonts:
+        font = fonts[key].get_object()
+        descriptor = font.get("/FontDescriptor")
+        if descriptor is None and font.get("/DescendantFonts"):
+            descriptor = font["/DescendantFonts"][0].get_object().get("/FontDescriptor")
+        descriptor = descriptor.get_object() if descriptor else None
+
+        name = str(font.get("/BaseFont"))
+        assert "Be-Vietnam-Pro" in name, (
+            f"{name} is not Be Vietnam Pro - WeasyPrint fell back to a system font, which means "
+            "the bundled TTFs were not found. Check quote/render/fonts/."
+        )
+        assert descriptor and any(
+            k in descriptor for k in ("/FontFile", "/FontFile2", "/FontFile3")
+        ), f"{name} is referenced but not embedded, so the PDF depends on the reader's fonts"
 
 
 if __name__ == "__main__":  # pragma: no cover - operational

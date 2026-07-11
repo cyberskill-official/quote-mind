@@ -1,0 +1,400 @@
+{
+  "generated_at": "2026-07-11T06:59:58.113372+00:00",
+  "pipeline": {
+    "cases": 30,
+    "skipped": 0,
+    "line_extraction": {
+      "precision": 1.0,
+      "recall": 0.9851,
+      "f1": 0.9925,
+      "tp": 66,
+      "fp": 0,
+      "fn": 1
+    },
+    "sku_top1_accuracy": 1.0,
+    "price_exactness": 0.9667,
+    "task_success": 0.9667,
+    "human_intervention_rate": 0.0667,
+    "errors": 0,
+    "latency_ms": {
+      "p50": 23006,
+      "p95": 39577
+    },
+    "tokens": {
+      "in": 217536,
+      "out": 23240
+    },
+    "cost_usd": {
+      "total": "0.309398",
+      "per_quote": "0.010313"
+    }
+  },
+  "baseline": {
+    "cases": 30,
+    "skipped": 0,
+    "line_extraction": {
+      "precision": 0.9833,
+      "recall": 0.8806,
+      "f1": 0.9291,
+      "tp": 59,
+      "fp": 1,
+      "fn": 8
+    },
+    "sku_top1_accuracy": 0.9831,
+    "price_exactness": 0.4,
+    "task_success": 0.4,
+    "human_intervention_rate": 0.0,
+    "errors": 5,
+    "latency_ms": {
+      "p50": 22755,
+      "p95": 30883
+    },
+    "tokens": {
+      "in": 176858,
+      "out": 19365
+    },
+    "cost_usd": {
+      "total": "0.328419",
+      "per_quote": "0.010947"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "vi_text_001",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_002",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_003",
+      "tags": [
+        "demo",
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_004",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_005",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_006",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_007",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_008",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_009",
+      "tags": [
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_text_010",
+      "tags": [
+        "vat_10_percent",
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_text_001",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_text_002",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_text_003",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_text_004",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_text_005",
+      "tags": [
+        "text",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_xlsx_001",
+      "tags": [
+        "xlsx",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_xlsx_002",
+      "tags": [
+        "xlsx",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_xlsx_003",
+      "tags": [
+        "xlsx",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_xlsx_001",
+      "tags": [
+        "xlsx",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_xlsx_002",
+      "tags": [
+        "xlsx",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_pdf_001",
+      "tags": [
+        "pdf_digital",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_pdf_002",
+      "tags": [
+        "pdf_digital",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    },
+    {
+      "case_id": "en_pdf_003",
+      "tags": [
+        "pdf_digital",
+        "en"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "vi_scan_001",
+      "tags": [
+        "pdf_scan",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": "ScannedPdfError: PDF yielded 0 extractable characters; it looks scanned and needs OCR"
+    },
+    {
+      "case_id": "vi_scan_002",
+      "tags": [
+        "demo",
+        "pdf_scan",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": "ScannedPdfError: PDF yielded 0 extractable characters; it looks scanned and needs OCR"
+    },
+    {
+      "case_id": "vi_scan_003",
+      "tags": [
+        "pdf_scan",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": "ScannedPdfError: PDF yielded 0 extractable characters; it looks scanned and needs OCR"
+    },
+    {
+      "case_id": "vi_scan_004",
+      "tags": [
+        "pdf_scan",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": "ScannedPdfError: PDF yielded 0 extractable characters; it looks scanned and needs OCR"
+    },
+    {
+      "case_id": "vi_scan_005",
+      "tags": [
+        "pdf_scan",
+        "vi"
+      ],
+      "pipeline_price_exact": false,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": "ScannedPdfError: PDF yielded 0 extractable characters; it looks scanned and needs OCR"
+    },
+    {
+      "case_id": "adv_001",
+      "tags": [
+        "adversarial",
+        "out_of_catalog",
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": false,
+      "baseline_error": null
+    },
+    {
+      "case_id": "adv_002",
+      "tags": [
+        "adversarial",
+        "spec_conflict",
+        "text",
+        "vi"
+      ],
+      "pipeline_price_exact": true,
+      "pipeline_error": null,
+      "baseline_price_exact": true,
+      "baseline_error": null
+    }
+  ]
+}

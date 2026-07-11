@@ -41,6 +41,11 @@ eval:
 ## eval-baseline: the single-agent control on its own (FR-122).
 eval-baseline:
 	python -m quotemind.eval_.run --mode baseline
+## eval-snapshot: freeze the latest run into the page the deployed site serves at /eval (FR-104).
+## The page renders a committed snapshot rather than re-running the eval, so the number on the site
+## and the number in the submission cannot drift apart without a commit saying so.
+eval-snapshot:
+	python deploy/eval_snapshot.py
 ## demo: seed the catalog, then run the demo RFQ end to end (NFR-011).
 demo:
 	python deploy/seed.py && python deploy/smoke_trace.py

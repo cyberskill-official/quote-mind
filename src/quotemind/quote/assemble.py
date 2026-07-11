@@ -57,6 +57,43 @@ class AssemblyLine(BaseModel):
     source: LineSource = LineSource.MATCHED
 
 
+def lead_time_lines(lines: list[AssemblyLine]) -> list[int]:
+    """FR-056: the 1-based indexes of lines whose product is not on the shelf.
+
+    The critic never sees the catalog - it only sees the assembled Quote - so the caller that *did*
+    resolve the products has to say which lines carry a lead time. Returning indexes rather than a
+    boolean means the flag can point at a line instead of at the whole quote.
+    """
+    return [
+        index
+        for index, item in enumerate(lines, start=1)
+        if item.product.stock_status is StockStatus.OUT_OF_STOCK
+    ]
+
+
+def _line_note(item: AssemblyLine) -> BilingualText | None:
+    """FR-056: an out-of-stock line says so, on the line, in both languages.
+
+    A quote whose delivery terms promise seven working days while one of its lines is a made-to-
+    order server is a quote that makes a promise the business cannot keep. The lead time belongs
+    next to the item it applies to, not buried in the footer - so it is appended to whatever note
+    the line already carries (a substitution note, typically), rather than replacing it.
+    """
+    product = item.product
+    if product.stock_status is not StockStatus.OUT_OF_STOCK:
+        return item.note
+
+    days = product.lead_time_days
+    lead = BilingualText(
+        vi=f"Hiện hết hàng, thời gian giao dự kiến {days} ngày.",
+        en=f"Currently out of stock; estimated delivery {days} days.",
+    )
+
+    if item.note is None:
+        return lead
+    return BilingualText(vi=f"{item.note.vi} {lead.vi}", en=f"{item.note.en} {lead.en}")
+
+
 def assemble_quote(
     *,
     quote_id: str,
@@ -79,6 +116,7 @@ def assemble_quote(
 
     for index, item in enumerate(lines, start=1):
         product = item.product
+        item = item.model_copy(update={"note": _line_note(item)})  # FR-056  # noqa: PLW2901
         price = unit_price(product, item.tier, project_discount_pct)
         rate = vat_rate_for(product, on_date)
         amount = line_total(item.qty, price, item.discount_pct)

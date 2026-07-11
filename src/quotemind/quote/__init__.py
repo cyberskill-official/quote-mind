@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from .assemble import AssemblyLine, assemble_quote
+from .assemble import AssemblyLine, assemble_quote, lead_time_lines
 from .critic import (
     BILINGUAL_NUMBER_MISMATCH,
+    LEAD_TIME,
     MARGIN_BELOW_FLOOR,
     MISSING_MANDATORY_FIELDS,
     MOJIBAKE,
@@ -22,6 +23,7 @@ from .numbering import format_quote_number, is_valid_quote_number, parse_quote_n
 
 __all__ = [
     "BILINGUAL_NUMBER_MISMATCH",
+    "LEAD_TIME",
     "AssemblyLine",
     "MARGIN_BELOW_FLOOR",
     "MISSING_MANDATORY_FIELDS",
@@ -34,6 +36,7 @@ __all__ = [
     "bilingual_number_mismatches",
     "format_quote_number",
     "is_valid_quote_number",
+    "lead_time_lines",
     "mojibake_fields",
     "parse_quote_number",
     "policy_flags",

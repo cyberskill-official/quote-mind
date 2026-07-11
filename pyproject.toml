@@ -36,6 +36,9 @@ dev = [
     "import-linter>=2.1",
     "hypothesis>=6.100",
     "types-PyYAML>=6",
+    # FR-124: the golden test asserts the brand fonts are *embedded* in the PDF, not merely
+    # requested. A silent fallback to a system face is the failure mode that pin existed for.
+    "pypdf>=5",
 ]
 agents = ["agentscope==1.0.9", "mcp>=1.28,<2", "openai>=1.55,<3"]
 memory = ["tablestore>=6.4.7", "tablestore-for-agent-memory==1.1.3"]

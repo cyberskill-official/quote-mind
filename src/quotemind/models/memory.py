@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from .common import BilingualText, Outcome, SopTopic
+from .common import BilingualText, Category, Outcome, SopTopic
 
 
 class ItemBrief(BaseModel):
@@ -36,6 +36,18 @@ class SOPSnippet(BaseModel):
     topic: SopTopic
     text: BilingualText
     embedding: list[float] | None = None
+    # FR-048. Which goods this term is *allowed* to apply to. Empty means universal.
+    #
+    # This is a rule, not a similarity, and it exists because similarity got it wrong: asked for the
+    # payment terms on a Dell PowerEdge server, the vector search returned "software licences and
+    # implementation services: 100% before activation" (0.657) above the generic 30-day term
+    # (0.617). Both mention money and both say "100%", so they sit close together in the embedding -
+    # and the wrong one would have gone onto a quotation as an obligation nobody agreed to.
+    #
+    # Whether a payment term applies to software or to hardware is not a fuzzy question: the
+    # business knows exactly. So retrieval *proposes* - it ranks within what is allowed - and this
+    # field *disposes*, exactly as deterministic banding disposes of the matcher's SKU proposal.
+    applies_to: list[Category] = Field(default_factory=list)
 
 
 class EpisodicRecall(BaseModel):

@@ -1102,3 +1102,179 @@ Verification: ruff clean, mypy clean (80 files), import-linter 4/4, **316 passed
 coverage 100%. Live, on a real spreadsheet (QM-2026-0013): "chỉ cần 2 màn hình thôi, không phải 8" ->
 all three lines survive, the monitor drops 8 -> 2, and the total is recomputed deterministically from
 463,104,000 to 356,832,000 VND.
+
+## Batch: the roadmap, finished (feat/roadmap-finish)
+
+Seven FRs. One of them changed how the product reads, and it is worth saying which and why.
+
+**FR-048 - the terms on a quote are retrieved, not hardcoded.** `DEFAULT_TERMS` was a module-level
+constant, so every quote said "giao hàng trong vòng 7 ngày làm việc / delivery within 7 working
+days" - *including* a quote for a made-to-order server with a six-week manufacturer lead time. That
+is not a formatting problem. It is a promise the business cannot keep, printed on a document the
+customer is invoiced from.
+
+The sentences live in the `sop` KnowledgeStore tenant now, and the drafter retrieves them per topic,
+seeded with the goods being quoted. Retrieval is *per topic* rather than one global top-k, because a
+single search would happily return three payment snippets and no warranty. A topic that retrieves
+nothing falls back to the seeded default, because a quote with no payment terms is worse than a
+quote with generic ones.
+
+This gives the system its third kind of memory, and they are worth naming together: **procedural**
+(what the business always does - `memory/sop.py`), **episodic** (what happened last time with this
+customer - `memory/recall.py`), and **semantic** (what the products are - the catalog). All three
+inform the draft. None of them is allowed near the arithmetic.
+
+**FR-073 - the critic explains itself, and cannot argue with itself.** The order is load-bearing:
+`run_critic` reaches the verdict, in code; *then* `agents/reviewer.py` is handed the finished report
+and asked to explain it. The model cannot set `passed`, cannot add or drop a flag, and never sees a
+number it could recompute. If the call fails the quote is unaffected. The 80-word cap is enforced
+after generation, not merely requested in the prompt, because "concise" is not something a prompt
+can promise.
+
+The dashboard renders the two halves side by side and labels them: **KHÔNG DO AI / NOT AI** on the
+deterministic verdict, **AI** on the narrative, with a line saying the narrative was written after
+the verdict and cannot change it. Collapsing them into one block of prose would hide exactly the
+distinction the whole architecture is built on, at the one moment a human is deciding whether to
+trust it.
+
+**FR-056** - an out-of-stock line carries its lead time, in both languages, *appended* to whatever
+note it already had (a substitution note, typically) rather than replacing it. Two things can be
+true about one line. `LEAD_TIME` is non-blocking: it is news, not an error.
+
+**FR-085** - a quote nobody has answered in four hours is badged in the queue and logged. This is
+the failure mode an approval gate *creates*: the system did its job, stopped, and asked - and the
+asking went unheard.
+
+**FR-104** - `/eval` is public, like `/health`, and for the same reason: the headline of this whole
+project is 97% against 40%, and a benchmark a judge has to take on faith is not a benchmark. It
+renders a *committed snapshot* rather than running the eval, so the number on the site and the
+number in the submission cannot drift apart without a commit saying so. 17 of the 30 cases are ones
+we price exactly and the single agent does not.
+
+**FR-124** - Be Vietnam Pro is bundled (Regular / SemiBold / Bold + `OFL.txt`). It was left out on
+the reasoning that the repo stays source-only, which was the wrong call for this asset: WeasyPrint's
+fallback keeps the diacritics byte-exact, so nothing was broken, but a quotation rendered in whatever
+sans-serif the host happens to have is the difference between a document that looks like it came
+from a company and one that looks like it came from a script.
+
+**FR-134 - cancel, and the half of it that cannot be built honestly.** A quote at the gate is
+cancellable: it ends as `rejected` (the frozen enum's word for "ended, not sent"), but the audit
+event is `human.cancel`, so "the operator dropped this" and "the reviewer judged the price wrong"
+stay two different facts forever. Only one of them is evidence about the pricing, so a cancel is
+**not** written to episodic memory - somebody closing a browser tab must not teach the system to
+distrust its own prices.
+
+An *in-flight* run returns **409**, and that is the honest answer rather than a missing feature. The
+pipeline runs in a FastAPI BackgroundTask inside the same Function Compute invocation; no second
+process holds a handle to it. And the status enum is frozen (section 12.5) with no `cancelled`:
+landing an interrupted run in `failed_parse` would put a lie on a hash-chained audit trail, and
+`needs_manual` is not reachable from `parsing` under LEGAL_TRANSITIONS. Widening the state machine to
+make one P1 fit is exactly the change section 12 says to stop and ask about. **This is a decision for
+Stephen, not for me.**
+
+**FR-036 and FR-074 remain unbuilt, on purpose.** Both are P2. FR-074 is the auto-fix loop - a critic
+that sends work back to the drafter before a human sees it. Given that this project's entire argument
+is that the model does not get to talk its way past the guardrail, an auto-fix loop is a feature I
+would want to argue for out loud rather than quietly ship.
+
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **334 passed**, pricing branch coverage
+100%.
+
+### FR-048, take two: the retrieval was printing a payment obligation nobody agreed to
+
+I shipped FR-048, quoted a Dell PowerEdge server against the live site, and read the terms it
+produced. The payment term was **"software licences and implementation services: 100% payment before
+activation."**
+
+That is precisely the sin FR-048 exists to fix, committed by FR-048. Two bugs, one symptom:
+
+**The topic filter was applied after a truncation.** `TOP_K` was 4, the search covers the whole
+tenant, and the topic filter ran on the results. With 11 snippets across 5 topics, a topic could
+contribute a single survivor to the top 4 - and a single survivor wins by default, however badly it
+fits. A filter applied after a truncation is a filter over a lottery.
+
+**And similarity is not a classifier.** Even with every candidate present, the software payment term
+scored **0.657** against the generic 30-day term's **0.617** for a server. Both are about money,
+both say "100%", so they sit close together in the embedding. Similarity had no way to know that a
+server is not a software licence, because that is not a similarity question.
+
+Whether a payment term applies to hardware or to software is not fuzzy. **The business knows
+exactly.** So `SOPSnippet.applies_to` names the categories a term may be printed on, the categories
+of the *matched* lines decide which terms are eligible, and similarity only ranks within that.
+Retrieval proposes; the rule disposes - the same shape as the matcher's LLM proposal and its
+deterministic banding, and the same shape as the whole project.
+
+Live, after the fix - three RFQs, three genuinely different documents:
+
+| goods | payment | delivery | warranty |
+|---|---|---|---|
+| 3x PowerEdge R650 | 30% advance over 500M VND | manufacturer lead time | 36 months, on-site |
+| 10x Latitude 5450 | 30% advance over 500M VND | 7 working days | 12 months |
+| 5x Adobe CC | 100% before activation | free within HCMC/Hanoi | vendor support, no hardware warranty |
+
+One more thing worth recording. The *first* server quote after this deploy still came back with the
+old terms, because it landed on a warm Function Compute instance 14 seconds after the rollout. The
+env-var `git_sha` on `/health` had already flipped - config updates before code does. That is the
+"green deploy shipped the wrong code" failure I built the CD guard for, in miniature, and it means
+the guard needs to check *behaviour*, not a version string. Noted for the next round.
+
+### The live URL has never rendered in a browser
+
+Found while trying to screenshot the site for the demo video, which is a humbling way to find it.
+
+Function Compute injects `Content-Disposition: attachment` on **every** response from its default
+`*.fcapp.run` domain. We do not set it; it is not configurable. `curl` and `fetch` ignore it - which
+is why the API, the integration tests and every live check in this log pass - but **a browser obeys
+it**, and a browser is exactly what a judge uses. Open the URL and you get `download.html`.
+
+So the dashboard and `/eval` have never been viewable by anyone. Three separate browsers failed to
+screenshot the page during this session and I read each failure as a browser problem. The third one
+put a **Save As** dialog on screen with `download (3).html` in it, and I still did not see it.
+
+It is the same restriction that broke the PDF route (`ExternalRedirectForbidden` on a cross-domain
+302). The default FC domain is deliberately crippled for browser use in two different ways, and we
+have now been bitten by both.
+
+OSS static hosting is not an escape: Block Public Access is set at the **account** level on this
+account (`Put public bucket acl is not allowed`), which is the correct setting and should stay - the
+artifacts bucket holds customer quote PDFs.
+
+The fix is a custom domain, it takes about fifteen minutes, and it needs Stephen's DNS. Written up
+step by step in `docs/deploy/custom-domain.md`, including the two things to change in the repo once
+it works - the live URL in the README, and the FR-091 302, whose comment already says "restore the
+302 the day a custom domain is bound."
+
+**The lesson is not about Function Compute.** Every check in this project asserts against `curl`, and
+`curl` is not the client. The audit that found eight bugs asked *"does the API return the right
+JSON?"* over and over, and never once asked *"does the page open?"* A test that never uses the thing
+the way a user uses it is a test that can pass forever while the product is unusable.
+
+### CI caught the golden PDF, and the fix removed a skip that had been hiding it
+
+Bundling Be Vietnam Pro (FR-124) changed **29.1% of the pixels** in the rendered quote. That is the
+test doing exactly its job: the golden was recorded against WeasyPrint's *fallback* face, and the
+brand face is a different typeface. Intentional, and regenerated.
+
+The interesting part is what came off with it. The golden was **pinned to Linux and skipped
+everywhere else**, and the old docstring said why:
+
+> "the golden is only portable across machines that resolve the same fonts... Bundling the Be
+> Vietnam Pro TTFs is what makes it truly portable, and that is still outstanding."
+
+The TTFs are bundled now. WeasyPrint embeds all five faces into the PDF as TrueType subsets, and
+pdfium rasterises those embedded glyphs itself rather than asking the operating system for a font.
+So the same quote produces the same pixels everywhere, and the pin is gone: **the test now runs on
+the machine where the change is actually being made**, instead of only on the machine where nobody
+is looking.
+
+A skipped test catches nothing. This one had been skipped on macOS for its whole life, which is
+precisely why a font change reached CI before it reached me.
+
+And a new test asserts the property the pin was standing in for: **the fonts are inside the PDF.**
+If WeasyPrint ever stops finding the bundled TTFs it falls back silently - the PDF still renders,
+the diacritics still come out right, and the only symptom is a warning on stderr that nobody reads.
+`test_the_pdf_carries_its_own_fonts` opens the PDF and checks every face is Be Vietnam Pro and every
+one is embedded.
+
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **345 passed**, pricing branch coverage
+100%.

@@ -28,3 +28,7 @@ docs/openapi.json
 # Function Compute build output (`s build`): the vendored runtime dependencies and the s cache.
 python/
 .s/
+
+# The demo clip and its frames: real screenshots of the deployed UI, rebuilt by
+# `python deploy/demo_shots.py && python deploy/demo_clip.py`. Binary, and reproducible.
+.demo/

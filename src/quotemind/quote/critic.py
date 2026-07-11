@@ -34,6 +34,7 @@ MOJIBAKE = "MOJIBAKE"
 UNKNOWN_CUSTOMER = "UNKNOWN_CUSTOMER"
 NEEDS_CONFIRMATION = "NEEDS_CONFIRMATION"
 VALIDITY_OUT_OF_BOUNDS = "VALIDITY_OUT_OF_BOUNDS"
+LEAD_TIME = "LEAD_TIME"  # FR-056: a line the seller does not have on the shelf
 
 _NEEDS_CONFIRMATION_SOURCES = frozenset({LineSource.SUBSTITUTED, LineSource.NO_MATCH})
 _DIGIT_RE = re.compile(r"\d+")
@@ -132,8 +133,14 @@ def policy_flags(
     customer_known: bool = True,
     validity_min_days: int | None = None,
     validity_max_days: int | None = None,
+    lead_time_lines: list[int] | None = None,
 ) -> tuple[list[str], list[str]]:
-    """FR-071 policy flags: (blocking, non_blocking). Validity checked only if SOP bounds given."""
+    """FR-071 policy flags: (blocking, non_blocking). Validity checked only if SOP bounds given.
+
+    `lead_time_lines` (FR-056) comes from the caller, because the critic sees the assembled Quote
+    and never the catalog - stock status is not a fact the quote itself carries. It is non-blocking:
+    an out-of-stock item is a thing to tell the customer, not a thing that makes the quote wrong.
+    """
     blocking: list[str] = []
     non_blocking: list[str] = []
 
@@ -149,6 +156,8 @@ def policy_flags(
         non_blocking.append(UNKNOWN_CUSTOMER)
     if any(line.source in _NEEDS_CONFIRMATION_SOURCES for line in quote.lines):
         non_blocking.append(NEEDS_CONFIRMATION)
+    if lead_time_lines:  # FR-056
+        non_blocking.append(LEAD_TIME)
     if validity_min_days is not None and validity_max_days is not None:
         if not validity_min_days <= quote.validity_days <= validity_max_days:
             non_blocking.append(VALIDITY_OUT_OF_BOUNDS)
@@ -218,8 +227,14 @@ def run_critic(
     customer_known: bool = True,
     validity_min_days: int | None = None,
     validity_max_days: int | None = None,
+    lead_time_lines: list[int] | None = None,
 ) -> CriticReport:
-    """FR-070/071/072: assemble the deterministic CriticReport. passed only when nothing blocks."""
+    """FR-070/071/072: assemble the deterministic CriticReport. passed only when nothing blocks.
+
+    The FR-073 narrative is *not* produced here, and that is deliberate. This function is the
+    verdict; the narrative explains a verdict that already exists. Keeping them apart is what makes
+    it structurally impossible for the model's prose to talk the system out of a blocking flag.
+    """
     diffs = recompute_diffs(quote)
     blocking, non_blocking = policy_flags(
         quote,
@@ -227,6 +242,7 @@ def run_critic(
         customer_known=customer_known,
         validity_min_days=validity_min_days,
         validity_max_days=validity_max_days,
+        lead_time_lines=lead_time_lines,
     )
     if diffs:
         blocking = [RECOMPUTE_MISMATCH, *blocking]

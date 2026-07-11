@@ -19,6 +19,9 @@ from ...pricing import format_usd, format_vnd
 
 _TEMPLATE_DIR = Path(__file__).parent
 _TEMPLATE_NAME = "quote.html.j2"
+# FR-124: the branded face, bundled. `quote.html.j2` resolves the @font-face URLs relative to the
+# template, so WeasyPrint finds them without a base_url and without a Dockerfile step.
+FONT_DIR = _TEMPLATE_DIR / "fonts"
 _ENV = Environment(
     loader=FileSystemLoader(str(_TEMPLATE_DIR)),
     autoescape=select_autoescape(enabled_extensions=("html", "j2"), default_for_string=True),
