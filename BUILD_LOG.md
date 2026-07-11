@@ -1062,3 +1062,43 @@ Verification: ruff clean, mypy clean (81 files), import-linter 4/4, pytest 319 p
 coverage 100%. Live after the fixes: a bare-name RFQ from Thanh Cong resolves to `cust_thanhcong` at
 dealer tier, recalls its own history (effective 0.719), the PDF downloads (30 KB via signed URL), an
 approved file-drop quote stays approved with `dispatch.skipped` audited, and a second approve is 409.
+
+### The seventh and eighth bugs, found while fixing the sixth
+
+**7. A revision threw away the lines it was revising.** `revise()` appended the human's instruction
+to `source_text` and re-ran the **text** pipeline. For a quote that arrived as a spreadsheet, a PDF
+or a photo, `source_text` is a *placeholder* - the bytes are the document, and the text is only what
+a human reads on the record. So a reviewer who asked for a 3% discount on a file-sourced quote got
+back a quote with **no line items at all**.
+
+Every test passed, because every test revised a quote that had been pasted as text: the one channel
+where the placeholder happens to be the real document. Same seam as the first six.
+
+The extraction is now persisted and `quote_from_revision` re-drafts from *that*. The document is read
+exactly once, deliberately: re-OCRing a scan on every revision is not only expensive, it is
+non-deterministic - the same page can read differently twice, so an instruction about a *price* could
+silently change a *part number*.
+
+**8. There was a third allowlist, and it was the one that wrote.** The comment I had just written on
+`put_quote` said "there are TWO such lists". There were three: the keyword-only signature, an inline
+tuple in the body that did the actual writing, and `PAYLOAD_COLUMNS` on the read side. `extraction_json`
+went into the signature and into `PAYLOAD_COLUMNS` - and the guard test I wrote *in the same commit*
+compared exactly those two, so it passed while the column was dropped on the way to Tablestore. The
+live revision came back `needs_manual: no stored extraction`.
+
+The same bug, one level deeper, caught by the live site rather than by CI. Again. So the other two
+lists are gone: `put_quote` validates against `PAYLOAD_COLUMNS` and **raises** on an unknown column
+rather than dropping it, and the test drives a fake Tablestore client to assert that every column the
+read side looks for is a column the write side actually sent. A typed signature could not express that
+property, which is why it did not hold.
+
+**Also.** `traceability.csv` was missing ten spec FRs entirely - including FR-133, a P0. A matrix that
+omits its own failures is not a matrix. They are in it now, honestly marked: four not implemented,
+three partial (FR-133 among them: `structured_model=` at the text parser, the matcher and the baseline,
+but the vision reader hand-parses JSON, because `qwen-vl-ocr` is an OCR model, not a tool-calling chat
+model).
+
+Verification: ruff clean, mypy clean (80 files), import-linter 4/4, **316 passed**, pricing branch
+coverage 100%. Live, on a real spreadsheet (QM-2026-0013): "chỉ cần 2 màn hình thôi, không phải 8" ->
+all three lines survive, the monitor drops 8 -> 2, and the total is recomputed deterministically from
+463,104,000 to 356,832,000 VND.
