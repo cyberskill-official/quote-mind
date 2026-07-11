@@ -1248,3 +1248,33 @@ it works - the live URL in the README, and the FR-091 302, whose comment already
 `curl` is not the client. The audit that found eight bugs asked *"does the API return the right
 JSON?"* over and over, and never once asked *"does the page open?"* A test that never uses the thing
 the way a user uses it is a test that can pass forever while the product is unusable.
+
+### CI caught the golden PDF, and the fix removed a skip that had been hiding it
+
+Bundling Be Vietnam Pro (FR-124) changed **29.1% of the pixels** in the rendered quote. That is the
+test doing exactly its job: the golden was recorded against WeasyPrint's *fallback* face, and the
+brand face is a different typeface. Intentional, and regenerated.
+
+The interesting part is what came off with it. The golden was **pinned to Linux and skipped
+everywhere else**, and the old docstring said why:
+
+> "the golden is only portable across machines that resolve the same fonts... Bundling the Be
+> Vietnam Pro TTFs is what makes it truly portable, and that is still outstanding."
+
+The TTFs are bundled now. WeasyPrint embeds all five faces into the PDF as TrueType subsets, and
+pdfium rasterises those embedded glyphs itself rather than asking the operating system for a font.
+So the same quote produces the same pixels everywhere, and the pin is gone: **the test now runs on
+the machine where the change is actually being made**, instead of only on the machine where nobody
+is looking.
+
+A skipped test catches nothing. This one had been skipped on macOS for its whole life, which is
+precisely why a font change reached CI before it reached me.
+
+And a new test asserts the property the pin was standing in for: **the fonts are inside the PDF.**
+If WeasyPrint ever stops finding the bundled TTFs it falls back silently - the PDF still renders,
+the diacritics still come out right, and the only symptom is a warning on stderr that nobody reads.
+`test_the_pdf_carries_its_own_fonts` opens the PDF and checks every face is Be Vietnam Pro and every
+one is embedded.
+
+Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **345 passed**, pricing branch coverage
+100%.
