@@ -66,8 +66,10 @@ where = ["src"]
 # FR-090 render assets ship inside the wheel (Jinja2 template + bundled fonts for WeasyPrint).
 [tool.setuptools.package-data]
 "quotemind.quote.render" = ["*.j2", "fonts/*"]
-# FR-106: the dashboard is served by the API itself, so it must travel with the code.
+# FR-106: the dashboard is served by the API itself, so it must travel with the code - and so must
+# the vendored CyberSkill design system it is styled with.
 "quotemind.web" = ["*.html"]
+"quotemind.web.vendor" = ["*.css", "*.svg", "*.json"]
 
 [tool.ruff]
 # `s build` vendors every runtime dependency into python/ for the FC bundle. It is build output,

@@ -60,8 +60,8 @@ FR-100,P0,EP-10,feat/observability-dashboard,web/index.html (queue),,implemented
 FR-101,P0,EP-10,feat/observability-dashboard,web/index.html (detail),,implemented (bilingual lines, flags, totals, margin)
 FR-102,P0,EP-10,feat/observability-dashboard,web/index.html (action bar + waiver modal),,implemented
 FR-103,P0,EP-10,feat/observability-dashboard,web/index.html (trace panel),,implemented (steps, tokens, cost, duration)
-FR-105,P1,EP-10,feat/observability-dashboard,web/index.html (CDS styling),,implemented (Umber/Ochre; light theme)
-FR-106,P1,EP-10,feat/vision-ocr,src/quotemind/web/index.html + api/app.py GET /,tests/unit/test_dashboard_route.py,implemented (served by the API same-origin; OSS static hosting blocked by bucket Block Public Access - deploy/upload_site.py retained)
+FR-105,P1,EP-10,feat/design-system-ui,src/quotemind/web/,tests/unit/test_dashboard_route.py,implemented (CyberSkill design system vendored verbatim + hash-checked; AI disclosure; HumanReviewGate; dark theme; keyboard review)
+FR-106,P1,EP-10,feat/design-system-ui,src/quotemind/web/index.html + api/app.py GET /,tests/unit/test_dashboard_route.py,implemented (LIVE: served same-origin by the API; design system inlined at serve time)
 FR-110,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/otel.py,tests/unit/test_obs.py,implemented (span names + attributes; exporter optional)
 FR-111,P0,EP-11,feat/observability-dashboard,src/quotemind/obs/trace.py + service.py (_persist_trace) + api (API-05),tests/unit/test_obs.py + tests/unit/test_service.py,implemented
 FR-112,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/cost.py + config/model_prices.yaml,tests/unit/test_obs.py,implemented (real provider token counts; list prices)

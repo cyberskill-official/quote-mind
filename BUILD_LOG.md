@@ -951,3 +951,58 @@ next RFQ is minutes or days later; it matters only if you test it in a tight loo
 
 Verification: ruff clean, mypy clean (80 files), import-linter 4/4 kept, pytest 301 passed, pricing
 branch coverage 100%.
+
+## Batch: the dashboard adopts the CyberSkill design system (feat/design-system-ui)
+
+FR-105/106. The dashboard was hand-styled with hardcoded hex values that happened to *resemble*
+Umber and Ochre. It now uses the real design system - and the design system turned out to have
+opinions that changed what the page says, not just how it looks.
+
+**Vendored, not approximated.** `github.com/cyberskill-official/design-system` ships as npm packages;
+this dashboard is one self-contained page served by an event-driven FC handler, with no bundler to
+resolve `@cyberskill/tokens` for it. So `tokens.css`, `styles.css`, `glass.css` and the logo are
+copied byte-for-byte into `web/vendor/`, inlined at serve time, and pinned by sha256 in
+`vendor/MANIFEST.json`. A test re-hashes them on every run. The whole value of vendoring evaporates
+the moment someone "just tweaks" a colour in the copy, and Umber/Ochre are what the design system
+calls *anchor immutables* - so an edit now fails loudly instead of shipping silently.
+
+The logo is the master file's bytes, per DESIGN.md 1.2.x: the official mark "must be used -
+reproduced from the master file, never recreated, retraced, retyped, recoloured". Redrawing it in
+CSS would have been quicker, and would have been wrong.
+
+**Two doctrine rules landed squarely on this product.**
+
+*Disclosure is universal* (Part 3h rule 1). Every AI-generated region carries a badge. But a blanket
+"AI-generated" banner over a quote would be **false in the direction that matters most**: it would
+imply a model priced it. So the disclosure is specific, in both languages and in machine-readable
+form - AI reads the document, matches the SKUs, writes the review note and the memory summary; AI
+touches **no number**. The prices are exact Decimal from the catalogue, independently recomputed by
+the critic. That claim is now the most prominent sentence beneath every quote, which is where it
+belongs: it is the entire argument of the system.
+
+*Confidence is calibrated before it is numeric* (Part 3h rule 2). The matcher self-reports a 0.99 on
+almost every line. Rendering that as a confidence score would be false precision dressed up as
+rigour - it is the model's opinion of itself, not a calibrated claim about this quote. So the page
+shows human-review state and provenance instead, and the episodic retrieval scores (similarity,
+importance, decay) sit behind a diagnostics toggle where they cannot be mistaken for a promise. A
+test fails if anyone starts printing `confidence` on a line.
+
+*Sensitive domains require a human gate* (Part 3h rule 4, naming financial output explicitly). The
+approve/reject/revise bar is now the design system's own `HumanReviewGate`, and it says what it is:
+"Nothing leaves this system until you approve it."
+
+**UX, beyond the repaint.** The queue no longer rebuilds itself on every 5-second poll - it compares
+a signature first. The old behaviour threw away the reviewer's scroll position and keyboard focus
+mid-read, which made the dashboard unusable for exactly the task it exists to do. Added: j/k/a/r/e
+keyboard review, focus-visible rings, a skip link, aria-live on the toast, `role=listbox` on the
+queue, loading skeletons rather than a spinner, honest empty states, and a warm-dark theme (the
+design system's, not an inverted-colours guess). A record with no quote - a document the system
+refused to guess at - used to render as a blank pane that looked like a bug; it now says what it is.
+
+Verification: ruff clean, mypy clean (81 files), import-linter 4/4 kept, pytest 310 passed, pricing
+branch coverage 100%. Deployed: `GET /` returns 200 and 67 KB of self-contained page.
+
+An honest gap: I could not get a rendered screenshot in this environment (the browser extension was
+wedged and headless Chrome fought the updater), so the layout has been verified structurally and by
+the twelve dashboard tests, but not visually by me. A preview file with mock data ships alongside for
+a human to look at.
