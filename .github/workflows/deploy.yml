@@ -113,11 +113,11 @@ jobs:
           s build
           s deploy -y
 
-      - name: Verify what actually went live
+      - name: Verify the right code went live
         if: steps.guard.outputs.ready == 'true'
         run: |
           sleep 10
-          URL="${{ vars.QUOTEMIND_URL || 'https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run' }}"
+          URL="${{ vars.QUOTEMIND_URL || 'https://quotemind.cyberskill.world' }}"
           health=$(curl -fsS --max-time 120 "$URL/health")
           echo "$health"
 
@@ -129,12 +129,21 @@ jobs:
             exit 1
           fi
 
-          # And the models it depends on must still be there (FR-012).
-          echo "$health" | python3 -c "
-          import json, sys
-          h = json.load(sys.stdin)
-          assert h['status'] == 'ok', h
-          if h['unverified']:
-              print(f'::warning::model probe reports unverified: {h[\"unverified\"]}')
-          "
-          curl -fsS --max-time 60 -o /dev/null "$URL/"  # the dashboard renders
+      # This step exists because the one above is not enough, and we know that because it wasn't.
+      #
+      # The first time CD ever ran for real it shipped a wrong DASHSCOPE_BASE_URL, and every check in
+      # the job passed: the SHA was right, /health was green, the model probe passed 7/7, and `curl /`
+      # returned 200. Meanwhile every embedding call 404'd and the site could not produce a single
+      # quote. "The right code is live" and "the thing still works" are different questions, and CD
+      # was only ever asking the first one.
+      #
+      # So CD now runs the same end-to-end check a human would: it pushes an RFQ the system has never
+      # seen all the way to the approval gate, on the real domain, over HTTPS. If quoting is broken,
+      # this deploy goes red - which is the entire point of having a deploy pipeline.
+      - name: Prove it still works
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          DEMO_API_TOKEN: ${{ secrets.DEMO_API_TOKEN }}
+        run: |
+          pip install --quiet certifi
+          python deploy/smoke.py --url "${{ vars.QUOTEMIND_URL || 'https://quotemind.cyberskill.world' }}"
