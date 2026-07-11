@@ -45,7 +45,7 @@ a real outcome. Point at the trace: `qwen-vl-ocr` read the pages.
 *Paste the RFQ into the dashboard. Hit submit. The quote appears in the queue.*
 
 > "QuoteMind reads it, matches the catalog, works out this is a dealer, prices it, and drafts the
-> quote. Twenty-three seconds, one cent."
+> quote. Thirty-one seconds, a cent and a quarter."
 
 *Open the quote. Show the bilingual line table, the VAT split, the amount in words.*
 
@@ -98,13 +98,13 @@ This is the technical heart of the submission. Do not rush it.
 *Screen: the eval table.*
 
 > "We tested this against a single monolithic agent - same Qwen models, same catalog, same prompts -
-> on twenty-five labelled RFQs.
+> on thirty labelled RFQs, five of them real scans.
 >
 > It reads just as well. It matches just as well. It gets **the money wrong on more than half the
 > quotes** - and it never once notices.
 >
-> Taking arithmetic away from the model, and putting a critic behind it, is worth forty-eight points
-> of end-to-end success. Eleven-tenths of a cent per quote."
+> Taking arithmetic away from the model, and putting a critic behind it, is worth fifty-three points
+> of end-to-end success. A cent and a quarter per quote."
 
 *End card: repo URL, Track 4.*
 
@@ -115,7 +115,7 @@ This is the technical heart of the submission. Do not rush it.
 - **Do not hide the failure.** If asked, the one case QuoteMind gets "wrong" is an RFQ for a laptop
   configuration that does not exist; it refuses to quote it and escalates. We think that is correct
   behaviour and the label is arguable. Saying so is more convincing than a suspicious 100%.
-- **Do not fake the latency.** 23 seconds is a real number. Cutting to a pre-rendered quote and
+- **Do not fake the latency.** 31 seconds (p50) is a real number. Cutting to a pre-rendered quote and
   implying it was instant would be the one thing that, if noticed, discredits everything else.
 - **Do not oversell the autonomy.** The gate is the feature. A judge who thinks this thing emails
   customers by itself will (correctly) distrust it.

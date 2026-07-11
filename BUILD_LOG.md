@@ -1507,3 +1507,47 @@ All four are now in `docs/known-limitations.md`. A limitation you have written d
 one you have not is a bug you have not met yet.
 
 What is left is Stephen's voice on the demo, and the submission.
+
+### The audit round: the narration script almost recorded a false number
+
+A full sweep - repo, live system, and the demo assets - after the backlog closed. What it found, in
+descending order of how much it would have cost:
+
+  * **`docs/demo-narration.md` still said "ninety-seven percent."** That is the script Stephen reads
+    into a microphone. The eval moved to 93% days ago and every rendered surface was corrected - but
+    the one file whose entire job is to be read aloud was not. Caught hours before the recording.
+    The same sweep found the demo captions ("97% price-exact"), the demo script ("twenty-five
+    labelled RFQs", "forty-eight points", "23 seconds"), and - subtler - **"$0.011 a quote" in the
+    submission text and the clip's closing card, which is the BASELINE's cost, not ours.** Ours is
+    $0.0126. Attributing your competitor's (lower) cost to yourself is the one direction of error a
+    judge will not forgive. Every number now traces to `src/quotemind/eval_/latest.json`.
+  * **`LICENSE` did not exist.** The README said Apache-2.0 "see LICENSE", pyproject declared it,
+    and the file was never created. Now it is (with the CyberSkill copyright line).
+  * **Four traceability rows pointed at test files that do not exist** (`test_parser.py`,
+    `test_memory.py`, `test_tools.py`) - renamed long ago, CSV never updated. A judge who spot-checks
+    traceability and finds a dead path stops trusting the whole column.
+  * `.scan_preview.png` - 336KB of tracked junk at the repo root, referenced by nothing. Gone.
+  * The public dashboard carries the demo credential **by design** (the route docstring argues it
+    well) - but the argument lived only in a docstring. Now in `docs/known-limitations.md`.
+
+And the live audit, which is the part that cannot be greppped:
+
+  * **The OSS drop channel works on the CI-built deployment** - proven by dropping a real file:
+    `rfq/audit-*.txt` -> parsed (diacritics restored: "Công ty TNHH Hải Đăng"), the laptop matched,
+    the unknown monitor **refused** with a bilingual reason, critic passed -> `QM-2026-0032` at the
+    gate. The first poll said "broken" and was wrong: it grepped the quotes LIST for the source
+    text, and the list does not carry source text. The channel was fine; the check was checking the
+    wrong thing. Same lesson as ever, pointed at myself.
+  * The live PDF embeds all five Be Vietnam Pro subsets (pypdf-verified).
+  * The demo clip is **re-shot against the live site**. Every proof frame's caption bar now names
+    `quotemind.cyberskill.world`, because a clip shot against a local uvicorn proves nothing a judge
+    can check. The star quote is live: `QM-2026-0033`, 3x DELL-R650 - and the deterministic engine
+    reproduced the old caption's total **to the đồng** (492,480,000 ₫), which is the thesis of the
+    product demonstrated by its own demo tooling.
+
+New guardrail: `.github/workflows/health.yml` runs the smoke suite **daily**, not just on deploys.
+CD catches what a deploy breaks; it cannot catch what breaks between deploys - and this project has
+already met two of those (the model drifted under a frozen id; the platform turned pages into
+downloads). If the site stops working on a quiet Tuesday, the repo goes red that Tuesday, not on
+demo day. Plus a cert-renewal runbook in `docs/deploy/custom-domain.md` (expiry 09 Oct; renewal is
+one command and no redeploy, because the ACME challenge lives in OSS).

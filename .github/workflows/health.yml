@@ -1,0 +1,46 @@
+# The daily question: does the live site still work - not "did the last deploy work".
+#
+# CD runs the smoke test on every deploy, and that catches what a deploy breaks. It cannot catch
+# what breaks BETWEEN deploys, and this project has already met two of those: the model behind a
+# frozen id drifted (the eval headline moved 97% -> 93% on unchanged code), and Function Compute's
+# default domain turned the dashboard into a download while every API check stayed green. Model
+# retirement, certificate expiry, DNS lapses, and platform behaviour changes all land on days
+# nobody deploys.
+#
+# So the same end-to-end check runs once a day: an RFQ the system has never seen, pushed to the
+# approval gate on the real domain over HTTPS, plus the no-attachment-header assertion. If the site
+# stops working on a quiet Tuesday, the repo goes red on that Tuesday - not on demo day.
+
+name: health
+on:
+  schedule:
+    - cron: "0 22 * * *" # 05:00 Viet Nam time, before anyone's workday
+  workflow_dispatch: {}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard - skip cleanly when the secret is absent (forks)
+        id: guard
+        run: |
+          if [ -n "${{ secrets.DEMO_API_TOKEN }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::DEMO_API_TOKEN is not configured; skipping."
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: The site still works
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          DEMO_API_TOKEN: ${{ secrets.DEMO_API_TOKEN }}
+        run: |
+          pip install --quiet certifi
+          python deploy/smoke.py --url "${{ vars.QUOTEMIND_URL || 'https://quotemind.cyberskill.world' }}"

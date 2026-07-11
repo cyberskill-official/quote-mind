@@ -68,4 +68,4 @@ just the price but **every step that produced it** - each model call, its tokens
 quote cannot be approved silently: the waiver goes onto the hash-chained audit trail, with who signed
 it and why.
 
-An autopilot that files a flight plan and asks the captain before takeoff. **$0.011 a quote.**
+An autopilot that files a flight plan and asks the captain before takeoff. **$0.013 a quote.**
