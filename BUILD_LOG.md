@@ -335,3 +335,27 @@ Delivered (src/quotemind/quote/assemble.py):
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (47 files), import-linter 4/4 kept,
 pytest 106 passed.
+## 2026-07-11 - PR-4 live close + memory search metadata fix (branch fix/memory-search-metadata)
+
+OSS was activated and the three offline PRs (EP-03, EP-07, EP-06/09) merged to main. Resumed with
+the live provision + catalog round-trip that had been blocked.
+
+Live verification (Mac .venv against real ap-southeast-1 cloud):
+- deploy/provision.py: created quotemind-inbox and quotemind-artifacts (both private); Tablestore
+  tables/indexes initialized at vector dim 1024; exit 0. Re-run is idempotent (FR-004 AC).
+- Catalog round-trip: embedded 3 products with text-embedding-v4 (dim 1024), put_catalog, then
+  get_catalog (equal round-trip) and search_catalog_vector - top hit DELL-LAT-5450 @ 0.85 for a
+  "laptop Dell doanh nghiep i5 16GB" query, correctly ranked ahead of the monitor and switch, with
+  byte-exact Vietnamese reconstructed. full_text_search returned the two Dell items.
+
+Bug found and fixed (store.py): the SDK's vector_search / full_text_search return DocumentHit
+documents with metadata = {} unless meta_data_to_get is passed, so _parse could not find
+payload_json and _hits dropped every result (search returned 0 while get_document worked). Fixed all
+four search methods (search_catalog_vector, search_catalog_text, search_episodic, search_sop) to
+pass meta_data_to_get=[payload_json]. This is the value of the live round-trip - a real
+result-mapping bug the mocked unit test (which returns a canned Response with metadata) could not
+catch. No unit test asserts call kwargs, so the fix is transparent to the suite.
+
+Verification (Python 3.10 sandbox, rebuilt after session reset): ruff clean, mypy clean (47 files),
+import-linter 4/4 kept, pytest 103 passed. Live: catalog vector + text search now return
+reconstructed models.
