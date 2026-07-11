@@ -54,11 +54,25 @@ retrieval silently.
 **https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run** — live on Function Compute 3.0 in
 `ap-southeast-1` (Singapore).
 
-| Open this | And you get |
+> **⚠️ Read this before you click.** Function Compute injects `Content-Disposition: attachment` on
+> every response from its default `*.fcapp.run` domain — it is a debugging endpoint, and Alibaba do
+> not want it used to host pages. `curl` ignores that header; **a browser obeys it**, so the two HTML
+> pages below *download* instead of rendering. This is a property of the endpoint, not of the app: a
+> custom domain removes it in about fifteen minutes
+> ([`docs/deploy/custom-domain.md`](docs/deploy/custom-domain.md)), and it is the next thing being
+> done.
+>
+> **Everything below is verifiable with `curl` right now**, and that is the point of the table.
+
+| Check | What it proves |
 |---|---|
-| [`/`](https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run/) | the operator dashboard: approval queue, quote detail, reasoning trace, waiver modal (FR-100..106) |
-| [`/health`](https://quotemind-api-yccvwlooxw.ap-southeast-1.fcapp.run/health) | version, git SHA, and the model ids actually in use — probed live at boot |
-| `/api/*` | `401` without `Authorization: Bearer $DEMO_API_TOKEN` (FR-010) |
+| `curl -s .../health` | version, the deployed git SHA, and the model ids actually in use — probed live from inside FC (FR-012) |
+| `curl -s .../eval` | the 97%-vs-40% benchmark page, rendered from a committed snapshot (FR-104). Public, deliberately: a claim you cannot check is a claim you have to take on faith |
+| `curl -s .../api/quotes` | `401` — every `/api/*` route requires `Authorization: Bearer $DEMO_API_TOKEN` (FR-010) |
+| `curl -s .../` | the operator dashboard: approval queue, quote detail, the critic's verdict beside the model's note, reasoning trace, waiver modal (FR-100..106). Save it and open the file, or bind the domain |
+
+To see the dashboard as a page today: `python deploy/demo_shots.py` renders it from the live API, and
+[`.demo/quotemind-demo.mp4`](docs/demo-narration.md) is a 96-second walkthrough of it.
 
 `/health` currently reports `"unverified": []` and `"substitutions": {}`. That is not a hardcoded
 banner: on first need, the function probes every frozen model id from inside Function Compute

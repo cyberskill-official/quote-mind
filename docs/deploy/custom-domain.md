@@ -12,100 +12,107 @@ Content-Disposition: attachment
 
 We do not set it. It is not configurable. It is Alibaba Cloud's anti-abuse measure: the default
 domain is a debugging endpoint, and they do not want it used to host web pages. `curl` and `fetch`
-ignore the header, which is why the API and every integration test pass — but a **browser obeys it**,
-and a browser is exactly what a judge will use.
+ignore the header, which is why the API and every live check in `BUILD_LOG.md` pass — but a
+**browser obeys it**, and a browser is exactly what a judge will use.
 
-This is the same restriction that broke the PDF route (`ExternalRedirectForbidden` on a cross-domain
-302, see `api/app.py::quote_pdf`). The default domain is deliberately crippled for browser use, in
+It is the same restriction that broke the PDF route (`ExternalRedirectForbidden` on a cross-domain
+302, see `api/app.py::quote_pdf`). The default domain is deliberately crippled for browser use in
 two different ways, and we have now been bitten by both.
 
-**Why not OSS static hosting?** Tried. This account has **Block Public Access at the account level**:
+**Why not OSS static hosting?** Tried. Block Public Access is set at the **account** level:
 
 ```
-$ oss2 put_bucket_acl(public-read)
 AccessDenied: Put public bucket acl is not allowed
 ```
 
-That is the correct setting and it should stay — the artifacts bucket holds customer quote PDFs. It
-also means no bucket on this account can serve a public page, so there is exactly one fix.
+That is the correct setting and it should stay — the artifacts bucket holds customer quote PDFs
+served by short-lived presigned URLs. It also means no bucket on this account can serve a public
+page. So there is exactly one fix.
 
 ---
 
-## The fix: bind a custom domain (≈15 minutes)
+# The fix
 
-**Singapore (`ap-southeast-1`) does not require an ICP filing.** This only works in a non-mainland
-region, which is where we are.
-
-### 1. Create the custom domain in Function Compute
-
-Console → **Function Compute** → **Custom Domains** (Tên miền tuỳ chỉnh) → **Create**.
-
-| Field | Value |
-|---|---|
-| Domain name | `quotemind.cyberskill.world` |
-| Protocol | **HTTP & HTTPS** (pick HTTPS-only after step 3) |
-| Route — Path | `/*` |
-| Route — Service/Function | `quotemind` → `quotemind-api` |
-| Route — Version | `LATEST` |
-
-Save. The console shows you a **CNAME target** that looks like:
+**Everything on the Alibaba side is scripted.** The only thing that needs a human is one DNS record,
+because Function Compute *refuses* to create a custom domain until the CNAME already points at it:
 
 ```
-<account-id>.ap-southeast-1.fc.aliyuncs.com
+DomainNameNotResolved: domain name 'quotemind.cyberskill.world' has not been resolved to your
+FC endpoint, the expected endpoint is '5492870817983957.ap-southeast-1.fc.aliyuncs.com.'
 ```
 
-Copy it.
+So DNS is genuinely step one. It is one row.
 
-### 2. Point DNS at it
+## Step 1 — add one CNAME (this is the only manual step)
 
-Wherever `cyberskill.world` is managed, add:
+`cyberskill.world` is on **Tenten.vn** (`ns-a1/a2/a3.tenten.vn`). Log in there, open the DNS records
+for `cyberskill.world`, and add:
 
-| Type | Name | Value | TTL |
+| Type | Name / Host | Value / Target | TTL |
 |---|---|---|---|
-| CNAME | `quotemind` | `<account-id>.ap-southeast-1.fc.aliyuncs.com` | 600 |
+| **CNAME** | `quotemind` | `5492870817983957.ap-southeast-1.fc.aliyuncs.com` | 600 |
 
-Wait for it to resolve:
+> That value is not a guess — it is the endpoint Function Compute itself named in the error above,
+> and `deploy/custom_domain.py` prints it from the live account ID.
+
+Wait for it to propagate (usually a few minutes):
 
 ```bash
 dig +short quotemind.cyberskill.world
+# should return an alibaba fc endpoint
 ```
 
-### 3. HTTPS
-
-Back in the custom-domain screen, enable **HTTPS** and either:
-
-- upload a certificate for `quotemind.cyberskill.world`, or
-- issue a free one via Alibaba Cloud SSL Certificates (Digital Certificate Service → free DV cert),
-  then select it here.
-
-### 4. Verify
+## Step 2 — bind it (scripted)
 
 ```bash
-# the header must be GONE
-curl -sI https://quotemind.cyberskill.world/ | grep -i content-disposition   # expect: nothing
-
-# and the page must render, not download
-open https://quotemind.cyberskill.world/
+source .venv/bin/activate
+set -a && source .env && set +a
+python deploy/custom_domain.py --domain quotemind.cyberskill.world
 ```
 
-### 5. Two things to change in the repo once it works
+That creates the FC custom domain, routes `/*` to `quotemind-api:LATEST`, and then verifies that the
+attachment header is gone. Re-run it any time; it updates rather than duplicating.
 
-1. **`README.md` and `docs/submission-description.md`** — swap the live URL. The `fcapp.run` URL
-   still works for the API; it is only unusable as a *page*.
-2. **`api/app.py::quote_pdf`** — restore the FR-091 302. The comment there says "restore the 302 the
-   day a custom domain is bound." That day is this one.
+## Step 3 — HTTPS
+
+Console → **Function Compute → Custom Domains → quotemind.cyberskill.world → HTTPS**. Either upload a
+certificate, or issue a free DV one (Digital Certificate Service) and select it.
+
+`--protocol` is created as `HTTP,HTTPS` so the CNAME can be verified before a certificate exists.
+Once the cert is on, switch it to HTTPS-only.
+
+## Step 4 — verify
+
+```bash
+python deploy/custom_domain.py --domain quotemind.cyberskill.world --check
+```
+
+Expected:
+
+```
+  DNS      quotemind.cyberskill.world resolves
+  HTTP     200 - and NO attachment header
+  HTTPS    200 - and NO attachment header
+```
+
+And then the thing that actually matters: **open it in a browser.** It should render, not download.
+
+## Step 5 — two things to change in the repo once it works
+
+1. **`README.md`** and **`docs/submission-description.md`** — swap the live URL. The `fcapp.run` URL
+   still works as an *API*; it is only unusable as a *page*.
+2. **`api/app.py::quote_pdf`** — restore the FR-091 302. The comment there already says: *"restore
+   the 302 the day a custom domain is bound."* That day is this one.
 
 ---
 
-## What we do in the meantime
+## Until then
 
-The submission's live URL is the primary artifact and it currently downloads. Until the domain is
-bound, the honest options are:
+The submission's primary artifact is a URL that downloads. Nothing about that is fine, and the honest
+stopgaps are:
 
-- **Ship the demo video** (`.demo/quotemind-demo.mp4`), which shows the real UI against live cloud
-  data, and say plainly in the submission that the dashboard is at the custom domain.
-- **Judges can still verify the deployment** without a browser page: `/health` returns JSON with the
-  deployed commit and the model probe, and every API route works with `curl`. That is worth one line
-  in the README.
+- The **demo clip** (`.demo/quotemind-demo.mp4`) shows the real UI against live cloud data.
+- A judge can still verify the deployment without a page: `GET /health` returns the deployed commit
+  and the model probe, and every API route works with `curl`. Worth one line in the README.
 
-Neither is a substitute for a URL that opens. **Bind the domain.**
+Neither is a substitute for a link that opens. **Add the CNAME.**
