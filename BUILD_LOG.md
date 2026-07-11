@@ -199,3 +199,38 @@ Fixes and notes:
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (43 files), import-linter 4/4 kept,
 pytest 80 passed.
+
+## 2026-07-11 - EP-03 Excel parser + extraction gate (branch feat/FR-033-excel-parser)
+
+Scope (offline, out of strict PR-1..5 order): FR-033 deterministic .xlsx extraction and the FR-034
+validation gate - both pure and fully unit-testable, so they land while OSS activation is pending.
+
+Delivered:
+- parsing/excel.py (FR-033): openpyxl-only parse_excel(bytes) -> RFQExtraction. Fuzzy header-row
+  detection over the first 15 rows against the Vietnamese and English column names in the spec
+  ({stt, ten hang, mo ta, description, qty, so luong, dvt, unit}); a row is the header once it
+  carries both a description and a quantity column, so title rows above the table are skipped.
+  Quantities are read straight from the cells (no LLM touches numeric cells, per the FR): ints and
+  integral floats normalize to a clean Decimal, text digits parse, junk -> None. Fully blank rows
+  are dropped; confidence is 1.0 (deterministic). HeaderNotFoundError when no header row is found.
+- parsing/validate.py (FR-034): validation_reasons / needs_clarification returning the reason codes
+  NO_LINE_ITEMS, MISSING_DESCRIPTION, MISSING_QUANTITY. The pipeline maps a non-empty result to
+  status needs_clarification (it does not proceed to matching). Empty-body AC -> NO_LINE_ITEMS.
+- parsing/__init__.py re-exports the deterministic surface only; the text/vision/PDF parsers
+  (FR-030/031/032) call models and land with the agent path.
+- Tests (6): Vietnamese headers under a title row, quantities matching labels exactly incl. an
+  integral-float row (FR-033 AC), English headers with a blank row skipped, missing-header raise,
+  and the FR-034 gate (empty -> NO_LINE_ITEMS, missing-quantity flagged, complete line passes).
+
+Decisions / notes (logged, not frozen-registry items):
+- Per-line language (FR-035) is a deterministic diacritic check: a line carrying Vietnamese
+  diacritics reads VI, otherwise EN. A diacritic-free brand/model line (e.g. "Laptop Dell Latitude
+  5450") therefore reads EN; the drafter agent refines language later. This keeps the parser
+  LLM-free while still populating language_per_line.
+- LLM normalization of genuinely ambiguous headers (the second half of FR-033) is deferred to the
+  agent path; deterministic fuzzy matching covers the labeled fixtures.
+- CI and Makefile now install the parse extra (openpyxl) alongside memory so import-linter builds
+  the full graph and the tests run. Makefile `gc` target now invokes the real FR-046 module.
+
+Verification (Python 3.10 sandbox): ruff clean, mypy clean (45 files), import-linter 4/4 kept,
+pytest 86 passed.

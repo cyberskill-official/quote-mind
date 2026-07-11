@@ -1,8 +1,8 @@
 .PHONY: setup setup-all dev test lint type verify eval eval-smoke eval-baseline seed demo gc diagrams deploy deploy-frontend proof
 
-## setup: install the package + dev toolchain (light core; Python 3.12)
+## setup: install the package + offline-gate deps (memory + parse; Python 3.12)
 setup:
-	pip install -e .[memory,dev]
+	pip install -e .[memory,parse,dev]
 
 ## setup-all: install the full runtime stack + dev toolchain
 setup-all:
@@ -39,8 +39,9 @@ eval-baseline:
 	@echo 'eval-baseline: implemented in FR-122 (EP-12).'
 demo:
 	@echo 'demo: implemented in NFR-011 (EP-13).'
+## gc: run episodic forgetting + compaction sweep (FR-046; needs live memory env)
 gc:
-	@echo 'gc: implemented in FR-046 (EP-04).'
+	python -m quotemind.memory.gc
 diagrams:
 	@echo 'diagrams: implemented with the docs/diagrams PR (SUB-03).'
 deploy:
