@@ -120,6 +120,7 @@ reproduce with `make eval && make eval-snapshot`.
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — the system, and the one idea it is built around
+- [`docs/known-limitations.md`](docs/known-limitations.md) — what we know is imperfect, and why we left it
 - [`docs/roadmap.html`](docs/roadmap.html) — live FR-by-FR progress
 - [`docs/demo-script.md`](docs/demo-script.md) — the ~3-minute demo
 - [`docs/submission-description.md`](docs/submission-description.md) — the submission text

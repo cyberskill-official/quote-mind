@@ -1,0 +1,67 @@
+# Known limitations
+
+Everything below is a thing we know is imperfect and chose to leave. A limitation you have written
+down is a decision; one you have not is a bug you have not met yet. Each entry says what the
+behaviour is, why it is that way, and what it would cost to change.
+
+## FR-134 — an in-flight quote cannot be cancelled
+
+`POST /api/quotes/{id}/cancel` works at the approval gate. On a quote that is still **running** it
+returns `409 illegal_transition`, with a message that says exactly why.
+
+Two things make it so, and only one of them is ours:
+
+1. **Function Compute cannot interrupt a background task.** The pipeline runs to completion. Even a
+   perfect API-level cancel would not stop the model calls that are already in flight.
+2. **The status enum is frozen.** QM-SPEC-001 §12 lists the statuses in the DO-NOT-CHANGE registry,
+   and there is no `cancelled` among them. Cancellation is therefore recorded as the transition to
+   `rejected`, distinguished by its audit event — `human.cancel`, never `human.rejected`. The
+   dashboard reads the event, not the status, so a reviewer sees "cancelled", not "rejected".
+
+Making an in-flight cancel *work* means widening `LEGAL_TRANSITIONS`, which §12 says to stop and ask
+about — and it would still not stop the run. It would need a cancellation check before every write,
+or the finished pipeline would happily write its result onto a quote the human had already
+abandoned. That is a race, added late, to buy an edge case; the 409 is a correct answer to a question
+the platform genuinely cannot answer differently.
+
+**What a reviewer actually loses:** a few seconds. Wait for the gate, then cancel.
+
+## FR-091 — the PDF route hands back a signed URL, it does not redirect
+
+The spec allows a 302 to the object. We return the URL in JSON instead, and the docstring on
+`quote_pdf` explains why at length. The short version: the route is bearer-guarded, and a 302 is only
+useful to a client that can *follow a link* — a plain `<a href>` carries no `Authorization` header.
+The custom domain lifted Function Compute's cross-domain redirect ban, so the redirect is now
+*possible*; it was never the better shape. FR-091's actual guarantee — the object stays private,
+reachable only through a short-lived signed URL — is preserved either way, and preserved more usably
+by handing the URL back.
+
+## The two eval points we did not buy back
+
+QuoteMind scores 93%, not 95%, because one adversarial case asks for a laptop the catalog does not
+sell (64GB RAM, 2TB SSD) and the matcher **refuses to substitute** the 32GB machine we do sell. The
+label expects the substitution. We could move the label. Quietly selling someone a 32GB laptop when
+they asked for 64GB is not a rounding error, and a system whose whole premise is *stop rather than
+guess* should not be penalised for stopping. The refusal is shown at the gate with the near-misses
+and the reason, so a human can decide in seconds.
+
+## The frozen model id is not a frozen model
+
+§12 freezes `qwen3-max`. It cannot freeze its weights. Our headline moved from 97% to 93% between two
+runs of an unchanged eval on unchanged code, because the model behind the id changed underneath us.
+This is inherent to building on a hosted model and worth stating plainly rather than quoting the
+best number we ever saw. The **baseline moved too** — it is measured in the same run, against the
+same models, which is the entire point of measuring it at all. The gap is the claim, and the gap held.
+
+## Artifacts are private, and stay private
+
+OSS **Block Public Access** is an account-level setting on this account. The artifacts bucket holds
+customer quote PDFs, so this is a feature, not an obstacle: nothing in the bucket is reachable
+without a signed URL, and we did not turn it off to make a demo easier.
+
+## The custom domain is the deployment, not a nicety
+
+`*.fcapp.run` sends `Content-Disposition: attachment` on every response. If the custom domain lapses,
+the dashboard becomes a download again. `deploy/smoke.py` asserts the header's absence on every run,
+so this fails loudly rather than silently. The certificate is Let's Encrypt (90 days); renewal is
+`python deploy/issue_cert.py` and needs no redeploy, because the ACME challenge is served from OSS.
