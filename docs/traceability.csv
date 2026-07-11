@@ -70,3 +70,11 @@ FR-123,P0,EP-12,feat/eval-harness,src/quotemind/eval_/cassette.py + deploy/recor
 FR-124,P1,EP-12,feat/eval-harness,tests/golden/test_golden_pdf.py,tests/golden/test_golden_pdf.py,implemented (pinned to the CI platform; fonts not yet bundled)
 FR-031,P1,EP-03,feat/eval-harness,src/quotemind/parsing/pdf.py,tests/unit/test_eval.py,implemented (digital PDF; scans raise ScannedPdfError)
 FR-011,P0,EP-01,feat/eval-harness,src/quotemind/seed/data.py,tests/unit/test_eval.py,implemented (61 SKUs + 8 customers per Appendix A.1/A.2)
+FR-003,P0,EP-01,feat/deploy-proof,deploy/s.yaml + src/quotemind/api/fc.py,,implemented (FC 3.0; two functions; s deploy)
+FR-005,P0,EP-01,feat/deploy-proof,src/quotemind/cloud/alibaba_proof.py,,implemented (live: 8/8 checks PASS on ap-southeast-1)
+FR-012,P0,EP-01,feat/deploy-proof,src/quotemind/config/bootstrap.py,tests/unit/test_bootstrap.py,implemented (live: 4/4 models verified, 0 substitutions)
+SUB-02,P0,SUB,feat/deploy-proof,README.md (Proof of Alibaba Cloud Deployment),,implemented (endpoint URL pending deploy)
+SUB-03,P0,SUB,feat/deploy-proof,docs/architecture.md + docs/architecture.mmd + docs/architecture.png,,implemented
+SUB-04,P0,SUB,feat/deploy-proof,docs/demo-script.md,,implemented (script; video pending)
+SUB-05,P0,SUB,feat/deploy-proof,docs/submission-description.md,,implemented (491 words of 500)
+SUB-06,P0,SUB,feat/deploy-proof,README.md (Track 4 badge),,implemented

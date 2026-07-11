@@ -7,6 +7,7 @@ immediately and the pipeline runs in the background, ending durably at the appro
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Annotated, Any
 
@@ -18,13 +19,15 @@ from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .. import __version__
-from ..config import models as model_constants
+from ..config.bootstrap import ModelStatus, check_models, health_models
+from ..config.models import MODEL_CONSTANTS
 from ..config.seller import SELLER_BLOCK
 from ..config.settings import get_settings
 from ..intake import MAX_UPLOAD_BYTES, UnsupportedPayloadError, doc_type_for
 from ..memory.quotes import QuoteStore
 from ..memory.store import MemoryFacade
 from ..models import Channel, EmailMeta, Status
+from ..obs.log import log_event
 from ..service import ApprovalBlockedError, QuoteNotFoundError, QuoteService
 from .auth import require_bearer
 
@@ -93,15 +96,43 @@ async def _http_exception_handler(_request: Any, exc: StarletteHTTPException) ->
     )
 
 
+# FR-012: filled by the cold-start probe. Empty until initialize() runs, which is the honest state -
+# /health then reports the frozen constants and says they are unverified rather than implying a
+# check happened that did not.
+_MODEL_STATUS: list[ModelStatus] = []
+
+
+def initialize(_context: Any = None) -> None:
+    """FC initializer (FR-003) / FR-012. Probes every frozen model id once per cold start.
+
+    Never raises. A boot check that can take the API down is a liability, not a safeguard.
+    """
+    global _MODEL_STATUS
+    try:
+        _MODEL_STATUS = check_models(get_settings())
+    except Exception as exc:  # noqa: BLE001 - a failed probe must not stop the function booting
+        log_event(
+            "model_bootstrap_failed",
+            level=logging.WARNING,
+            error=f"{type(exc).__name__}: {exc}",
+        )
+        _MODEL_STATUS = []
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
-    """API-11 / FR-009: liveness, version, git SHA, and frozen model constants. No auth."""
-    return {
+    """API-11 / FR-009 + FR-012: liveness, version, git SHA, and the models actually in use."""
+    body: dict[str, Any] = {
         "status": "ok",
         "version": __version__,
         "git_sha": os.getenv("GIT_SHA", "dev"),
-        "models": model_constants.MODEL_CONSTANTS,
     }
+    if _MODEL_STATUS:
+        body.update(health_models(_MODEL_STATUS))  # includes any fallback substitution, visibly
+    else:
+        body["models"] = MODEL_CONSTANTS
+        body["unverified"] = sorted(MODEL_CONSTANTS)  # no probe has run; say so
+    return body
 
 
 async def _run_pipeline(

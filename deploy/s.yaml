@@ -1,0 +1,113 @@
+# FR-003: Serverless Devs descriptor for Function Compute 3.0, ap-southeast-1 (Singapore).
+#
+#   s deploy                      deploy both functions
+#   s quotemind-api logs --tail   follow the API's JSON log lines (FR-008)
+#
+# Two functions, because they have genuinely different shapes:
+#
+#   quotemind-api      HTTP trigger. Synchronous, user-facing, holds the approval gate.
+#   quotemind-ingest   OSS object-created trigger on quotemind-inbox/rfq/. Event-driven, no caller.
+#
+# They deliberately share one codebase and one pipeline. An ingest path with its own copy of the
+# quoting logic would be a second system that could disagree with the first about the price.
+#
+# Secrets are injected from the environment at deploy time (${env('NAME')}) and never committed.
+# Run `s deploy` with the same .env you use locally - `make deploy` does this for you.
+
+edition: 3.0.0
+name: quotemind
+access: default
+
+vars:
+  region: ap-southeast-1
+  runtime: python3.12
+  # Every P0 variable from section 4.7. A missing one fails fast at cold start (FR-002) rather than
+  # surfacing later as a confusing 500 halfway through someone's quote.
+  environmentVariables:
+    DASHSCOPE_API_KEY: ${env('DASHSCOPE_API_KEY')}
+    DASHSCOPE_BASE_URL: ${env('DASHSCOPE_BASE_URL')}
+    ALIBABA_CLOUD_ACCESS_KEY_ID: ${env('ALIBABA_CLOUD_ACCESS_KEY_ID')}
+    ALIBABA_CLOUD_ACCESS_KEY_SECRET: ${env('ALIBABA_CLOUD_ACCESS_KEY_SECRET')}
+    TABLESTORE_ENDPOINT: ${env('TABLESTORE_ENDPOINT')}
+    TABLESTORE_INSTANCE: ${env('TABLESTORE_INSTANCE')}
+    OSS_ENDPOINT: ${env('OSS_ENDPOINT')}
+    OSS_BUCKET_INBOX: ${env('OSS_BUCKET_INBOX')}
+    OSS_BUCKET_ARTIFACTS: ${env('OSS_BUCKET_ARTIFACTS')}
+    MAIL_FROM: ${env('MAIL_FROM')}
+    MAIL_TRANSPORT: ${env('MAIL_TRANSPORT')}
+    DIRECTMAIL_SMTP_HOST: ${env('DIRECTMAIL_SMTP_HOST')}
+    DIRECTMAIL_SMTP_PORT: ${env('DIRECTMAIL_SMTP_PORT')}
+    DIRECTMAIL_USER: ${env('DIRECTMAIL_USER')}
+    DIRECTMAIL_PASSWORD: ${env('DIRECTMAIL_PASSWORD')}
+    DEMO_API_TOKEN: ${env('DEMO_API_TOKEN')}
+    FX_USD_VND: ${env('FX_USD_VND')}
+    MARGIN_FLOOR_PCT: ${env('MARGIN_FLOOR_PCT')}
+    QUOTE_VALIDITY_DAYS: ${env('QUOTE_VALIDITY_DAYS')}
+    OTEL_SEMCONV_STABILITY_OPT_IN: ${env('OTEL_SEMCONV_STABILITY_OPT_IN')}
+    QM_ENV: fc
+    REGION: ap-southeast-1
+    # PYTHONPATH so the FC bundle can import the package straight from src/ without a wheel build.
+    PYTHONPATH: /code/src:/code
+
+resources:
+  quotemind-api:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: quotemind-api
+      runtime: ${vars.runtime}
+      code: ../
+      handler: quotemind.api.fc.handler
+      # FR-012: the initializer probes every frozen model id once per cold start and activates the
+      # documented fallback if a primary has been retired. It never raises - see api/app.py.
+      initializer: quotemind.api.fc.initialize
+      initializationTimeout: 60
+      # 1024 MB because WeasyPrint's font stack and the 1024-dim embeddings are the memory floor,
+      # not the LLM calls (those are network-bound).
+      memorySize: 1024
+      # 300 s: a 3-line RFQ takes ~23 s end to end (measured, eval/reports/), so this is ~13x
+      # headroom. It is a ceiling for a stuck call, not a target.
+      timeout: 300
+      environmentVariables: ${vars.environmentVariables}
+      triggers:
+        - triggerName: http
+          triggerType: http
+          triggerConfig:
+            authType: anonymous  # the app enforces bearer auth itself (FR-010); see the note below
+            methods:
+              - GET
+              - POST
+              - OPTIONS  # CORS preflight from the OSS-hosted dashboard (FR-106)
+
+  quotemind-ingest:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: quotemind-ingest
+      runtime: ${vars.runtime}
+      code: ../
+      handler: deploy.ingest.handler
+      memorySize: 1024
+      timeout: 300
+      environmentVariables: ${vars.environmentVariables}
+      triggers:
+        - triggerName: oss-rfq-drop
+          triggerType: oss
+          triggerConfig:
+            events:
+              - oss:ObjectCreated:PutObject
+              - oss:ObjectCreated:PostObject
+              - oss:ObjectCreated:CompleteMultipartUpload
+            filter:
+              key:
+                prefix: rfq/
+            bucketName: ${env('OSS_BUCKET_INBOX')}
+
+# A note on `authType: anonymous`, because it looks alarming and should be argued for rather than
+# glossed over. FC's own gateway auth signs requests with the account's AK/SK, which the browser
+# dashboard cannot hold and the demo's reviewers cannot use. So the function is reachable and the
+# *application* is the authorization boundary: every /api/* route requires
+# `Authorization: Bearer $DEMO_API_TOKEN` and returns 401 otherwise (FR-010), and /health is
+# deliberately open so a judge can verify the deployment without a credential. This is demo-grade by
+# design and section 3.2 says so; a production tenant would put this behind API Gateway with a real
+# identity provider. What it is not is an accident.

@@ -116,8 +116,13 @@
     <p><b>The multi-agent gain is measured, not asserted.</b> 30 labelled RFQ cases against a 61-SKU
        catalog, scored against a single-agent baseline running the same models on the same inputs.
        See eval/reports/ for the numbers, including the ones that did not go our way.</p>
-    <p><b>Next:</b> the deployment proof (s.yaml, Function Compute), vision OCR for scanned RFQs, and
-       the submission checklist.</p>
+    <p><b>The Alibaba proof is a file you can run.</b> <code>make proof</code> exercises DashScope
+       (chat + 1024-dim embedding), OSS (put &rarr; presigned GET &rarr; byte-compare &rarr; delete) and
+       Tablestore (put &rarr; get &rarr; delete, diacritics byte-exact) against the real Singapore region:
+       8/8 checks pass. <code>deploy/s.yaml</code> ships both Function Compute functions, and the
+       cold-start check verifies every frozen model id and reports any substitution on /health.</p>
+    <p><b>Next:</b> deploy, paste the endpoint into the README, rehearse and shoot the demo. Then vision
+       OCR (FR-032), which unblocks the last 5 eval cases.</p>
   </div>
 
   <div class="legend">
@@ -137,8 +142,8 @@
 
 <script>
 const EPICS = [
-  { id: "EP-01", name: "Repository, infrastructure, scaffolding", active: false, note: "Catalog seeded to 61 SKUs + 8 customers (Appendix A). Remaining: s.yaml deploy descriptor, deployment proof, model bootstrap check.",
-    frs: [["001","done"],["002","done"],["003","todo"],["004","done","live"],["005","todo"],["006","done"],["007","done"],["008","done"],["009","done"],["010","done"],["011","done","live"],["012","todo"]] },
+  { id: "EP-01", name: "Repository, infrastructure, scaffolding", active: false, note: "Complete. s.yaml deploys two FC functions; the Alibaba proof passes 8/8 live; the cold-start model check verifies all four frozen ids with no substitutions.",
+    frs: [["001","done"],["002","done"],["003","done"],["004","done","live"],["005","done","live"],["006","done"],["007","done"],["008","done"],["009","done"],["010","done"],["011","done","live"],["012","done","live"]] },
   { id: "EP-02", name: "Intake and channels", active: false, note: "POST /api/rfq, the OSS drop channel, deterministic classification, idempotency and upload guards - all live.",
     frs: [["020","done","live"],["021","done","live"],["022","done"],["023","done"],["024","done","live"],["025","done"]] },
   { id: "EP-03", name: "Document parsing and extraction", active: true, note: "Text, Excel and digital-PDF RFQs all run the same pipeline. Scanned PDFs need vision OCR (FR-032) - the 5 eval cases waiting on it are declared, not hidden.",
@@ -174,7 +179,8 @@ const PHASES = [
   { s: "done", t: "PDF, dispatch and the OSS drop channel", d: "WeasyPrint PDF, private OSS artifact + V4 presigned URL, bilingual DirectMail dispatch with stub fallback, the quotemind-inbox trigger." },
   { s: "done", t: "Dashboard and observability", d: "Review UI (queue, detail, actions, trace panel), OTel GenAI spans, persisted trace document, cost accounting from real provider token counts." },
   { s: "done", t: "Evaluation harness", d: "30 labelled cases against a 61-SKU catalog, metrics runner, single-agent baseline, CI cassettes, golden PDF. The multi-agent gain is now measured." },
-  { s: "now",  t: "Deployment proof", d: "s.yaml descriptor, Function Compute deploy, the demo rehearsal (EV-08), and the submission checklist." },
+  { s: "done", t: "Deployment proof and submission artifacts", d: "s.yaml (FC 3.0, two functions), the Alibaba proof module (8/8 live), the FR-012 cold-start model check, architecture diagram, demo script, submission text." },
+  { s: "now",  t: "Deploy and rehearse", d: "s deploy, paste the endpoint into the README, run the demo rehearsal (EV-08), shoot the video." },
   { s: "next", t: "Remaining P1 surface", d: "Vision OCR for scans (FR-032, unblocks 5 eval cases), bilingual NL drafting (FR-061), episodic memory (FR-044/045), planner handoff (FR-131)." },
 ];
 

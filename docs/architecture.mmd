@@ -1,0 +1,76 @@
+%% SUB-03: QuoteMind architecture. Qwen Cloud <-> backend <-> database <-> frontend.
+%% Render: make diagrams  (mermaid-cli -> docs/architecture.png)
+graph TB
+    subgraph channels["Intake channels (EP-02)"]
+        PASTE["Paste / API<br/>POST /api/rfq"]
+        UPLOAD["Upload<br/>xlsx · pdf · txt"]
+        DROP["OSS drop<br/>quotemind-inbox/rfq/"]
+    end
+
+    subgraph fc["Alibaba Function Compute 3.0 · ap-southeast-1"]
+        API["quotemind-api<br/><i>HTTP trigger</i>"]
+        INGEST["quotemind-ingest<br/><i>OSS object-created trigger</i>"]
+
+        subgraph pipeline["AgentScope pipeline (EP-13)"]
+            PARSE["DocumentParser<br/>qwen-plus · qwen-vl-ocr"]
+            GATE{{"Validation gate<br/>FR-034"}}
+            MATCH["CatalogMatcher<br/>vector + full-text -> RRF<br/>qwen3-max · SKU whitelist"]
+            PRICE["Pricing engine<br/><b>pure Decimal · no LLM</b><br/>FR-050..055"]
+            CRITIC{{"Critic<br/>recompute + policy flags<br/>FR-070/071"}}
+            RENDER["Renderer<br/>bilingual HTML -> PDF"]
+        end
+    end
+
+    subgraph qwen["Qwen Cloud · DashScope (Model Studio, Singapore)"]
+        LLM["qwen3-max · qwen-plus<br/>qwen-vl-ocr"]
+        EMB["text-embedding-v4<br/>1024 dims"]
+    end
+
+    subgraph data["Data plane"]
+        TS[("Tablestore<br/>qm_quotes · qm_audit · qm_counters<br/>KnowledgeStore: catalog + customers<br/>vector + full-text index")]
+        OSS[("OSS<br/>quotemind-inbox<br/>quotemind-artifacts<br/>PDFs · traces · outbox")]
+    end
+
+    subgraph human["Human-in-the-loop (EP-08/EP-10)"]
+        DASH["Review dashboard<br/>OSS static hosting<br/>queue · quote · reasoning trace"]
+        REVIEWER(["Sales manager"])
+    end
+
+    MAIL["DirectMail<br/>bilingual quote email"]
+
+    PASTE --> API
+    UPLOAD --> API
+    DROP --> INGEST
+    INGEST --> PARSE
+    API --> PARSE
+
+    PARSE --> GATE
+    GATE -->|"missing qty / no items"| DASH
+    GATE -->|ok| MATCH
+    MATCH --> PRICE --> CRITIC
+    CRITIC -->|"recompute mismatch"| DASH
+    CRITIC -->|ok| RENDER
+
+    PARSE <-.->|"chat"| LLM
+    MATCH <-.->|"chat"| LLM
+    MATCH <-.->|"embed"| EMB
+
+    MATCH <-->|"vector + FTS search"| TS
+    RENDER -->|"quote PDF"| OSS
+    pipeline -->|"state · audit chain · trace"| TS
+    pipeline -->|"trace.json"| OSS
+
+    RENDER -->|"pending_approval"| DASH
+    DASH <--> REVIEWER
+    REVIEWER -->|"approve<br/>(waiver if flagged)"| API
+    API -->|"on approval"| MAIL
+    MAIL -.->|"stub transport"| OSS
+
+    classDef det fill:#F4BA17,stroke:#45210E,stroke-width:2px,color:#1c140d
+    classDef qwenC fill:#45210E,stroke:#F4BA17,color:#fff
+    classDef store fill:#e4eff9,stroke:#0F6FC5,color:#0b3d66
+    classDef gate fill:#fbe6e4,stroke:#B3261E,color:#7a1c14
+    class PRICE det
+    class LLM,EMB qwenC
+    class TS,OSS store
+    class GATE,CRITIC gate

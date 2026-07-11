@@ -29,18 +29,56 @@ The full runtime stack (agents, memory, cloud, parse, pdf, obs) is pinned in
 `pyproject.toml` as extras and installed as later phases need it; `make setup-all` installs
 everything.
 
-## Build status
+## Proof of Alibaba Cloud Deployment
 
-Bootstrapped in the PR order from the blueprint (QM-REPO-001 section 9):
+**[`src/quotemind/cloud/alibaba_proof.py`](src/quotemind/cloud/alibaba_proof.py)** — one runnable
+file that exercises every Alibaba Cloud service QuoteMind depends on, against the real
+`ap-southeast-1` region:
 
-- PR-1 (this): scaffold, config, structured logging, `/health`, bearer auth. Done.
-- PR-2: data models and the quote state machine.
-- PR-3: deterministic pricing and the amount-in-words converter.
-- PR-4: memory adapter over `tablestore-for-agent-memory` (Appendix E verified).
-- PR-5: Alibaba Cloud deployment proof and `deploy/s.yaml`.
+```bash
+make proof          # python -m quotemind.cloud.alibaba_proof
+```
 
-The Alibaba Cloud deployment-proof module (SUB-02) arrives in PR-5:
-`python -m quotemind.cloud.alibaba_proof`.
+| Service | What the proof does |
+|---|---|
+| **DashScope** (Model Studio, Singapore) | chat completion on `qwen3-max`; embedding on `text-embedding-v4`, asserting the 1024 dims the vector index requires |
+| **OSS** | put → V4-presigned GET → HTTPS fetch → byte-compare → delete, on a Vietnamese payload |
+| **Tablestore** | create table → put row → get row (diacritics byte-exact) → delete row |
+
+Each check asserts on the *content* that came back, not merely on the absence of an exception — an
+embedding check that only asserted "no error" would happily accept a wrong-width vector and corrupt
+retrieval silently.
+
+**Deployed endpoint:** `<paste the Function Compute URL after `make deploy`>` — `GET /health` returns
+the version, the git SHA, and the model ids actually in use (including any fallback substitution,
+per FR-012).
+
+Deployment descriptor: [`deploy/s.yaml`](deploy/s.yaml) — Function Compute 3.0, two functions
+(`quotemind-api` on an HTTP trigger, `quotemind-ingest` on an OSS object-created trigger).
+
+## The measured result
+
+QuoteMind was evaluated against a **single monolithic agent** given the same Qwen models, the same
+catalog and the same prompts, on 25 labelled RFQs:
+
+| | task success | line F1 | SKU top-1 | price exact | flagged the problem | $/quote |
+|---|---|---|---|---|---|---|
+| **QuoteMind** | **96%** | 0.992 | 100% | **96%** | — | $0.011 |
+| single agent | 48% | 0.992 | 98% | 48% | **0%** | $0.013 |
+
+The single agent reads and matches almost as well. It gets **the money wrong on 52% of quotes** — and
+never once notices. Every one of its failures is arithmetic.
+
+That is the argument for the architecture: the model reads, deterministic code prices, and a critic
+recomputes. Reports: [`eval/reports/`](eval/reports/) · reproduce with `make eval`.
+
+## Documentation
+
+- [`docs/architecture.md`](docs/architecture.md) — the system, and the one idea it is built around
+- [`docs/roadmap.html`](docs/roadmap.html) — live FR-by-FR progress
+- [`docs/demo-script.md`](docs/demo-script.md) — the ~3-minute demo
+- [`docs/submission-description.md`](docs/submission-description.md) — the submission text
+- [`docs/spec/`](docs/spec/) — QM-SPEC-001, the authoritative specification
 
 ## License and tracking
 
