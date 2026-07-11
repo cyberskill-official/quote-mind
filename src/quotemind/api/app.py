@@ -9,12 +9,13 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
 from typing import Annotated, Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -34,6 +35,9 @@ from ..obs.log import log_event
 from ..service import ApprovalBlockedError, QuoteNotFoundError, QuoteService
 from ..web import dashboard_html
 from .auth import require_bearer
+
+# ACME tokens are base64url. Anything else is not a challenge, it is someone probing.
+_ACME_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]{16,128}")
 
 app = FastAPI(title="QuoteMind API", version=__version__)
 
@@ -185,6 +189,32 @@ def dashboard() -> HTMLResponse:
     page = dashboard_html()
     page = page.replace("__API_BASE__", "").replace("__API_TOKEN__", get_settings().demo_api_token)
     return HTMLResponse(page)
+
+
+@app.get("/.well-known/acme-challenge/{token}", include_in_schema=False)
+def acme_challenge(token: str) -> PlainTextResponse:
+    """Let's Encrypt's HTTP-01 challenge, so the site can have a certificate.
+
+    The custom domain is bound over HTTP - which is what removed Function Compute's forced
+    `Content-Disposition: attachment` and made the dashboard a page instead of a download. HTTPS
+    needs a certificate, a certificate needs domain validation, and the cheapest honest validation
+    is: prove you control what the domain serves. This route is how.
+
+    The answer is read from OSS rather than from an environment variable, and that is the point of
+    doing it this way: an env var means a redeploy per challenge, and a redeploy inside an ACME
+    validation window is a race nobody should have to run. Renewal is a `put_object` and a `curl`.
+
+    It serves exactly one shape of thing - an ACME key authorization, under a token ACME chose - and
+    it can leak nothing else: the key is prefixed, the value is a string Let's Encrypt itself gave
+    us, and there is no path traversal to be had from a token that has to match a base64url charset.
+    """
+    if not _ACME_TOKEN_RE.fullmatch(token):
+        raise _error(404, "not_found", "no such challenge")
+    try:
+        answer = get_service().artifacts.get_acme_challenge(token)
+    except Exception as exc:  # noqa: BLE001 - an unissued challenge is a 404, not a 500
+        raise _error(404, "not_found", "no such challenge") from exc
+    return PlainTextResponse(answer)
 
 
 @app.get("/eval", response_class=HTMLResponse, include_in_schema=False)
