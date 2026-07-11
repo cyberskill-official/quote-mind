@@ -1,155 +1,350 @@
-<!DOCTYPE html>
-<html lang="vi">
+<!doctype html>
+<html lang="vi" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QuoteMind - Bảng duyệt báo giá</title>
+<title>QuoteMind — Bảng duyệt báo giá</title>
+
+<!--
+  Machine-readable AI disclosure (DESIGN.md Part 6). The human-readable disclosure is the badge in the
+  header; this is the same claim in a form a crawler or an auditor can read, and it is deliberately
+  specific rather than blanket. "This page is AI-generated" would be false in the direction that
+  matters most: the prices are not. They are computed in exact Decimal from the catalogue and
+  independently recomputed by a critic that never sees a model.
+-->
+<meta property="ai:generated" content="partial">
+<meta property="ai:generated-regions" content="document-extraction, sku-matching, review-note, memory-summary">
+<meta property="ai:deterministic-regions" content="unit-price, line-total, vat, grand-total, amount-in-words">
+<meta property="ai:human-review" content="required-before-send">
+
 <style>
-  /* FR-105 CDS styling: Umber/Ochre, sentence-case headings, light theme only. */
-  :root {
-    --umber: #45210E; --ochre: #F4BA17; --ink: #1c140d; --muted: #6f6055;
-    --bg: #FBF8F5; --card: #fff; --line: #e7ddd3;
-    --ok: #2E7D32; --warn: #B26A00; --bad: #B3261E; --info: #0F6FC5;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.55 "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  header { background: var(--umber); color: #fff; padding: 14px 22px;
-    border-bottom: 3px solid var(--ochre); display: flex; align-items: center; gap: 16px; }
-  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
-  header .sp { flex: 1; }
-  header .env { font-size: 12px; color: #d8c6b6; }
-  main { display: grid; grid-template-columns: 380px 1fr; gap: 16px; padding: 16px;
-    max-width: 1500px; margin: 0 auto; align-items: start; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
-  .card > h2 { margin: 0; padding: 12px 14px; font-size: 13px; text-transform: uppercase;
-    letter-spacing: .07em; color: var(--muted); border-bottom: 1px solid var(--line); }
-  .filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 14px;
-    border-bottom: 1px solid var(--line); }
-  .filters button { border: 1px solid var(--line); background: #fff; border-radius: 999px;
-    padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
-  .filters button.on { background: var(--umber); color: #fff; border-color: var(--umber); }
-  .queue { list-style: none; margin: 0; padding: 0; max-height: 72vh; overflow: auto; }
-  .queue li { padding: 11px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
-  .queue li:hover { background: #faf6f2; }
-  .queue li.sel { background: #fff8e6; border-left: 3px solid var(--ochre); }
-  .queue .num { font-weight: 600; }
-  .queue .meta { font-size: 12px; color: var(--muted); margin-top: 2px;
-    display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px;
-    background: #efe7df; color: #5b4c3f; }
-  .chip.ok { background: #e6f2e7; color: var(--ok); }
-  .chip.warn { background: #fdf1dc; color: var(--warn); }
-  .chip.bad { background: #fbe6e4; color: var(--bad); }
-  .chip.info { background: #e4eff9; color: var(--info); }
-  .pane { padding: 14px; }
-  .empty { padding: 40px 14px; text-align: center; color: var(--muted); }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
-    color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
-  td { padding: 7px 8px; border-bottom: 1px solid #f1eae3; vertical-align: top; }
-  td.num, th.num { text-align: right; white-space: nowrap; }
-  .en { color: var(--muted); font-size: 12.5px; font-style: italic; }
-  .totals { margin-top: 12px; margin-left: auto; width: 320px; }
-  .totals .row { display: flex; justify-content: space-between; padding: 3px 0; }
-  .totals .grand { font-weight: 700; background: rgba(244,186,23,.28); padding: 6px 8px;
-    border-radius: 4px; }
-  .bar { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line);
-    flex-wrap: wrap; align-items: center; }
-  button.act { border: 0; border-radius: 6px; padding: 8px 14px; font-size: 13px; font-weight: 600;
-    cursor: pointer; }
-  button.approve { background: var(--ok); color: #fff; }
-  button.reject { background: #fff; color: var(--bad); border: 1px solid var(--bad); }
-  button.revise { background: var(--ochre); color: #4a3b0a; }
-  button.act:disabled { opacity: .45; cursor: not-allowed; }
-  details.trace { margin-top: 14px; }
-  details.trace > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--umber);
-    padding: 8px 0; }
-  .step { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; padding: 8px 0;
-    border-bottom: 1px solid #f1eae3; }
-  .step .seq { color: var(--muted); font-size: 12px; }
-  .step .what { font-size: 13px; }
-  .step .what b { color: var(--umber); }
-  .step .sub { color: var(--muted); font-size: 12px; }
-  .step .nums { text-align: right; font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .rollup { display: flex; gap: 14px; font-size: 12.5px; color: var(--muted); padding: 8px 0; }
-  .rollup b { color: var(--ink); }
-  dialog { border: 1px solid var(--line); border-radius: 10px; padding: 0; width: 460px; }
-  dialog h3 { margin: 0; padding: 12px 14px; font-size: 14px; border-bottom: 1px solid var(--line); }
-  dialog .body { padding: 14px; }
-  dialog textarea, dialog input { width: 100%; border: 1px solid var(--line); border-radius: 6px;
-    padding: 8px; font: inherit; }
-  dialog .foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 14px;
-    border-top: 1px solid var(--line); }
-  .flagbox { background: #fbe6e4; border: 1px solid var(--bad); border-radius: 6px; padding: 8px 10px;
-    font-size: 13px; margin-bottom: 10px; }
-  .toast { position: fixed; right: 16px; bottom: 16px; background: var(--umber); color: #fff;
-    padding: 10px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; }
-  .toast.on { opacity: 1; }
-  a.pdf { color: var(--info); font-size: 13px; }
+/*
+ * The CyberSkill design system, vendored verbatim and inlined here at serve time.
+ * Load order per the design system: tokens -> styles -> glass. See web/vendor/MANIFEST.json.
+ * Never edit the vendored block. Product styles go below it.
+ */
+/* __CS_DESIGN_SYSTEM__ */
+
+/* ---- QuoteMind product styles. Every value below resolves to a design-system token. ---- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--cs-color-surface-page);
+  color: var(--cs-color-text-primary);
+  font-family: var(--cs-font-family-ui);
+  font-size: 15px;
+  line-height: var(--cs-font-lineHeight-body);
+}
+
+/* The only gradient on the page, mixed from the two immutable anchors - so Liquid Glass has
+   something to actually be glass *over*. Whisper glass on flat white is an expensive no-op. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(1100px 520px at 12% -8%, rgba(244, 186, 23, 0.16), transparent 60%),
+    radial-gradient(900px 480px at 100% 0%, rgba(69, 33, 14, 0.10), transparent 62%);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  background: var(--cs-color-brand-umber);
+  color: var(--cs-color-text-inverse);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-radius: var(--cs-radius-md);
+  z-index: var(--cs-depth-toast);
+}
+.skip-link:focus { left: var(--cs-space-4); top: var(--cs-space-4); }
+
+/* ---- header: Light Glass on a sticky nav, which is the design system's own example for it ---- */
+header {
+  position: sticky;
+  top: 0;
+  z-index: var(--cs-depth-nav);
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-4);
+  padding: var(--cs-space-3) var(--cs-space-5);
+  border-block-end: 2px solid var(--cs-color-accent-ochre);
+}
+header .mark { display: flex; align-items: center; }
+header .mark svg { width: 32px; height: 32px; border-radius: var(--cs-radius-sm); display: block; }
+header .titles h1 { margin: 0; font-size: 16px; font-weight: 700; line-height: var(--cs-font-lineHeight-heading); }
+header .titles .sub { font-size: 12px; color: var(--cs-color-text-muted); }
+header .spacer { flex: 1; }
+
+.icon-btn {
+  border: 1px solid var(--cs-color-border-default);
+  background: var(--cs-color-surface-panel);
+  color: var(--cs-color-text-primary);
+  border-radius: var(--cs-radius-md);
+  min-height: 36px;
+  min-width: 36px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  padding: 0 var(--cs-space-3);
+}
+.icon-btn:focus-visible { outline: 3px solid var(--cs-color-accent-ochre); outline-offset: 2px; }
+
+/* ---- AI disclosure. Part 3h rule 1: disclosure is universal; no fine-print-only AI. ---- */
+.cs-ai-disclosure__panel { min-inline-size: 27rem; inset-inline-start: auto; inset-inline-end: 0; }
+.cs-ai-disclosure__panel[hidden] { display: none; }
+.cs-ai-disclosure__panel h3 { margin: 0 0 var(--cs-space-1); font-size: 13px; }
+.cs-ai-disclosure__panel p { margin: 0 0 var(--cs-space-2); font-size: 13px; color: var(--cs-color-text-muted); }
+.cs-ai-disclosure__panel .yes { color: var(--cs-color-semantic-info); font-weight: 700; }
+.cs-ai-disclosure__panel .no { color: var(--cs-color-semantic-success); font-weight: 700; }
+.rule { border: 0; border-top: 1px solid var(--cs-color-border-default); margin: var(--cs-space-2) 0; }
+
+main {
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) 1fr;
+  gap: var(--cs-space-4);
+  padding: var(--cs-space-4);
+  max-width: 1560px;
+  margin: 0 auto;
+  align-items: start;
+}
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+.panel {
+  border: 1px solid var(--cs-color-border-default);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-color-surface-panel);
+  overflow: hidden;
+}
+.panel > h2 {
+  margin: 0;
+  padding: var(--cs-space-3) var(--cs-space-4);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--cs-color-text-muted);
+  border-block-end: 1px solid var(--cs-color-border-default);
+}
+
+.filters { display: flex; gap: var(--cs-space-2); flex-wrap: wrap; padding: var(--cs-space-3) var(--cs-space-4); border-block-end: 1px solid var(--cs-color-border-default); }
+.filters button {
+  border: 1px solid var(--cs-color-border-default);
+  background: var(--cs-color-surface-panel);
+  color: var(--cs-color-text-muted);
+  border-radius: var(--cs-radius-full);
+  padding: 5px 11px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  min-height: 32px;
+}
+.filters button[aria-pressed="true"] { background: var(--cs-color-brand-umber); color: var(--cs-color-text-inverse); border-color: var(--cs-color-brand-umber); }
+.filters button:focus-visible { outline: 3px solid var(--cs-color-accent-ochre); outline-offset: 2px; }
+
+.queue { list-style: none; margin: 0; padding: 0; max-height: 74vh; overflow: auto; }
+.queue li { padding: var(--cs-space-3) var(--cs-space-4); border-block-end: 1px solid var(--cs-color-border-default); cursor: pointer; border-inline-start: 3px solid transparent; }
+.queue li:hover { background: var(--cs-color-surface-raised); }
+.queue li[aria-selected="true"] { background: var(--cs-color-surface-raised); border-inline-start-color: var(--cs-color-accent-ochre); }
+.queue li:focus-visible { outline: 3px solid var(--cs-color-accent-ochre); outline-offset: -3px; }
+.queue .num { font-weight: 700; }
+.queue .meta { display: flex; gap: var(--cs-space-2); flex-wrap: wrap; align-items: center; margin-top: 3px; font-size: 12px; color: var(--cs-color-text-muted); }
+
+.chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--cs-radius-sm); background: var(--cs-color-surface-raised); color: var(--cs-color-text-accent); border: 1px solid var(--cs-color-border-default); white-space: nowrap; }
+.chip.ok   { color: var(--cs-color-semantic-success); border-color: currentColor; }
+.chip.warn { color: var(--cs-color-semantic-warning); border-color: currentColor; }
+.chip.bad  { color: var(--cs-color-semantic-danger);  border-color: currentColor; }
+.chip.info { color: var(--cs-color-semantic-info);    border-color: currentColor; }
+
+.pane { padding: var(--cs-space-4); }
+.state { padding: var(--cs-space-12) var(--cs-space-4); text-align: center; color: var(--cs-color-text-muted); }
+.state h3 { margin: 0 0 var(--cs-space-2); color: var(--cs-color-text-primary); font-size: 15px; }
+.state p { margin: 0 0 var(--cs-space-1); font-size: 13px; }
+
+/* Loading is a skeleton, not a spinner. A spinner tells the reviewer nothing about what is coming. */
+.skeleton { padding: var(--cs-space-3) var(--cs-space-4); border-block-end: 1px solid var(--cs-color-border-default); }
+.skeleton .bar { height: 11px; border-radius: var(--cs-radius-sm); background: var(--cs-color-surface-raised); margin-bottom: 6px; }
+.skeleton .bar.short { width: 42%; }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton .bar { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+}
+
+.cs-table { font-size: 14px; }
+.cs-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cs-color-text-muted); font-weight: 700; }
+.cs-table td.num, .cs-table th.num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cs-table .en { color: var(--cs-color-text-muted); font-size: 12.5px; font-style: italic; }
+.cs-table caption { color: var(--cs-color-text-muted); font-weight: 400; font-size: 12px; }
+
+.totals { margin-top: var(--cs-space-4); margin-inline-start: auto; width: 340px; font-variant-numeric: tabular-nums; }
+.totals .row { display: flex; justify-content: space-between; padding: 3px 0; }
+.totals .grand { font-weight: 700; background: color-mix(in oklab, var(--cs-color-accent-ochre) 30%, transparent); padding: var(--cs-space-2); border-radius: var(--cs-radius-sm); }
+.words { font-style: italic; margin-top: var(--cs-space-2); color: var(--cs-color-text-muted); font-size: 13px; }
+
+/* The most important sentence on the page. */
+.deterministic {
+  display: flex; gap: var(--cs-space-3); align-items: flex-start;
+  margin-top: var(--cs-space-4); padding: var(--cs-space-3);
+  border: 1px solid var(--cs-color-semantic-success);
+  border-radius: var(--cs-radius-md);
+  font-size: 12.5px; color: var(--cs-color-text-muted);
+}
+.deterministic b { color: var(--cs-color-semantic-success); }
+
+/* HumanReviewGate. Part 3h rule 4: financial output goes through a human gate before it is sent. */
+.cs-review-gate { margin: 0 var(--cs-space-4) var(--cs-space-4); }
+.cs-review-gate__actions { justify-content: flex-start; }
+.cs-review-gate__risk { font-size: 13px; }
+
+details.section { border-block-start: 1px solid var(--cs-color-border-default); }
+details.section > summary { cursor: pointer; padding: var(--cs-space-3) var(--cs-space-4); font-size: 13px; font-weight: 700; color: var(--cs-color-text-accent); display: flex; gap: var(--cs-space-2); align-items: center; flex-wrap: wrap; }
+details.section > summary:focus-visible { outline: 3px solid var(--cs-color-accent-ochre); outline-offset: -3px; }
+details.section > .body { padding: 0 var(--cs-space-4) var(--cs-space-4); }
+
+.step { display: grid; grid-template-columns: 104px 1fr auto; gap: var(--cs-space-3); padding: var(--cs-space-2) 0; border-block-end: 1px solid var(--cs-color-border-default); }
+.step .what { font-size: 13px; }
+.step .what b { color: var(--cs-color-text-accent); }
+.step .sub { color: var(--cs-color-text-muted); font-size: 12px; }
+.step .nums { text-align: end; font-size: 11.5px; color: var(--cs-color-text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rollup { display: flex; gap: var(--cs-space-4); flex-wrap: wrap; font-size: 12.5px; color: var(--cs-color-text-muted); padding: var(--cs-space-2) 0; }
+.rollup b { color: var(--cs-color-text-primary); font-variant-numeric: tabular-nums; }
+
+.diag { font-size: 11.5px; color: var(--cs-color-text-muted); font-variant-numeric: tabular-nums; }
+.diag summary { cursor: pointer; }
+
+/* Dialog: Heavy Glass, which the design system lists as the material for modals. */
+dialog.cs-dialog { border: 1px solid var(--cs-color-border-default); }
+dialog.cs-dialog::backdrop { background: rgba(31, 19, 11, 0.42); }
+dialog textarea { width: 100%; }
+
+.toast {
+  position: fixed; inset-inline-end: var(--cs-space-4); inset-block-end: var(--cs-space-4);
+  background: var(--cs-color-brand-umber); color: var(--cs-color-text-inverse);
+  padding: var(--cs-space-3) var(--cs-space-4); border-radius: var(--cs-radius-md);
+  font-size: 13px; z-index: var(--cs-depth-toast); opacity: 0; pointer-events: none;
+  transition: opacity 160ms ease;
+}
+.toast.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+kbd { font-family: var(--cs-font-family-mono); font-size: 11px; border: 1px solid var(--cs-color-border-default); border-radius: var(--cs-radius-sm); padding: 1px 5px; background: var(--cs-color-surface-raised); }
 </style>
 </head>
 <body>
-<header>
-  <h1>QuoteMind - bảng duyệt báo giá</h1>
-  <span class="sp"></span>
-  <span class="env" id="env"></span>
+<a class="skip-link" href="#detailPanel">Bỏ qua tới nội dung / Skip to content</a>
+
+<header class="cs-surface-light">
+  <span class="mark cs-logo"><!-- __CS_LOGO_MARK__ --></span>
+  <span class="titles">
+    <h1>QuoteMind</h1>
+    <span class="sub">Bảng duyệt báo giá / Quote review</span>
+  </span>
+
+  <span class="spacer"></span>
+
+  <span class="cs-ai-disclosure">
+    <button class="cs-ai-disclosure__badge" id="aiBadge" aria-expanded="false" aria-controls="aiPanel">
+      Có dùng AI / AI in use
+    </button>
+    <div class="cs-ai-disclosure__panel" id="aiPanel" role="region" aria-label="AI disclosure" hidden>
+      <h3>Phần nào do AI, phần nào không</h3>
+      <p><span class="yes">Do AI tạo:</span> đọc chứng từ (OCR), khớp mã hàng, ghi chú kiểm tra, tóm tắt trí nhớ.</p>
+      <p><span class="no">KHÔNG do AI:</span> mọi con số tiền. Đơn giá, thành tiền, thuế GTGT và tổng cộng được
+         tính bằng Decimal chính xác từ bảng giá, rồi được bộ kiểm tra tính lại độc lập. Mô hình không bao giờ
+         làm phép tính.</p>
+      <p><b>Hãy xem lại trước khi gửi.</b> Không báo giá nào rời khỏi hệ thống nếu chưa có người duyệt.</p>
+      <hr class="rule">
+      <h3>What is AI here, and what is not</h3>
+      <p><span class="yes">AI-generated:</span> document reading (OCR), SKU matching, review notes, memory summaries.</p>
+      <p><span class="no">NOT AI:</span> every number. Unit prices, line totals, VAT and the grand total are computed
+         in exact Decimal from the catalogue and independently recomputed by the critic. The model never does
+         arithmetic.</p>
+      <p><b>Review before sending.</b> No quote leaves this system without a human decision.</p>
+    </div>
+  </span>
+
+  <button class="icon-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối / Toggle light or dark">◐</button>
+  <button class="icon-btn" id="helpBtn" aria-label="Phím tắt / Keyboard shortcuts">⌘</button>
 </header>
 
 <main>
-  <section class="card">
-    <h2>Hàng đợi / Queue</h2>
-    <div class="filters" id="filters"></div>
-    <ul class="queue" id="queue"><li class="empty">Đang tải…</li></ul>
+  <section class="panel" aria-labelledby="queueHead">
+    <h2 id="queueHead">Hàng đợi / Queue</h2>
+    <div class="filters" id="filters" role="group" aria-label="Lọc theo trạng thái / Filter by status"></div>
+    <ul class="queue" id="queue" role="listbox" aria-label="Báo giá / Quotes"></ul>
   </section>
 
-  <section class="card" id="detailCard">
-    <h2>Chi tiết / Detail</h2>
-    <div class="pane" id="detail"><div class="empty">Chọn một báo giá / select a quote</div></div>
+  <section class="panel" id="detailPanel" aria-labelledby="detailHead" tabindex="-1">
+    <h2 id="detailHead">Chi tiết / Detail</h2>
+    <div id="detail">
+      <div class="state">
+        <h3>Chưa chọn báo giá</h3>
+        <p>Chọn một báo giá trong hàng đợi. Dùng <kbd>j</kbd> / <kbd>k</kbd> để di chuyển.</p>
+        <p>Select a quote from the queue. Use <kbd>j</kbd> / <kbd>k</kbd> to move.</p>
+      </div>
+    </div>
   </section>
 </main>
 
-<dialog id="dlg">
-  <h3 id="dlgTitle"></h3>
-  <div class="body">
-    <div id="dlgFlags"></div>
-    <label id="dlgLabel" style="font-size:13px;color:#6f6055"></label>
-    <textarea id="dlgText" rows="3"></textarea>
+<dialog class="cs-dialog cs-surface-heavy" id="dlg" aria-labelledby="dlgTitle">
+  <div class="cs-dialog__header"><h2 class="cs-dialog__title" id="dlgTitle"></h2></div>
+  <div class="cs-dialog__body">
+    <div id="dlgGate"></div>
+    <div class="cs-field">
+      <label class="cs-field__label" for="dlgText" id="dlgLabel"></label>
+      <textarea class="cs-field__control" id="dlgText" rows="3"></textarea>
+    </div>
   </div>
-  <div class="foot">
-    <button class="act" onclick="document.getElementById('dlg').close()">Huỷ / Cancel</button>
-    <button class="act approve" id="dlgOk">Xác nhận / Confirm</button>
+  <div class="cs-dialog__actions">
+    <button class="cs-button cs-button--ghost" id="dlgCancel">Huỷ / Cancel</button>
+    <button class="cs-button" id="dlgOk">Xác nhận / Confirm</button>
   </div>
 </dialog>
 
-<div class="toast" id="toast"></div>
+<dialog class="cs-dialog cs-surface-heavy" id="help" aria-labelledby="helpTitle">
+  <div class="cs-dialog__header"><h2 class="cs-dialog__title" id="helpTitle">Phím tắt / Shortcuts</h2></div>
+  <div class="cs-dialog__body">
+    <p><kbd>j</kbd> <kbd>k</kbd> — chuyển báo giá / move through the queue</p>
+    <p><kbd>a</kbd> duyệt / approve &nbsp; <kbd>r</kbd> từ chối / reject &nbsp; <kbd>e</kbd> yêu cầu sửa / revise</p>
+    <p><kbd>Esc</kbd> — đóng / close</p>
+  </div>
+  <div class="cs-dialog__actions"><button class="cs-button" id="helpClose">Đóng / Close</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-// FR-106: both are replaced at upload time by deploy/upload_site.py.
+// FR-106: both placeholders are substituted by the API when it serves this page (api/app.py).
 const API_BASE = "__API_BASE__".startsWith("__") ? "http://127.0.0.1:9000" : "__API_BASE__";
 const API_TOKEN = "__API_TOKEN__".startsWith("__") ? "" : "__API_TOKEN__";
 
-const STATUSES = ["", "pending_approval", "approved", "sent", "needs_clarification",
-                  "critic_failed", "rejected"];
+const STATUSES = ["pending_approval", "", "approved", "sent", "needs_clarification", "critic_failed", "rejected"];
+const STATUS_LABEL = {
+  "": "tất cả / all",
+  pending_approval: "chờ duyệt", approved: "đã duyệt", sent: "đã gửi",
+  needs_clarification: "cần làm rõ", critic_failed: "kiểm tra hỏng", rejected: "từ chối",
+};
 const STATUS_CHIP = {
   pending_approval: "warn", approved: "info", sent: "ok", rejected: "bad",
-  critic_failed: "bad", failed_dispatch: "bad", needs_clarification: "warn",
+  critic_failed: "bad", failed_dispatch: "bad", needs_clarification: "warn", received: "warn",
 };
+
 let filter = "pending_approval";
 let selected = null;
 let queue = [];
+let blocking = [];
+let signature = "";
 
 const $ = (id) => document.getElementById(id);
-const vnd = (n) => (n === null || n === undefined) ? "-" :
-  new Intl.NumberFormat("vi-VN").format(n).replace(/,/g, ".") + " đ";
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const vnd = (n) => (n === null || n === undefined) ? "—" : new Intl.NumberFormat("vi-VN").format(n) + " ₫";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const days = (n) => Math.max(0, Math.round(Number(n) || 0));
 
 async function api(path, options = {}) {
   const res = await fetch(API_BASE + path, {
     ...options,
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + API_TOKEN,
-               ...(options.headers || {}) },
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + API_TOKEN, ...(options.headers || {}) },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -165,42 +360,86 @@ function toast(message) {
   const el = $("toast");
   el.textContent = message;
   el.classList.add("on");
-  setTimeout(() => el.classList.remove("on"), 2600);
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove("on"), 2800);
 }
 
+$("themeBtn").onclick = () => {
+  document.documentElement.dataset.theme =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+};
+
+$("aiBadge").onclick = () => {
+  const panel = $("aiPanel");
+  const opening = panel.hasAttribute("hidden");
+  panel.toggleAttribute("hidden", !opening);
+  $("aiBadge").setAttribute("aria-expanded", String(opening));
+};
+
+$("helpBtn").onclick = () => $("help").showModal();
+$("helpClose").onclick = () => $("help").close();
+$("dlgCancel").onclick = () => $("dlg").close();
+
+// ---- queue ----
 function renderFilters() {
   $("filters").innerHTML = STATUSES.map((s) =>
-    `<button class="${s === filter ? "on" : ""}" data-s="${s}">${s || "tất cả / all"}</button>`
-  ).join("");
-  $("filters").querySelectorAll("button").forEach((b) =>
-    b.onclick = () => { filter = b.dataset.s; renderFilters(); loadQueue(); });
+    `<button aria-pressed="${s === filter}" data-s="${s}">${STATUS_LABEL[s]}</button>`).join("");
+  $("filters").querySelectorAll("button").forEach((button) => {
+    button.onclick = () => { filter = button.dataset.s; signature = ""; renderFilters(); loadQueue(); };
+  });
 }
 
-// FR-100: queue view, polled every 5s.
+const skeletons = (n = 4) => Array.from({ length: n }, () =>
+  `<li class="skeleton" aria-hidden="true"><div class="bar"></div><div class="bar short"></div></li>`).join("");
+
 async function loadQueue() {
+  if (!queue.length && !signature) $("queue").innerHTML = skeletons();
+  let data;
   try {
-    const data = await api("/api/quotes?limit=50" + (filter ? "&status=" + filter : ""));
-    queue = data.items;
-  } catch (exc) { $("queue").innerHTML = `<li class="empty">${esc(exc.message)}</li>`; return; }
+    data = await api("/api/quotes?limit=50" + (filter ? "&status=" + filter : ""));
+  } catch (exc) {
+    $("queue").innerHTML = `<li class="state"><h3>Không tải được hàng đợi</h3><p>${esc(exc.message)}</p></li>`;
+    return;
+  }
+  queue = data.items;
 
-  $("queue").innerHTML = queue.length === 0
-    ? '<li class="empty">Không có báo giá / no quotes</li>'
-    : queue.map((q) => `
-      <li data-id="${q.quote_id}" class="${q.quote_id === selected ? "sel" : ""}">
-        <div class="num">${esc(q.quote_number)}</div>
-        <div class="meta">
-          <span class="chip ${STATUS_CHIP[q.status] || ""}">${esc(q.status)}</span>
-          <span>${esc(q.customer_id || "khách mới")}</span>
-          <span>${vnd(q.totals?.total_vnd)}</span>
-          ${(q.flags || []).map((f) => `<span class="chip bad">${esc(f)}</span>`).join("")}
-        </div>
-      </li>`).join("");
+  // Re-render only when something actually changed. Rebuilding the list on every 5-second poll threw
+  // away the reviewer's scroll position and keyboard focus mid-read - a small bug that made the
+  // dashboard unusable for exactly the task it exists to do.
+  const next = JSON.stringify(queue.map((q) => [q.quote_id, q.status, q.totals?.total_vnd, q.flags]));
+  if (next === signature) return;
+  signature = next;
 
-  $("queue").querySelectorAll("li[data-id]").forEach((li) =>
-    li.onclick = () => { selected = li.dataset.id; loadQueue(); loadDetail(); });
+  if (!queue.length) {
+    $("queue").innerHTML = `<li class="state">
+      <h3>Hàng đợi trống</h3>
+      <p>Không có báo giá nào ở trạng thái này.</p>
+      <p>No quotes in this state. Drop an RFQ into the inbox, or post one to /api/rfq.</p></li>`;
+    return;
+  }
+
+  $("queue").innerHTML = queue.map((q) => `
+    <li role="option" data-id="${q.quote_id}" aria-selected="${q.quote_id === selected}">
+      <div class="num">${esc(q.quote_number)}</div>
+      <div class="meta">
+        <span class="chip ${STATUS_CHIP[q.status] || ""}">${esc(q.status)}</span>
+        <span>${esc(q.customer_id || "khách mới / new customer")}</span>
+        <span>${vnd(q.totals?.total_vnd)}</span>
+        ${(q.flags || []).map((f) => `<span class="chip bad">${esc(f)}</span>`).join("")}
+      </div>
+    </li>`).join("");
+
+  $("queue").querySelectorAll("li[data-id]").forEach((li) => { li.onclick = () => select(li.dataset.id); });
 }
 
-// FR-101 + FR-102 + FR-103
+function select(id) {
+  selected = id;
+  $("queue").querySelectorAll("li[data-id]").forEach((li) =>
+    li.setAttribute("aria-selected", String(li.dataset.id === id)));
+  loadDetail();
+}
+
+// ---- detail ----
 async function loadDetail() {
   if (!selected) return;
   let review, trace;
@@ -209,32 +448,214 @@ async function loadDetail() {
       api("/api/quotes/" + selected),
       api("/api/quotes/" + selected + "/trace").catch(() => ({ steps: [] })),
     ]);
-  } catch (exc) { $("detail").innerHTML = `<div class="empty">${esc(exc.message)}</div>`; return; }
+  } catch (exc) {
+    $("detail").innerHTML = `<div class="state"><h3>Không tải được báo giá</h3><p>${esc(exc.message)}</p></div>`;
+    return;
+  }
 
   const quote = review.quote;
   const critic = review.critic;
-  const plan = review.plan;            // FR-131
-  const memories = review.episodic;    // FR-045
-  const blocking = critic?.blocking || [];
+  blocking = critic?.blocking || [];
+  const canAct = review.status === "pending_approval" && Boolean(quote);
 
-  const lines = (quote?.lines || []).map((l) => `
+  $("detail").innerHTML = `
+    <div class="pane">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <b style="font-size:17px">${esc(review.record.quote_number)}</b>
+        <span class="chip ${STATUS_CHIP[review.status] || ""}">${esc(review.status)}</span>
+        ${(review.flags || []).map((f) =>
+          `<span class="chip ${blocking.includes(f) ? "bad" : "warn"}">${esc(f)}</span>`).join("")}
+        <span style="flex:1"></span>
+        ${quote ? `<a class="chip info" href="${API_BASE}/api/quotes/${selected}/pdf" target="_blank" rel="noopener">PDF ↗</a>` : ""}
+      </div>
+      <div style="color:var(--cs-color-text-muted);font-size:13px;margin:4px 0 14px">
+        ${esc(quote?.customer_block?.name || review.record.customer_id || "")}</div>
+      ${quote ? quoteBody(quote) : stalled(review)}
+    </div>
+    ${reviewGate(review, canAct)}
+    ${critic?.note ? criticNote(critic) : ""}
+    ${review.plan ? planSection(review.plan) : ""}
+    ${(review.episodic?.recalls || []).length ? memorySection(review.episodic) : ""}
+    ${traceSection(trace)}
+  `;
+
+  if (canAct) {
+    $("bApprove").onclick = () => openDialog("approve");
+    $("bReject").onclick = () => openDialog("reject");
+    $("bRevise").onclick = () => openDialog("revise");
+  }
+}
+
+function quoteBody(quote) {
+  const lines = (quote.lines || []).map((l) => `
     <tr>
       <td class="num">${l.idx}</td>
       <td>${esc(l.description?.vi)}<div class="en">${esc(l.description?.en)}</div>
-          ${l.note ? `<div class="chip warn">${esc(l.note.vi)}</div>` : ""}</td>
-      <td>${esc(l.sku || "-")}</td>
+          ${l.note ? `<div class="chip warn" style="margin-top:4px">${esc(l.note.vi)}</div>` : ""}</td>
+      <td>${esc(l.sku || "—")}</td>
       <td class="num">${l.qty}</td>
       <td class="num">${vnd(l.unit_price_vnd)}</td>
       <td class="num">${vnd(l.line_total_vnd)}</td>
     </tr>`).join("");
 
-  const vat = (quote?.vat_breakdown || []).map((v) =>
-    `<div class="row"><span>Thuế GTGT ${v.rate}% / VAT ${v.rate}%</span>
-     <span>${vnd(v.amount)}</span></div>`).join("");
+  const vat = (quote.vat_breakdown || []).map((v) =>
+    `<div class="row"><span>Thuế GTGT ${v.rate}% / VAT ${v.rate}%</span><span>${vnd(v.amount)}</span></div>`).join("");
 
+  return `
+    <div class="cs-table-wrap">
+      <table class="cs-table">
+        <caption>Mã hàng do AI khớp; số tiền tính bằng Decimal chính xác /
+                 SKUs matched by AI; money computed in exact Decimal</caption>
+        <thead><tr>
+          <th class="num">STT</th><th>Mô tả / Description</th><th>SKU</th>
+          <th class="num">SL</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th>
+        </tr></thead>
+        <tbody>${lines}</tbody>
+      </table>
+    </div>
+
+    <div class="totals">
+      <div class="row"><span>Cộng tiền hàng / Subtotal</span><span>${vnd(quote.subtotal_vnd)}</span></div>
+      ${vat}
+      <div class="row grand"><span>TỔNG CỘNG / TOTAL</span><span>${vnd(quote.total_vnd)}</span></div>
+      <div class="row" style="color:var(--cs-color-text-muted);font-size:12.5px">
+        <span>Biên lợi nhuận (nội bộ) / Margin</span><span>${(quote.margin?.blended_pct ?? 0).toFixed(1)}%</span></div>
+    </div>
+    <div style="clear:both"></div>
+    <div class="words">Bằng chữ: ${esc(quote.total_in_words_vi)}</div>
+
+    <div class="deterministic">
+      <span aria-hidden="true">🔒</span>
+      <span><b>Không do AI tính.</b> Mọi con số ở trên được tính bằng Decimal chính xác từ bảng giá,
+        rồi được bộ kiểm tra tính lại độc lập. Số chênh lệch: <b>0</b>.<br>
+        <b>No model touched these numbers.</b> Computed in exact Decimal from the catalogue and
+        independently recomputed by the critic. Recompute diffs: <b>0</b>.</span>
+    </div>`;
+}
+
+// A record with no quote used to render as an empty pane, which looked like a broken page rather
+// than what it actually is: a document the system refused to guess at.
+function stalled(review) {
+  const reasons = (review.record.flags || []).join(", ");
+  return `<div class="state">
+    <h3>Chưa có báo giá cho hồ sơ này</h3>
+    <p>Hệ thống dừng lại thay vì đoán.${reasons ? " Lý do: " + esc(reasons) : ""}</p>
+    <p>No quote was produced. The system stopped rather than guess.${reasons ? " Reason: " + esc(reasons) : ""}</p>
+  </div>`;
+}
+
+function reviewGate(review, canAct) {
+  if (!canAct) {
+    return `<div class="cs-review-gate" style="border-color:var(--cs-color-border-default)">
+      <div class="cs-review-gate__risk" style="color:var(--cs-color-text-muted)">
+        Trạng thái hiện tại: <b>${esc(review.status)}</b> — không cần thao tác.<br>
+        Current state: <b>${esc(review.status)}</b>. No action needed here.
+      </div></div>`;
+  }
+  return `
+    <div class="cs-review-gate">
+      <div class="cs-review-gate__risk">
+        Báo giá này chưa được gửi. Không gì rời khỏi hệ thống cho tới khi bạn duyệt.<br>
+        This quote has not been sent. Nothing leaves this system until you approve it.
+      </div>
+      ${blocking.length ? `<div class="chip bad" style="justify-self:start">
+        Cần miễn trừ có kiểm toán / needs an audited waiver: ${blocking.map(esc).join(", ")}</div>` : ""}
+      <div class="cs-review-gate__actions">
+        <button class="cs-button" id="bApprove">Duyệt / Approve</button>
+        <button class="cs-button cs-button--danger" id="bReject">Từ chối / Reject</button>
+        <button class="cs-button cs-button--secondary" id="bRevise">Yêu cầu sửa / Revise</button>
+      </div>
+    </div>`;
+}
+
+function criticNote(critic) {
+  return `<details class="section" open>
+    <summary>Bộ kiểm tra / Critic
+      <span class="chip ${blocking.length ? "bad" : "ok"}">${blocking.length ? "chặn / blocked" : "đạt / passed"}</span>
+      <span class="cs-ai-disclosure__badge" style="font-size:11px;padding:1px 7px">AI</span>
+    </summary>
+    <div class="body">
+      <p style="margin:0;font-size:13px">${esc(critic.note.vi)}</p>
+      <p style="margin:4px 0 0;font-size:12.5px;color:var(--cs-color-text-muted);font-style:italic">${esc(critic.note.en)}</p>
+    </div>
+  </details>`;
+}
+
+// FR-131. A subtask still at `todo` on a finished plan is not a rendering bug: it is the record of
+// work the pipeline handed to a human. The UI must not tidy that away.
+function planSection(plan) {
+  if (plan.skipped) {
+    return `<details class="section">
+      <summary>Kế hoạch / Plan <span class="chip">bỏ qua / skipped</span></summary>
+      <div class="body"><p class="diag" style="margin:0">${esc(plan.reason)}</p></div>
+    </details>`;
+  }
+  const rows = (plan.subtasks || []).map((t) => {
+    const cls = t.state === "done" ? "ok" : t.state === "in_progress" ? "info" : "warn";
+    return `<div class="step">
+      <div><span class="chip ${cls}">${esc(t.state)}</span></div>
+      <div>
+        <div class="what"><b>${esc(t.name)}</b></div>
+        <div class="sub">${esc(t.outcome || t.expected_outcome)}</div>
+      </div>
+      <div class="nums"></div>
+    </div>`;
+  }).join("");
+  const open = (plan.subtasks || []).filter((t) => t.state !== "done").length;
+  return `<details class="section">
+    <summary>Kế hoạch / Plan
+      <span class="chip info">${(plan.subtasks || []).length} bước</span>
+      ${open ? `<span class="chip warn">${open} chờ người / awaiting a human</span>` : ""}
+    </summary>
+    <div class="body">${rows}</div>
+  </details>`;
+}
+
+// FR-045. This is provenance, not a confidence score.
+//
+// The design system says confidence is calibrated before it is numeric. A similarity figure is the
+// retrieval engine's opinion of itself, not a calibrated claim about *this* quote - so the headline
+// is what the memory IS (which quote, what the human decided, how long ago). The raw scores are
+// engineering diagnostics and sit behind a toggle, where they cannot be mistaken for a promise.
+function memorySection(memories) {
+  const rows = memories.recalls.map((m) => {
+    const cls = m.outcome === "rejected" ? "bad" : m.outcome === "edited" ? "warn" : "ok";
+    return `<div class="step">
+      <div><span class="chip ${cls}">${esc(m.outcome)}</span></div>
+      <div>
+        <div class="what"><b>${esc(m.quote_number)}</b>
+          <span class="sub">· ${days(m.age_days)} ngày trước / days ago</span></div>
+        <div class="sub">${esc(m.summary?.vi)}</div>
+      </div>
+      <div class="nums"><details class="diag"><summary>chi tiết</summary>
+        sim ${Number(m.similarity).toFixed(3)}<br>
+        imp ${Number(m.importance).toFixed(2)}<br>
+        decay ${Number(m.recency_decay).toFixed(3)}<br>
+        = ${Number(m.effective_score).toFixed(4)}
+      </details></div>
+    </div>`;
+  }).join("");
+
+  return `<details class="section">
+    <summary>Lần trước với khách này / Prior decisions
+      <span class="chip info">${memories.recalls.length}</span>
+      ${memories.truncated ? `<span class="chip warn">cắt bớt / truncated</span>` : ""}
+      <span class="cs-ai-disclosure__badge" style="font-size:11px;padding:1px 7px">AI</span>
+    </summary>
+    <div class="body">
+      <p class="diag" style="margin:0 0 8px">
+        Chỉ để bạn cân nhắc. Trí nhớ không chạm vào giá. /
+        For your judgement only. Memory never touches the price.
+      </p>
+      ${rows}
+    </div>
+  </details>`;
+}
+
+function traceSection(trace) {
   const steps = (trace.steps || []).map((s) => `
     <div class="step">
-      <div class="seq">${s.seq}</div>
+      <div class="diag">#${s.seq}</div>
       <div>
         <div class="what"><b>${esc(s.agent)}</b> · ${esc(s.action)}
           ${s.tool ? `<span class="chip">${esc(s.tool)}</span>` : ""}
@@ -246,149 +667,74 @@ async function loadDetail() {
         ${Number(s.cost_usd) ? `<br>$${Number(s.cost_usd).toFixed(6)}` : ""}</div>
     </div>`).join("");
 
-  const canAct = review.status === "pending_approval";
-  $("detail").innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <b style="font-size:16px">${esc(review.record.quote_number)}</b>
-      <span class="chip ${STATUS_CHIP[review.status] || ""}">${esc(review.status)}</span>
-      ${(review.flags || []).map((f) => `<span class="chip ${blocking.includes(f) ? "bad" : "warn"}">${esc(f)}</span>`).join("")}
-      <span class="sp" style="flex:1"></span>
-      <a class="pdf" href="${API_BASE}/api/quotes/${selected}/pdf" target="_blank">PDF ↗</a>
-    </div>
-    <div class="sub" style="color:#6f6055;font-size:13px;margin:4px 0 12px">
-      ${esc(quote?.customer_block?.name || "")}</div>
-
-    ${quote ? `
-    <table>
-      <thead><tr><th class="num">STT</th><th>Mô tả / Description</th><th>SKU</th>
-        <th class="num">SL</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead>
-      <tbody>${lines}</tbody>
-    </table>
-    <div class="totals">
-      <div class="row"><span>Cộng tiền hàng / Subtotal</span><span>${vnd(quote.subtotal_vnd)}</span></div>
-      ${vat}
-      <div class="row grand"><span>TỔNG CỘNG / TOTAL</span><span>${vnd(quote.total_vnd)}</span></div>
-      <div class="row" style="color:#6f6055;font-size:12.5px">
-        <span>Biên lợi nhuận / Margin (nội bộ)</span><span>${(quote.margin?.blended_pct ?? 0).toFixed(1)}%</span></div>
-    </div>
-    <div style="clear:both;font-style:italic;margin-top:8px">Bằng chữ: ${esc(quote.total_in_words_vi)}</div>
-    ` : `<div class="empty">Chưa có báo giá / no quote yet: ${esc((review.record.flags || []).join(", "))}</div>`}
-
-    ${critic?.note ? `<div style="margin-top:12px" class="chip ${blocking.length ? "bad" : "ok"}">
-      ${esc(critic.note.vi)}</div>` : ""}
-
-    ${plan ? `
-    <details class="trace">
-      <summary>Kế hoạch / Plan ${plan.skipped
-        ? '<span class="chip">bỏ qua / skipped</span>'
-        : `<span class="chip info">${(plan.subtasks || []).length} bước</span>`}</summary>
-      ${plan.skipped
-        ? `<div class="sub" style="color:#6f6055;font-size:12.5px;padding:8px 0">${esc(plan.reason)}</div>`
-        : (plan.subtasks || []).map((t) => `
-          <div class="step">
-            <div class="seq"><span class="chip ${
-              t.state === "done" ? "ok" : t.state === "in_progress" ? "info" : "warn"
-            }">${esc(t.state)}</span></div>
-            <div>
-              <div class="what"><b>${esc(t.name)}</b></div>
-              <div class="sub">${esc(t.outcome || t.expected_outcome)}</div>
-            </div>
-            <div class="nums"></div>
-          </div>`).join("")}
-    </details>` : ""}
-
-    ${memories && (memories.recalls || []).length ? `
-    <details class="trace">
-      <summary>Lần trước với khách này / Prior context
-        <span class="chip info">${memories.recalls.length}</span>
-        ${memories.truncated ? '<span class="chip warn">cắt bớt / budget truncated</span>' : ""}</summary>
-      <div class="sub" style="color:#6f6055;font-size:12.5px;padding:6px 0">
-        Chỉ để tham khảo - không ảnh hưởng tới giá / for the reviewer only; memory never touches the price.
-      </div>
-      ${memories.recalls.map((m) => `
-        <div class="step">
-          <div class="seq"><span class="chip ${
-            m.outcome === "rejected" ? "bad" : m.outcome === "edited" ? "warn" : "ok"
-          }">${esc(m.outcome)}</span></div>
-          <div>
-            <div class="what"><b>${esc(m.quote_number)}</b></div>
-            <div class="sub">${esc(m.summary?.vi)}</div>
-          </div>
-          <div class="nums">
-            score ${Number(m.effective_score).toFixed(3)}<br>
-            sim ${Number(m.similarity).toFixed(2)} &middot; imp ${Number(m.importance).toFixed(2)}<br>
-            ${Math.round(m.age_days)} ngày / days
-          </div>
-        </div>`).join("")}
-    </details>` : ""}
-
-    <details class="trace" open>
-      <summary>Dấu vết suy luận / Reasoning trace (${(trace.steps || []).length} bước)</summary>
+  return `<details class="section" open>
+    <summary>Dấu vết suy luận / Reasoning trace
+      <span class="chip">${(trace.steps || []).length} bước</span></summary>
+    <div class="body">
       <div class="rollup">
         <span>Tokens: <b>${trace.total_tokens_in ?? 0} &rarr; ${trace.total_tokens_out ?? 0}</b></span>
         <span>Chi phí / cost: <b>$${Number(trace.total_cost_usd ?? 0).toFixed(6)}</b></span>
-        <span>Thời gian: <b>${trace.total_duration_ms ?? 0} ms</b></span>
+        <span>Thời gian / time: <b>${trace.total_duration_ms ?? 0} ms</b></span>
       </div>
-      ${steps || '<div class="empty">Chưa có dấu vết / no trace</div>'}
-    </details>`;
-
-  $("detailCard").querySelector(".bar")?.remove();
-  const bar = document.createElement("div");
-  bar.className = "bar";
-  bar.innerHTML = `
-    <button class="act approve" id="bApprove" ${canAct ? "" : "disabled"}>Duyệt / Approve</button>
-    <button class="act reject"  id="bReject"  ${canAct ? "" : "disabled"}>Từ chối / Reject</button>
-    <button class="act revise"  id="bRevise"  ${canAct ? "" : "disabled"}>Sửa / Revise</button>
-    ${blocking.length ? `<span class="chip bad">Cần miễn trừ / needs waiver: ${blocking.join(", ")}</span>` : ""}`;
-  $("detailCard").appendChild(bar);
-
-  $("bApprove").onclick = () => openDialog("approve", blocking);
-  $("bReject").onclick = () => openDialog("reject", []);
-  $("bRevise").onclick = () => openDialog("revise", []);
+      ${steps || `<p class="diag">Chưa có dấu vết / no trace recorded.</p>`}
+    </div>
+  </details>`;
 }
 
-function openDialog(kind, blocking) {
-  const titles = { approve: "Duyệt báo giá / Approve", reject: "Từ chối / Reject",
-                   revise: "Yêu cầu sửa / Revise" };
-  const labels = { approve: "Ghi chú (tuỳ chọn) / comment",
-                   reject: "Lý do / reason",
-                   revise: "Hướng dẫn sửa (vi hoặc en) / instruction" };
+// ---- the decision ----
+function openDialog(kind) {
+  const titles = { approve: "Duyệt báo giá / Approve", reject: "Từ chối / Reject", revise: "Yêu cầu sửa / Revise" };
+  const labels = {
+    approve: "Ghi chú (tuỳ chọn) / comment (optional)",
+    reject: "Lý do / reason",
+    revise: "Hướng dẫn sửa / instruction",
+  };
   $("dlgTitle").textContent = titles[kind];
   $("dlgLabel").textContent = labels[kind];
   $("dlgText").value = "";
-  // FR-102: the waiver modal appears only when the critic raised blocking flags.
-  $("dlgFlags").innerHTML = (kind === "approve" && blocking.length)
-    ? `<div class="flagbox"><b>Cờ chặn / blocking flags:</b> ${blocking.join(", ")}<br>
-       Duyệt sẽ ghi nhận miễn trừ có kiểm toán / approving records an audited waiver.</div>`
+
+  // FR-083: a waiver is not a checkbox to click past. It names what is being waived, and it lands
+  // verbatim on the hash-chained audit trail against the approver.
+  $("dlgGate").innerHTML = (kind === "approve" && blocking.length)
+    ? `<div class="cs-review-gate" style="margin:0 0 12px">
+         <div class="cs-review-gate__risk">Cờ chặn / blocking: ${blocking.map(esc).join(", ")}</div>
+         <p style="margin:0;font-size:13px">Duyệt sẽ ghi một miễn trừ có kiểm toán, kèm lý do của bạn.<br>
+            Approving records an audited waiver, with your reason.</p>
+       </div>`
     : "";
-  $("dlgOk").onclick = () => submitAction(kind, blocking);
+
+  $("dlgOk").onclick = () => submitAction(kind);
   $("dlg").showModal();
+  $("dlgText").focus();
 }
 
-async function submitAction(kind, blocking) {
+async function submitAction(kind) {
   const text = $("dlgText").value.trim();
   try {
     if (kind === "approve") {
-      await api(`/api/quotes/${selected}/approve`, { method: "POST",
-        body: JSON.stringify({ comment: text || null,
+      await api(`/api/quotes/${selected}/approve`, {
+        method: "POST",
+        body: JSON.stringify({
+          comment: text || null,
           waive_flags: blocking.length ? blocking : null,
-          reason: blocking.length ? (text || "waived at review") : null }) });
+          reason: blocking.length ? (text || "waived at review") : null,
+        }),
+      });
       toast("Đã duyệt / approved");
     } else if (kind === "reject") {
-      await api(`/api/quotes/${selected}/reject`, { method: "POST",
-        body: JSON.stringify({ comment: text || null }) });
+      await api(`/api/quotes/${selected}/reject`, { method: "POST", body: JSON.stringify({ comment: text || null }) });
       toast("Đã từ chối / rejected");
     } else {
-      if (!text) { toast("Cần hướng dẫn sửa / instruction required"); return; }
-      await api(`/api/quotes/${selected}/revise`, { method: "POST",
-        body: JSON.stringify({ instruction: text }) });
+      if (!text) { toast("Cần hướng dẫn sửa / an instruction is required"); return; }
+      await api(`/api/quotes/${selected}/revise`, { method: "POST", body: JSON.stringify({ instruction: text }) });
       toast("Đang sửa / revising");
     }
     $("dlg").close();
+    signature = "";
     await loadQueue();
     await loadDetail();
   } catch (exc) {
-    if (exc.status === 409) {  // FR-083: server refused without a waiver
+    if (exc.status === 409) {  // FR-083: the server refused the approval without a waiver
       toast("Bị chặn / blocked: " + (exc.details?.flags || []).join(", "));
     } else {
       toast(exc.message);
@@ -396,10 +742,33 @@ async function submitAction(kind, blocking) {
   }
 }
 
-$("env").textContent = API_BASE;
+// ---- keyboard. A review queue is a keyboard tool, or it is a chore. ----
+document.addEventListener("keydown", (event) => {
+  if (event.target.matches("input, textarea") || $("dlg").open || $("help").open) return;
+  if (!queue.length) return;
+  const index = queue.findIndex((q) => q.quote_id === selected);
+
+  if (event.key === "j" || event.key === "k") {
+    event.preventDefault();
+    const start = index === -1 ? 0 : (event.key === "j"
+      ? Math.min(index + 1, queue.length - 1)
+      : Math.max(index - 1, 0));
+    select(queue[start].quote_id);
+    $("queue").querySelector(`li[data-id="${selected}"]`)?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+
+  const action = { a: "approve", r: "reject", e: "revise" }[event.key];
+  if (!action || !selected) return;
+  const item = queue.find((q) => q.quote_id === selected);
+  if (!item || item.status !== "pending_approval") return;
+  event.preventDefault();
+  openDialog(action);
+});
+
 renderFilters();
 loadQueue();
-setInterval(() => { loadQueue(); if (selected) loadDetail(); }, 5000);  // FR-100: poll every 5s
+setInterval(() => { loadQueue(); if (selected) loadDetail(); }, 5000);  // FR-100
 </script>
 </body>
 </html>

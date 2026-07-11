@@ -1,0 +1,13 @@
+{
+  "source": "https://github.com/cyberskill-official/design-system",
+  "design_system_version": "1.5.1-artifact.0",
+  "commit": "7231866de7df54c3950964711c67604235afd641",
+  "vendored_at": "2026-07-11",
+  "why": "The dashboard is one self-contained page served by the API, so the design system is vendored verbatim and inlined at serve time. These files are COPIES - never hand-edit them. To update, re-copy from upstream and refresh this manifest; the sha256 below is what tests check, so an edit here fails loudly instead of quietly drifting the brand.",
+  "sha256": {
+    "cs-glass.css": "73f5401ee7cba80b51d415a15faab665a6bc59e254ca8c558e30bb3cdc577788",
+    "cs-logo-mark.svg": "f1cb23302d4325f9cda48103bde3efdcac67556c656a092052a2d24095e12e5c",
+    "cs-styles.css": "5df8993bf4a89cd6b68aa3bc6188046bcf5153747e90d56f64abc736dbaa9370",
+    "cs-tokens.css": "c58bee02cd0ef9923d55e04f6cfa6818516f24d5aad5836f4137426f7892f5ef"
+  }
+}
