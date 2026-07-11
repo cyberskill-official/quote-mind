@@ -83,6 +83,17 @@ This is inherent to building on a hosted model and worth stating plainly rather 
 best number we ever saw. The **baseline moved too** — it is measured in the same run, against the
 same models, which is the entire point of measuring it at all. The gap is the claim, and the gap held.
 
+## The public dashboard carries the demo credential, deliberately
+
+View the source of `/` and you will find `DEMO_API_TOKEN` in the page. This is not an oversight —
+the docstring on the route (`api/app.py::dashboard`) says it out loud. A public demo page must carry
+a credential to be usable at all: the alternative is a login screen in front of judges, guarding
+seeded demo data. It is bounded three ways: every write path still stops at the human approval gate,
+nothing dispatches without a person clicking approve; the token is a single rotatable value (it has
+already been rotated once); and the data behind it is the seeded catalog and demo quotes, not
+customer data. A production tenant puts this behind the identity provider the spec's section 3.2
+calls for — that is a deployment decision, not an architecture change.
+
 ## Artifacts are private, and stay private
 
 OSS **Block Public Access** is an account-level setting on this account. The artifacts bucket holds

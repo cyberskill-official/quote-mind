@@ -22,7 +22,7 @@ FR-031,P1,EP-03,feat/vision-ocr,src/quotemind/parsing/raster.py,tests/unit/test_
 FR-032,P1,EP-03,feat/vision-ocr,src/quotemind/agents/vision.py,tests/unit/test_vision.py,implemented (qwen-vl-ocr; 5/5 scanned cases quoted)
 FR-033,P1,EP-03,feat/file-intake,src/quotemind/agents/vision.py,tests/unit/test_file_intake.py,implemented (a photographed RFQ is a one-page scan, same vision reader)
 FR-034,P0,EP-03,feat/FR-033-excel-parser,src/quotemind/parsing/validate.py,tests/unit/test_excel_parser.py,implemented
-FR-035,P1,EP-03,feat/agents,src/quotemind/agents/parser.py,tests/unit/test_parser.py,implemented (language_per_line on RFQExtraction)
+FR-035,P1,EP-03,feat/agents,src/quotemind/agents/parser.py,tests/unit/test_models_roundtrip.py + tests/unit/test_excel_parser.py,implemented (language_per_line on RFQExtraction)
 FR-040,P0,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented; live vector+text search verified (meta_data_to_get fix)
 FR-041,P0,EP-04,feat/agent-layer,src/quotemind/memory/embedding.py,tests/unit/test_embedding.py,implemented (live-verified)
 FR-042,P0,EP-04,feat/agent-layer,src/quotemind/tools/matching.py + src/quotemind/agents/matcher.py,tests/unit/test_matching.py + test_agents.py,implemented (fusion+banding+LLM select; live-verified)
@@ -30,7 +30,7 @@ FR-043,P0,EP-04,fix/live-audit,src/quotemind/orchestrator.py,tests/unit/test_cus
 FR-044,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py,tests/unit/test_recall.py,implemented (LIVE: episode written on approve/reject; bilingual LLM summary)
 FR-045,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py + orchestrator.py,tests/unit/test_recall.py,implemented (LIVE: top-3 re-ranked by effective score, 1200-token budget, memory ids in the trace; memories inform the reviewer - never the price - see recall.py)
 FR-046,P0,EP-04,feat/memory-planner,src/quotemind/memory/episodic.py,tests/unit/test_recall.py,implemented (importance + decay now actually drive retrieval)
-FR-047,P0,EP-04,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_memory.py,implemented (MemoryStore Session per quote)
+FR-047,P0,EP-04,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented (MemoryStore Session per quote)
 FR-049,P1,EP-04,feat/EP-04-forgetting,src/quotemind/memory/budget.py,tests/unit/test_budget.py,implemented
 FR-050,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py,tests/unit/test_pricing.py,implemented
 FR-051,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (unit_price),tests/unit/test_pricing.py,implemented
@@ -73,7 +73,7 @@ FR-123,P0,EP-12,feat/eval-harness,src/quotemind/eval_/cassette.py + deploy/recor
 FR-124,P1,EP-12,feat/roadmap-finish,tests/golden/test_golden_pdf.py + quote/render/fonts/,tests/unit/test_roadmap_finish.py,"implemented (Be Vietnam Pro Regular/SemiBold/Bold + OFL.txt bundled in the wheel; WeasyPrint no longer falls back)"
 FR-130,P0,EP-13,feat/agent-layer,src/quotemind/orchestrator.py,tests/unit/test_orchestrator.py,implemented (live end-to-end)
 FR-131,P0,EP-05,feat/memory-planner,src/quotemind/agents/planner.py,tests/unit/test_planner.py,implemented (LIVE: AgentScope PlanNotebook; subtasks closed by the pipeline that ran; trivial quotes skip with a logged reason)
-FR-132,P0,EP-05,feat/agents,src/quotemind/tools/,tests/unit/test_tools.py,implemented (one Toolkit per agent)
+FR-132,P0,EP-05,feat/agents,src/quotemind/tools/,tests/unit/test_agents.py,implemented (one Toolkit per agent - build_agent constructs a fresh Toolkit)
 DM-01..14,P0,PR-2,feat/PR-2-models,src/quotemind/models/ (all aggregates),tests/unit/test_models_roundtrip.py,implemented
 DM-12,P0,PR-2,feat/PR-2-models,src/quotemind/models/audit.py (hash chain),tests/unit/test_audit_chain.py,implemented
 FR-036,P2,-,-,-,-,not implemented (P2: multi-RFQ splitting; one document = one quote in the demo)
@@ -84,7 +84,7 @@ FR-065,P1,EP-09,feat/roadmap-finish,src/quotemind/seed/sop.py + quote/render/quo
 FR-073,P1,EP-07,feat/roadmap-finish,src/quotemind/agents/reviewer.py,tests/unit/test_roadmap_finish.py,"implemented (bilingual review note, 80-word cap enforced in code; written AFTER the verdict, from it, and cannot change it)"
 FR-074,P2,-,-,-,-,not implemented (P2: auto-fix loop; every defect goes to the human instead - a deliberate choice, not a gap)
 FR-104,P1,EP-10,feat/roadmap-finish,src/quotemind/eval_/report.py + api/app.py GET /eval,tests/unit/test_roadmap_finish.py,"implemented (LIVE and public at /eval: metric table + per-case grid, rendered from a committed snapshot so the site and the submission cannot drift)"
-FR-133,P0,EP-03,feat/agent-layer,src/quotemind/agents/parser.py + matcher.py + eval_/baseline.py,tests/unit/test_parser.py + test_agents.py,"partial (structured_model= at the text parser, the matcher and the baseline; vision hand-parses JSON because qwen-vl-ocr is an OCR model, not a tool-calling chat model - see agents/vision.py VISION_SYS)"
+FR-133,P0,EP-03,feat/agent-layer,src/quotemind/agents/parser.py + matcher.py + eval_/baseline.py,tests/unit/test_agents.py + tests/unit/test_roadmap_finish.py,"partial (structured_model= at the text parser, the matcher and the baseline; vision hand-parses JSON because qwen-vl-ocr is an OCR model, not a tool-calling chat model - see agents/vision.py VISION_SYS)"
 FR-134,P1,EP-13,feat/roadmap-finish,src/quotemind/api/app.py + service.py (cancel),tests/unit/test_roadmap_finish.py,"partial by design (POST /cancel ends a quote at the gate as human.cancel - distinct from a rejection on the audit trail and NOT remembered as a pricing signal. An in-flight run returns 409: FC background tasks are not interruptible and the frozen status enum has no cancelled state - see the route docstring)"
 E.1,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified
 E.2,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (live DashScope)

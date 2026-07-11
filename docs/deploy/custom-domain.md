@@ -116,3 +116,21 @@ stopgaps are:
   and the model probe, and every API route works with `curl`. Worth one line in the README.
 
 Neither is a substitute for a link that opens. **Add the CNAME.**
+
+## Renewal (the certificate expires 09 Oct 2026)
+
+Let's Encrypt certificates live 90 days. Renewal is the same command as issuance, because the ACME
+challenge is served from OSS and needs no redeploy:
+
+```bash
+source .env
+python deploy/issue_cert.py --domain quotemind.cyberskill.world --email info@cyberskill.world
+```
+
+That orders a fresh certificate, proves the domain over HTTP-01, waits until it can fetch its own
+challenge back through the live site, then rebinds Function Compute with the new cert. Two minutes,
+no downtime, no DNS changes. Run it any time in the 30 days before expiry. If it ever misbehaves,
+add `--staging` first - the staging CA has no meaningful rate limits and fails identically.
+
+The daily `health` workflow will go red if the certificate actually lapses (strict TLS against a
+pinned CA bundle), so an expired cert cannot go unnoticed.

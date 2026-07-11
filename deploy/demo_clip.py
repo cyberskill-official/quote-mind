@@ -78,6 +78,10 @@ def shot(
     im = Image.new("RGB", (W, H), UMBER)
     d = ImageDraw.Draw(im)
 
+    # Every proof frame names where it was taken. The clip used to be shot against a local
+    # uvicorn, which proved nothing a judge could check; these are the live site.
+    kicker = f"{kicker}  \u00b7  quotemind.cyberskill.world"
+
     src = Image.open(SHOTS / name).convert("RGB")
     if crop:
         src = src.crop(crop)
@@ -186,7 +190,7 @@ BEATS: list[tuple[Image.Image, float]] = [
         shot(
             "07_eval_table.png",
             "we measured it",
-            "97% price-exact. The single agent: 40%.",
+            "93% price-exact. The single agent: 40%.",
             "Same models, same catalogue, same 30 labelled RFQs. The only difference is the "
             "architecture.",
         ),
@@ -205,7 +209,7 @@ BEATS: list[tuple[Image.Image, float]] = [
     (
         card(
             "deployed on Alibaba Cloud",
-            "$0.011 a quote.",
+            "$0.013 a quote.",
             "Qwen on DashScope · AgentScope · Function Compute · Tablestore for state and agent "
             "memory · OSS. Live, and every number on it is measured.",
         ),

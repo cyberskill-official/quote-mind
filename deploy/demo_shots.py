@@ -6,9 +6,9 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-URL = "http://127.0.0.1:8099"
+URL = "https://quotemind.cyberskill.world"
 OUT = Path("/tmp/qmvid/shots")
-QID = "01KX967Z4TMHVKYSBW7D15C04V"
+QID = "01KX9GKB10DGD1CRHERDR84CZN"
 W, H = 1680, 1400
 
 

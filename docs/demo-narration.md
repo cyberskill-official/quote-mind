@@ -66,7 +66,7 @@ are generous on purpose.
 > And we measured whether any of this matters.
 >
 > Same models. Same catalogue. Same thirty labelled RFQs. Against a single agent asked to produce
-> the whole quote: **ninety-seven percent price-exact, against forty.**
+> the whole quote: **ninety-three percent price-exact, against forty.**
 
 ## 1:19–1:28 · The grid
 
@@ -79,7 +79,7 @@ are generous on purpose.
 
 > Qwen on DashScope. AgentScope. Function Compute, Tablestore, OSS — deployed and live.
 >
-> One cent a quote.
+> A cent and a quarter a quote.
 
 ---
 
