@@ -1,4 +1,4 @@
-"""FR-080/081/083/084/094: the persisted lifecycle, the approval gate, and the audit chain."""
+"""TASK-080/081/083/084/094: the persisted lifecycle, the approval gate, and the audit chain."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ class _Settings:
     directmail_smtp_port = 465
     directmail_user = None
     directmail_password = None
-    trace_content = False  # FR-111: prompt bodies stay out of the trace by default
+    trace_content = False  # TASK-111: prompt bodies stay out of the trace by default
 
 
 class FakeStore:
@@ -193,7 +193,7 @@ def _service(store: FakeStore, *, thin_margin: bool = False, artifacts: Any = No
     async def revision_pipeline(
         extraction: Any, instruction: str, *, sequence: int, **_kwargs: Any
     ) -> PipelineResult:
-        # FR-064: the revision amends the *extraction*. Taking a str here is the bug - for a quote
+        # TASK-064: the revision amends the *extraction*. Taking a str here is the bug - for a quote
         # that arrived as a file there is no source text to re-read, so the lines only survive if
         # they are handed over as data.
         assert isinstance(extraction, RFQExtraction), (
@@ -223,7 +223,7 @@ def test_submit_is_idempotent() -> None:
     first, created_first = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
     second, created_second = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
 
-    assert created_first is True and created_second is False  # FR-024
+    assert created_first is True and created_second is False  # TASK-024
     assert first.quote_id == second.quote_id
     assert first.quote_number == "QM-2026-0001"
 
@@ -241,7 +241,7 @@ def test_pipeline_walks_the_states_and_chains_the_audit() -> None:
     names = [event.event for event in events]
     assert names[0] == "intake.received"
     assert "pipeline.parsing" in names and names[-1] == "pipeline.pending_approval"
-    assert verify_chain(events) is True  # FR-094 tamper-evident chain
+    assert verify_chain(events) is True  # TASK-094 tamper-evident chain
 
 
 def test_approve_requires_a_waiver_for_blocking_flags() -> None:
@@ -250,7 +250,7 @@ def test_approve_requires_a_waiver_for_blocking_flags() -> None:
     record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
     final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
 
-    # A policy flag still reaches the human (FR-071/083) - it is not a hard critic failure.
+    # A policy flag still reaches the human (TASK-071/083) - it is not a hard critic failure.
     assert final.status == Status.PENDING_APPROVAL
     assert "MARGIN_BELOW_FLOOR" in final.flags
 
@@ -263,7 +263,7 @@ def test_approve_requires_a_waiver_for_blocking_flags() -> None:
     )
     assert approved.status == Status.APPROVED
     waiver = [e for e in store.list_audit(final.quote_id) if e.event == "human.approved"][0]
-    assert waiver.payload_json["waived_flags"] == ["MARGIN_BELOW_FLOOR"]  # FR-083: audited
+    assert waiver.payload_json["waived_flags"] == ["MARGIN_BELOW_FLOOR"]  # TASK-083: audited
     assert waiver.actor.kind == "human"
 
 
@@ -280,7 +280,7 @@ def test_reject_and_illegal_transition() -> None:
     service = _service(store)
     record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
 
-    # received -> approved is not a legal edge (FR-080)
+    # received -> approved is not a legal edge (TASK-080)
     with pytest.raises(IllegalTransitionError):
         service.approve(record.quote_id)
 
@@ -299,10 +299,10 @@ def test_dispatch_renders_stores_and_sends_then_marks_sent() -> None:
     sent = service.dispatch(final.quote_id)
     assert sent.status == Status.SENT
 
-    # FR-091: a real PDF landed privately under quotes/{quote_number}.pdf
+    # TASK-091: a real PDF landed privately under quotes/{quote_number}.pdf
     key = f"quotes/{final.quote_number}.pdf"
     assert artifacts.pdfs[key].startswith(b"%PDF-")
-    # FR-093: the stub transport wrote the same message to the outbox
+    # TASK-093: the stub transport wrote the same message to the outbox
     assert f"outbox/{final.quote_number}.eml" in artifacts.emls
 
     event = [e for e in store.list_audit(final.quote_id) if e.event == "dispatch.sent_stub"][0]
@@ -357,7 +357,7 @@ def test_revise_reruns_and_counts_revisions() -> None:
     assert "human.revise" in names and names[-1] == "revision.pending_approval"
 
 
-# --- FR-111: the trace is persisted alongside the quote, and never load-bearing ---
+# --- TASK-111: the trace is persisted alongside the quote, and never load-bearing ---
 
 
 def test_the_trace_is_written_to_oss_and_stored_on_the_quote() -> None:
@@ -367,14 +367,14 @@ def test_the_trace_is_written_to_oss_and_stored_on_the_quote() -> None:
     record, _ = service.submit(text="Cần 2 laptop Dell", on_date=_ON)
     final = asyncio.run(service.process(record, "Cần 2 laptop Dell", on_date=_ON))
 
-    assert f"traces/{final.quote_id}.json" in artifacts.traces  # FR-111 key layout
+    assert f"traces/{final.quote_id}.json" in artifacts.traces  # TASK-111 key layout
 
     document = service.trace(final.quote_id)  # API-05
     assert document["quote_id"] == final.quote_id
     assert [step["seq"] for step in document["steps"]] == [1, 2]
     assert document["steps"][0]["model"] == MODEL_PARSER_TEXT
     assert document["total_tokens_in"] == 1200
-    assert Decimal(document["total_cost_usd"]) > 0  # FR-112: real tokens, priced
+    assert Decimal(document["total_cost_usd"]) > 0  # TASK-112: real tokens, priced
     assert document["contents"] == []  # TRACE_CONTENT is off, so no prompt bodies
 
 

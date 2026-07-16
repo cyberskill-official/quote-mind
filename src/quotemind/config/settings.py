@@ -1,7 +1,7 @@
 """Runtime configuration (QM-SPEC-001 section 4.7).
 
 Loaded exclusively from environment variables; the API function fails fast at cold start
-if a required (P0) variable is missing (FR-002).
+if a required (P0) variable is missing (TASK-002).
 """
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     oss_bucket_inbox: str = "quotemind-inbox"
     oss_bucket_artifacts: str = "quotemind-artifacts"
 
-    # Stub transport is the demo default (FR-093); set MAIL_TRANSPORT=smtp for real mail.
+    # Stub transport is the demo default (TASK-093); set MAIL_TRANSPORT=smtp for real mail.
     mail_transport: Literal["stub", "smtp"] = "stub"
     directmail_smtp_host: str = "smtpdm-ap-southeast-1.aliyun.com"
     directmail_smtp_port: int = 465
@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     margin_floor_pct: int = 5
     quote_validity_days: int = 14
 
-    # FR-111: prompt/response bodies are excluded from the trace unless this is switched on.
+    # TASK-111: prompt/response bodies are excluded from the trace unless this is switched on.
     trace_content: bool = False
     otel_semconv_stability_opt_in: str = "gen_ai_latest_experimental"
     qm_env: Literal["local", "fc"] = "local"
@@ -94,7 +94,7 @@ def _missing_env_vars(exc: ValidationError) -> list[str]:
 
 
 def require_settings() -> Settings:
-    """Construct Settings, or exit with a single-line actionable error (FR-002 AC)."""
+    """Construct Settings, or exit with a single-line actionable error (TASK-002 AC)."""
     try:
         return Settings()  # type: ignore[call-arg]  # values come from the environment
     except ValidationError as exc:

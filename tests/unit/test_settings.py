@@ -1,4 +1,4 @@
-"""FR-002: config loads from env and fails fast, naming a missing required variable."""
+"""TASK-002: config loads from env and fails fast, naming a missing required variable."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def test_settings_load_with_env() -> None:
     settings = get_settings()
     assert settings.dashscope_api_key == "sk-test-dummy"
     assert settings.oss_bucket_inbox == "quotemind-inbox"  # frozen default (section 12.6)
-    assert settings.mail_transport == "stub"  # FR-093 demo default
+    assert settings.mail_transport == "stub"  # TASK-093 demo default
 
 
 def test_missing_required_var_exits_naming_it(

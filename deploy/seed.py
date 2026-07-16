@@ -1,4 +1,4 @@
-"""FR-011 seed: load the demo catalog and customers into the Tablestore KnowledgeStore.
+"""TASK-011 seed: load the demo catalog and customers into the Tablestore KnowledgeStore.
 
     python deploy/seed.py
 
@@ -33,7 +33,7 @@ def main() -> None:
         facade.put_customer(customer)
     print(f"seed: {len(CUSTOMERS)} customers written")
 
-    # FR-048: the SOPs are indexed on the same text search reads, exactly as the catalog is - the
+    # TASK-048: the SOPs are indexed on the same text search reads, exactly as the catalog is - the
     # embedding and the indexed string must be the same string, or retrieval and seeding drift.
     sop_vectors = embed_texts([f"{sop.text.vi} {sop.text.en}" for sop in SOPS], settings)
     for sop, vector in zip(SOPS, sop_vectors, strict=True):

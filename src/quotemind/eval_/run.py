@@ -1,4 +1,4 @@
-"""FR-121/122: the metrics runner.
+"""TASK-121/122: the metrics runner.
 
     python -m quotemind.eval_.run --mode pipeline
     python -m quotemind.eval_.run --mode baseline
@@ -121,7 +121,7 @@ async def _run_pipeline_case(
         "seller_block": SELLER_BLOCK,
         "sequence": sequence,
         # A spreadsheet or PDF RFQ carries no sender inside the document - in the real world it
-        # arrives attached to an email, and intake passes that envelope through (FR-043). Feeding
+        # arrives attached to an email, and intake passes that envelope through (TASK-043). Feeding
         # the raw customer_id as a "hint" was wrong: resolve_customer matches on *name*, so file
         # cases silently fell through to END_CUSTOMER list pricing. The eval now supplies the
         # sender exactly as intake would.
@@ -179,7 +179,7 @@ async def run_case(
             )
         else:
             tracer = Tracer(quote_id=case.case_id)
-            # model= is what prices the step (FR-112); without it the baseline would report $0 and
+            # model= is what prices the step (TASK-112); without it the baseline would report $0 and
             # the cost comparison would be a lie in the pipeline's favour.
             with tracer.step("SingleAgent", "quote", model=MODEL_PLANNER) as step:
                 quote = await baseline_quote(
@@ -290,7 +290,7 @@ def write_summary(reports: dict[str, dict[str, Any]], stamp: str) -> Path:
         price_delta = (pipeline["price_exactness"] - baseline["price_exactness"]) * 100
         lines += [
             "",
-            "## Headline (FR-122)",
+            "## Headline (TASK-122)",
             "",
             f"**Task success: pipeline {pipeline['task_success']:.0%} vs "
             f"baseline {baseline['task_success']:.0%} — a {delta:+.0f} point delta.**",
@@ -328,7 +328,7 @@ async def main_async(mode: str, limit: int | None) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="QuoteMind eval runner (FR-121/122)")
+    parser = argparse.ArgumentParser(description="QuoteMind eval runner (TASK-121/122)")
     parser.add_argument("--mode", choices=["pipeline", "baseline", "both"], default="pipeline")
     parser.add_argument("--limit", type=int, default=None, help="run only the first N cases")
     args = parser.parse_args()

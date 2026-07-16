@@ -1,4 +1,4 @@
-"""Function Compute entry points (FR-003).
+"""Function Compute entry points (TASK-003).
 
 How FC 3.0 actually invokes an HTTP function - established by logging the arguments in production
 rather than by reading documentation, after three wrong guesses cost three deploys:
@@ -25,7 +25,7 @@ The WSGI branch is kept: if FC ever *does* hand us `(environ, start_response)`, 
 recognised by the second argument being callable, and passed straight through.
 
 `initialize` is the FC initializer: it runs once per cold start, before any request is served, and
-performs the FR-012 model-availability probe.
+performs the TASK-012 model-availability probe.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ from ..obs.log import configure_logging
 from .app import app
 from .app import initialize as _initialize
 
-# FC collects stdout, so JSON lines to stdout is the whole logging story (FR-008).
+# FC collects stdout, so JSON lines to stdout is the whole logging story (TASK-008).
 configure_logging()
 
 # a2wsgi types its argument against the raw ASGI protocol; FastAPI satisfies it structurally but

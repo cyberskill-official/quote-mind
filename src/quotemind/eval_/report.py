@@ -1,4 +1,4 @@
-"""FR-104: the eval report page - the headline claim, rendered from the run that produced it.
+"""TASK-104: the eval report page - the headline claim, rendered from the run that produced it.
 
 The submission says the pipeline gets the money right on 93% of quotes and a single agent gets it
 right on 40%. That is the whole argument of this project, and until now the only way to check it was
@@ -143,7 +143,7 @@ def _grid(data: dict[str, Any]) -> str:
 
 
 def render_report_html() -> str:
-    """FR-104: the whole page, self-contained, on the design system the dashboard uses."""
+    """TASK-104: the whole page, self-contained, on the design system the dashboard uses."""
     data = load()
     if data is None:
         body = (

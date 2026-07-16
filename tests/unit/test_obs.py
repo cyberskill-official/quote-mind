@@ -1,4 +1,4 @@
-"""EP-11: cost accounting (FR-112), the reasoning trace (FR-111), and error taxonomy (FR-113)."""
+"""EP-11: cost accounting (TASK-112), the reasoning trace (TASK-111), and error taxonomy (TASK-113)."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from quotemind.obs.otel import (
 )
 from quotemind.obs.trace import Tracer
 
-# --- FR-112: cost ---
+# --- TASK-112: cost ---
 
 
 def test_prices_cover_every_frozen_model() -> None:
@@ -56,7 +56,7 @@ def test_cost_is_decimal_not_float() -> None:
     assert isinstance(cost_usd(MODEL_PLANNER, 1234, 567), Decimal)
 
 
-# --- FR-110: OTel GenAI conventions ---
+# --- TASK-110: OTel GenAI conventions ---
 
 
 def test_span_names_follow_the_genai_convention() -> None:
@@ -84,7 +84,7 @@ def test_genai_span_still_collects_usage_without_an_exporter() -> None:
     assert (usage.tokens_in, usage.tokens_out) == (10, 4)
 
 
-# --- FR-111: the trace document ---
+# --- TASK-111: the trace document ---
 
 
 def test_tracer_records_steps_with_cost_and_totals() -> None:
@@ -119,7 +119,7 @@ def test_trace_omits_prompt_bodies_unless_content_is_opted_in() -> None:
     off = Tracer(quote_id="Q1")
     with off.step("DocumentParser", "parse", model=MODEL_PARSER_TEXT) as step:
         step.content(prompt="Chào anh, báo giá giúp em", response='{"lines": []}')
-    assert off.document().contents == []  # FR-111: customer PII stays out of the trace by default
+    assert off.document().contents == []  # TASK-111: customer PII stays out of the trace by default
 
     on = Tracer(quote_id="Q1", include_content=True)
     with on.step("DocumentParser", "parse", model=MODEL_PARSER_TEXT) as step:
@@ -148,7 +148,7 @@ def test_trace_round_trips_as_json() -> None:
     assert '"model":"qwen-plus"' in raw
 
 
-# --- FR-113: error taxonomy and retry ---
+# --- TASK-113: error taxonomy and retry ---
 
 
 def test_transient_failures_are_the_ones_worth_retrying() -> None:
@@ -183,7 +183,7 @@ def test_retry_backs_off_then_succeeds() -> None:
 
     assert asyncio.run(retry_model_call(flaky, sleep=fake_sleep)) == "ok"
     assert len(attempts) == 3
-    assert slept == list(RETRY_DELAYS)  # 1s then 4s, per FR-113
+    assert slept == list(RETRY_DELAYS)  # 1s then 4s, per TASK-113
 
 
 def test_retry_gives_up_after_the_budget() -> None:

@@ -29,7 +29,7 @@ behind it is worth **+48 points of end-to-end task success**. The numbers are in
 `qwen3-max` selects the SKU and plans, `qwen-vl-ocr` handles scans, and `text-embedding-v4` (1024
 dims) powers catalog retrieval. Model ids are frozen constants; a cold-start probe verifies each
 one and activates a documented fallback if Model Studio has retired it, reporting the substitution
-on `/health` (FR-012) rather than silently changing behaviour.
+on `/health` (TASK-012) rather than silently changing behaviour.
 
 **Function Compute 3.0** runs two functions from one codebase. `quotemind-api` serves the HTTP API
 and holds the approval gate; `quotemind-ingest` fires on an OSS object-created trigger when an RFQ
@@ -52,11 +52,11 @@ duration.
 
 ## The two gates that make it safe to automate
 
-**The validation gate (FR-034).** If the extraction is missing a quantity or has no line items, the
+**The validation gate (TASK-034).** If the extraction is missing a quantity or has no line items, the
 pipeline stops *before* matching. It does not guess. A quote with an invented quantity is worse than
 no quote.
 
-**The human gate (FR-080/083).** No quote is ever sent automatically. The pipeline runs to
+**The human gate (TASK-080/083).** No quote is ever sent automatically. The pipeline runs to
 `pending_approval` and stops - durably, in Tablestore, so a completely different process can pick it
 up. The critic's blocking flags (a margin under the floor, a recompute mismatch) cannot be approved
 away silently: approving one requires an explicit waiver, and the waiver is written verbatim into

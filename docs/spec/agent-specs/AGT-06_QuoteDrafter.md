@@ -1,6 +1,6 @@
 # AGT-06 — QuoteDrafter — Agent Behavior Specification
 
-**Document ID:** QM-AGT-06 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-06), FR-060..065, FR-045/048/049
+**Document ID:** QM-AGT-06 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-06), TASK-060..065, TASK-045/048/049
 **Implements in:** `src/quotemind/agents/drafter.py` + `src/quotemind/quote/assemble.py` · **Prompt file:** `src/quotemind/prompts/drafter.md`
 
 ---
@@ -11,7 +11,7 @@ Write the human language of the quote — bilingual notes, terms, substitution e
 
 ## 2. Division of labor with `quote/assemble.py` (critical design)
 
-Code assembles the numeric skeleton FIRST (FR-060):
+Code assembles the numeric skeleton FIRST (TASK-060):
 
 ```python
 skeleton = assemble_skeleton(priced_quote, customer, seller_block, quote_number, today)
@@ -21,7 +21,7 @@ skeleton = assemble_skeleton(priced_quote, customer, seller_block, quote_number,
 
 The drafter is then invoked with the skeleton (numbers visible, immutable) plus context, and returns ONLY the language fields via `structured_model=QuoteLanguage` (a Pydantic model mirroring just the BilingualText slots + per-line notes). Code merges language into skeleton and re-verifies the checksum — if any numeric drifted (it cannot, by construction, but defense in depth), discard and retry once, then FAILED_DRAFT.
 
-This design makes FR-060's acceptance criterion ("every numeric field equals engine output exactly") true by construction, not by prompt obedience.
+This design makes TASK-060's acceptance criterion ("every numeric field equals engine output exactly") true by construction, not by prompt obedience.
 
 ## 3. Construction (normative)
 
@@ -44,14 +44,14 @@ def build_drafter() -> ReActAgent:
 
 Generation params: temperature 0.3 (the one creative agent), top_p default.
 
-## 4. Context assembly (code, budgeted — FR-045/048/049)
+## 4. Context assembly (code, budgeted — TASK-045/048/049)
 
 Injected into the user message, in order, under the 2500-token memory budget:
 1. The numeric skeleton (rendered compactly).
 2. `MatchResult` reasons for flagged lines.
 3. Top-3 episodic memories for the customer (effective score = similarity × 0.5^(age_days/90) × importance), each rendered `[QM-2026-0007 · 2026-03-14 · approved] summary...`, hard cap 1200 tokens.
 4. Top-2 SOP snippets per needed topic (payment, delivery, warranty, validity, substitution when flags exist).
-5. Revision instruction verbatim, when present (FR-064), prefixed `HUMAN INSTRUCTION (authoritative):`.
+5. Revision instruction verbatim, when present (TASK-064), prefixed `HUMAN INSTRUCTION (authoritative):`.
 Overflow drops lowest-effective-score episodic items first, then extra SOPs, logging `memory_truncated=true`.
 
 ## 5. Tools available

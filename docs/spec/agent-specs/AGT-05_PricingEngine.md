@@ -1,6 +1,6 @@
 # AGT-05 — PricingEngine — Agent Behavior Specification
 
-**Document ID:** QM-AGT-05 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-05), FR-050..056
+**Document ID:** QM-AGT-05 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-05), TASK-050..056
 **Implements in:** `src/quotemind/pricing/engine.py`, `vat.py`, `words_vi.py`; traced wrapper in `tools/pricing_tools.py`
 
 ---
@@ -15,7 +15,7 @@ Judges and the dashboard see a uniform pipeline of agent steps. The PricingEngin
 
 ```python
 async def price_quote(quote_id: str) -> ToolResponse:
-    """Deterministic pricing of the matched quote. No LLM. FR-050..056."""
+    """Deterministic pricing of the matched quote. No LLM. TASK-050..056."""
     with agent_span("PricingEngine"):
         matches, customer, extraction = load_inputs(quote_id)
         priced = engine.price(matches, customer, extraction, settings, today=date.today())
@@ -31,7 +31,7 @@ async def price_quote(quote_id: str) -> ToolResponse:
 - Config: `MARGIN_FLOOR_PCT`, `FX_USD_VND`, `QUOTE_VALIDITY_DAYS`, optional `VAT_DEFAULT_OVERRIDE`.
 - Injected `today: date` (never wall-clock inside functions — NFR-002 determinism).
 
-## 4. Computation rules (normative, FR-051..055)
+## 4. Computation rules (normative, TASK-051..055)
 
 1. **Unit price by tier:** end_customer → `list_price_vnd`; dealer → `dealer_price_vnd`; project → `dealer_price_vnd × (1 − project_discount_pct/100)`. Missing dealer_price → list_price + flag `DEALER_PRICE_MISSING`.
 2. **Line total:** `qty × unit_price × (1 − discount_pct/100)`, `discount_pct` defaults 0 (populated on revise instructions only). All arithmetic in `Decimal`; VND amounts quantized `ROUND_HALF_UP` to 1 đồng at each line boundary.
@@ -39,7 +39,7 @@ async def price_quote(quote_id: str) -> ToolResponse:
 4. **Totals:** `subtotal = Σ line_total`; `total = subtotal + Σ vat_amount`. Assertion: recomputing from lines reproduces totals exactly (self-check inside engine).
 5. **Margin:** per line `(sell − cost×qty)/sell × 100` and blended; any line or blended < floor → `MARGIN_BELOW_FLOOR` (blocking).
 6. **USD reference:** when customer prefers USD or language is en: `usd = vnd / FX_USD_VND`, ROUND_HALF_UP to cent, annotated "reference only, invoice in VND", rate + as-of date carried into the quote footer.
-7. **Amount in words (words_vi.py):** grand total → formal Vietnamese, e.g. `1.234.000 → "Một triệu hai trăm ba mươi bốn nghìn đồng"`. Handles: mốt/tư/lăm variants, linh/lẻ, nghìn/triệu/tỷ groups, zero-group elision, và-insertion rules; ends with "đồng" (never "chẵn" in v1). Table-driven with the 30-case suite from FR-055.
+7. **Amount in words (words_vi.py):** grand total → formal Vietnamese, e.g. `1.234.000 → "Một triệu hai trăm ba mươi bốn nghìn đồng"`. Handles: mốt/tư/lăm variants, linh/lẻ, nghìn/triệu/tỷ groups, zero-group elision, và-insertion rules; ends with "đồng" (never "chẵn" in v1). Table-driven with the 30-case suite from TASK-055.
 8. **Number rendering:** VND `1.234.567 đ`; USD `$1,234.56`; dates `dd/mm/yyyy`.
 
 ## 5. Output contract — PricedQuote (feeds DM-10)

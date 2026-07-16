@@ -34,8 +34,8 @@ quotemind/
 │       ├── ci.yml                           lint → type → unit → smoke-eval → diagram render
 │       └── deploy.yml                       manual-dispatch s deploy (needs secrets)
 ├── deploy/
-│   ├── s.yaml                             ★ FC 3.0 descriptor: both functions (FR-003)
-│   ├── provision.py                         idempotent buckets/tables/indexes (FR-004)
+│   ├── s.yaml                             ★ FC 3.0 descriptor: both functions (TASK-003)
+│   ├── provision.py                         idempotent buckets/tables/indexes (TASK-004)
 │   ├── layer/
 │   │   └── build_weasyprint_layer.sh        builds Pango/Cairo layer zip for FC
 │   └── Dockerfile.pdf                       fallback custom-container image (risk #3)
@@ -51,17 +51,17 @@ quotemind/
 │   ├── submission-description.md            artifact 6 (SUB-05)
 │   ├── privacy.md                           PDPL mapping (NFR-007)
 │   ├── verification-log.md                  Appendix E results, version pins record
-│   ├── traceability.csv                   ⚙ FR→test map (P1)
+│   ├── traceability.csv                   ⚙ task→test map (P1)
 │   └── blog/
 │       └── building-quotemind.md            SUB-07 draft
 ├── src/
 │   └── quotemind/
 │       ├── __init__.py                      __version__ single source
 │       ├── config/
-│       │   ├── settings.py                ★ pydantic-settings; fail-fast on missing P0 vars (FR-002)
+│       │   ├── settings.py                ★ pydantic-settings; fail-fast on missing P0 vars (TASK-002)
 │       │   ├── models.py                  ★ MODEL_* constants + FALLBACKS dict (§4.6)
 │       │   ├── seller.py                    demo seller identity block (Appendix A.6)
-│       │   └── model_prices.yaml          ★ price table with as_of date (FR-112)
+│       │   └── model_prices.yaml          ★ price table with as_of date (TASK-112)
 │       ├── models/                        ★ DM-01..14, one file per aggregate
 │       │   ├── __init__.py                  re-exports all public models
 │       │   ├── common.py                    BilingualText, Money helpers, ULID, enums
@@ -77,22 +77,22 @@ quotemind/
 │       │   ├── eval.py                      DM-13
 │       │   └── trace.py                     DM-14
 │       ├── pricing/
-│       │   ├── engine.py                  ★ pure functions (FR-050..054)
-│       │   ├── vat.py                       VAT table + policy note (FR-052, App. B)
-│       │   └── words_vi.py                  bằng chữ converter (FR-055)
+│       │   ├── engine.py                  ★ pure functions (TASK-050..054)
+│       │   ├── vat.py                       VAT table + policy note (TASK-052, App. B)
+│       │   └── words_vi.py                  bằng chữ converter (TASK-055)
 │       ├── parsing/
 │       │   ├── router.py                    doc_type → parser dispatch
-│       │   ├── text.py                      qwen-plus structured extraction (FR-030)
-│       │   ├── vision.py                    page-image → qwen-vl-ocr (FR-032)
-│       │   ├── excel.py                     openpyxl deterministic (FR-033)
-│       │   └── raster.py                    pypdfium2 rasterizer (FR-031)
+│       │   ├── text.py                      qwen-plus structured extraction (TASK-030)
+│       │   ├── vision.py                    page-image → qwen-vl-ocr (TASK-032)
+│       │   ├── excel.py                     openpyxl deterministic (TASK-033)
+│       │   └── raster.py                    pypdfium2 rasterizer (TASK-031)
 │       ├── memory/
 │       │   ├── store.py                   ★ THE adapter over tablestore-for-agent-memory
-│       │   ├── episodic.py                  write/retrieve with importance×decay (FR-044..046)
-│       │   ├── gc.py                        forgetting + compaction CLI (FR-046)
-│       │   └── budget.py                    2500-token context guard (FR-049)
+│       │   ├── episodic.py                  write/retrieve with importance×decay (TASK-044..046)
+│       │   ├── gc.py                        forgetting + compaction CLI (TASK-046)
+│       │   └── budget.py                    2500-token context guard (TASK-049)
 │       ├── tools/
-│       │   ├── registry.py                  build_toolkit(agent_name) factory (FR-132)
+│       │   ├── registry.py                  build_toolkit(agent_name) factory (TASK-132)
 │       │   ├── catalog_tools.py             vector/fts/get_product (wraps MCP client)
 │       │   ├── memory_tools.py              get_episodic, get_sop
 │       │   ├── pricing_tools.py             price_quote, recompute_quote
@@ -109,29 +109,29 @@ quotemind/
 │       │   ├── orchestrator.md · intake.md · parser_text.md · parser_vision.md
 │       │   ├── matcher.md · drafter.md · critic.md · dispatch_email.md
 │       ├── quote/
-│       │   ├── assemble.py                  code-side numeric injection + checksum (FR-060)
-│       │   ├── numbering.py               ★ QM-YYYY-NNNN atomic counter (FR-062)
+│       │   ├── assemble.py                  code-side numeric injection + checksum (TASK-060)
+│       │   ├── numbering.py               ★ QM-YYYY-NNNN atomic counter (TASK-062)
 │       │   └── render/
 │       │       ├── template_quote.html.j2   Appendix C layout
 │       │       ├── quote.css                print CSS, CDS tokens
 │       │       └── fonts/                   BeVietnamPro-{Regular,SemiBold,Bold}.ttf (OFL)
-│       ├── orchestrator.py                ★ run_quote(quote_id) single entry (FR-130/131)
+│       ├── orchestrator.py                ★ run_quote(quote_id) single entry (TASK-130/131)
 │       ├── api/
 │       │   ├── app.py                       FastAPI app, routes API-01..13
-│       │   ├── auth.py                      Bearer middleware (FR-010)
+│       │   ├── auth.py                      Bearer middleware (TASK-010)
 │       │   └── handlers_fc.py               FC HTTP + OSS-event shims → app / run_quote
 │       ├── cloud/
-│       │   ├── alibaba_proof.py           ★ deployment proof module (FR-005, SUB-02)
-│       │   ├── oss.py                       V4 auth, put/get, presign slash_safe (FR-091)
+│       │   ├── alibaba_proof.py           ★ deployment proof module (TASK-005, SUB-02)
+│       │   ├── oss.py                       V4 auth, put/get, presign slash_safe (TASK-091)
 │       │   ├── tablestore.py                OTSClient factory + qm_* plain tables
-│       │   └── mail.py                      DirectMail SMTP + stub transport (FR-092/093)
+│       │   └── mail.py                      DirectMail SMTP + stub transport (TASK-092/093)
 │       ├── obs/
-│       │   ├── otel.py                      tracer setup, GenAI span helpers (FR-110)
-│       │   ├── trace.py                     TraceStep collector → OSS trace.json (FR-111)
-│       │   └── cost.py                      token×price accounting (FR-112)
+│       │   ├── otel.py                      tracer setup, GenAI span helpers (TASK-110)
+│       │   ├── trace.py                     TraceStep collector → OSS trace.json (TASK-111)
+│       │   └── cost.py                      token×price accounting (TASK-112)
 │       ├── eval_/                            (trailing underscore: avoid stdlib-ish clash)
-│       │   ├── run.py                       pipeline|baseline runner (FR-121)
-│       │   ├── baseline.py                  monolithic single agent (FR-122)
+│       │   ├── run.py                       pipeline|baseline runner (TASK-121)
+│       │   ├── baseline.py                  monolithic single agent (TASK-122)
 │       │   ├── metrics.py                   F1, accuracy, success, latency, cost
 │       │   └── judge_language.py            EV-06 rubric judge
 │       └── seed/
@@ -150,8 +150,8 @@ quotemind/
 └── tests/
     ├── unit/        pricing, words_vi, state machine, audit chain, formatters, budget
     ├── contract/    schema round-trips, OpenAPI conformance
-    ├── integration/ 5 cassette pipeline cases (FR-123), memory adapter live-optional
-    └── golden/      quote_golden.png + pixel-diff test (FR-124)
+    ├── integration/ 5 cassette pipeline cases (TASK-123), memory adapter live-optional
+    └── golden/      quote_golden.png + pixel-diff test (TASK-124)
 ```
 
 ## 4. Module contracts (what each package exports and may import)
@@ -271,8 +271,8 @@ resources:
 
 - Python: `snake_case` modules/functions, `PascalCase` Pydantic models matching DM names exactly; async tool functions verb-first (`price_quote`, `get_episodic`).
 - Frontend: components `PascalCase.tsx`; API client mirrors route names (`approveQuote`).
-- Branches: `feat/FR-042-catalog-matcher`, `fix/...`; one FR (or tight FR cluster) per PR; PR title starts with the FR id — this is how traceability.csv is generated.
-- Commits: conventional commits; scope = package (`feat(pricing): FR-052 VAT rules`).
+- Branches: `feat/TASK-042-catalog-matcher`, `fix/...`; one task (or tight task cluster) per PR; PR title starts with the task id — this is how traceability.csv is generated.
+- Commits: conventional commits; scope = package (`feat(pricing): TASK-052 VAT rules`).
 - Prompt files: header block `<!-- prompt: drafter | version: 1.0 | agent: AGT-06 | spec: QM-SPEC-001 -->`; any edit bumps version and is a reviewed change.
 
 ## 7. Makefile targets (canonical entrypoints)
@@ -282,13 +282,13 @@ resources:
 | `make setup` | `uv sync` (or pip install -e .[dev]) + frontend `npm ci` |
 | `make verify` | runs Appendix E snippets; writes `docs/verification-log.md` entries |
 | `make test` | unit + contract (offline, cassette-only) |
-| `make eval-smoke` | 5 cassette cases (FR-123) |
+| `make eval-smoke` | 5 cassette cases (TASK-123) |
 | `make eval` | full 30-case pipeline run (live models) |
 | `make eval-baseline` | baseline mode + side-by-side report |
 | `make dev` | local API on :9000 (`QM_ENV=local`) |
-| `make seed` | `python -m quotemind.seed` (FR-011) |
+| `make seed` | `python -m quotemind.seed` (TASK-011) |
 | `make demo` | seed + drive UJ-01..04 against target env (NFR-011) |
-| `make gc` | memory garbage collection demo (FR-046) |
+| `make gc` | memory garbage collection demo (TASK-046) |
 | `make diagrams` | re-render .mmd → .png |
 | `make deploy` | s deploy + provision + smoke `/health` |
 | `make deploy-frontend` | build SPA + OSS upload |
@@ -300,18 +300,18 @@ Jobs (all required on PR to main):
 1. **lint** — ruff, import-linter layer contract (§4).
 2. **type** — mypy basic.
 3. **unit** — tests/unit + contract; coverage gate: pricing 100% branch, overall ≥70% (NFR-010).
-4. **smoke-eval** — FR-123 cassettes; thresholds from parent §3.1 encoded as asserts.
-5. **golden-pdf** — container with WeasyPrint deps; pixel-diff ≤2% (FR-124).
+4. **smoke-eval** — TASK-123 cassettes; thresholds from parent §3.1 encoded as asserts.
+5. **golden-pdf** — container with WeasyPrint deps; pixel-diff ≤2% (TASK-124).
 6. **diagrams** — mmdc render; fail if .png differs from committed (prevents drift).
 `deploy.yml` is manual `workflow_dispatch` only; requires repo secrets; never runs on PR.
 
 ## 9. Bootstrap order for Cowork (first five PRs)
 
-1. **PR-1 (FR-001/002/008/009/010):** scaffold, settings, logging, health, auth — repo boots.
+1. **PR-1 (TASK-001/002/008/009/010):** scaffold, settings, logging, health, auth — repo boots.
 2. **PR-2 (models package, DM-01..14 + state machine tests):** the shared language.
-3. **PR-3 (FR-050..055 pricing + words_vi, 100% coverage):** money is done and frozen early.
+3. **PR-3 (TASK-050..055 pricing + words_vi, 100% coverage):** money is done and frozen early.
 4. **PR-4 (Appendix E verify + memory adapter `memory/store.py` + provision):** riskiest external contract pinned.
-5. **PR-5 (FR-005 alibaba_proof + deploy s.yaml + make deploy):** deployment proof exists from week 1.
+5. **PR-5 (TASK-005 alibaba_proof + deploy s.yaml + make deploy):** deployment proof exists from week 1.
 After these, EP-02/03 (intake+parsing), then EP-04..09 vertical slice, then EP-10..13 per Appendix F schedule.
 
 ## 10. Secrets and safety notes for implementers

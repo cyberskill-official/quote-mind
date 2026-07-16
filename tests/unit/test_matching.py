@@ -1,4 +1,4 @@
-"""FR-042 reciprocal-rank fusion and confidence banding into MatchResult (DM-09)."""
+"""TASK-042 reciprocal-rank fusion and confidence banding into MatchResult (DM-09)."""
 
 from __future__ import annotations
 

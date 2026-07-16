@@ -1,9 +1,9 @@
-"""FR-123: record the CI cassettes from a live run.
+"""TASK-123: record the CI cassettes from a live run.
 
     python deploy/record_cassettes.py
 
 Runs 5 designated cases against the real models and freezes what they said. The recording is taken
-from the pipeline's own reasoning trace (FR-111, TRACE_CONTENT=1) rather than from a bespoke capture
+from the pipeline's own reasoning trace (TASK-111, TRACE_CONTENT=1) rather than from a bespoke capture
 path - so what CI replays is exactly what the models actually returned, not a parallel fiction that
 could drift away from the real thing.
 """

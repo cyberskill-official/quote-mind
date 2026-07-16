@@ -1,4 +1,4 @@
-"""Adapter over tablestore-for-agent-memory (FR-040..043).
+"""Adapter over tablestore-for-agent-memory (TASK-040..043).
 
 This is the thin isolation layer for the riskiest external contract (Risk #2). The SDK
 layout was verified against the installed 1.1.3 wheel (Appendix E.1) and differs from the
@@ -140,7 +140,7 @@ class MemoryFacade:
 
     # --- customers ---
     def put_customer(self, profile: CustomerProfile) -> None:
-        # Index name + domains + emails so FR-043 can retrieve candidates by any of those signals.
+        # Index name + domains + emails so TASK-043 can retrieve candidates by any of those signals.
         searchable = " ".join([profile.name, *profile.domains, *profile.emails]).strip()
         self.knowledge.put_document(
             Document(
@@ -158,7 +158,7 @@ class MemoryFacade:
     def search_customers_text(
         self, query: str, limit: int = 10
     ) -> list[tuple[CustomerProfile, float]]:
-        """Candidate profiles for FR-043; tools.resolve_customer makes the precise pick."""
+        """Candidate profiles for TASK-043; tools.resolve_customer makes the precise pick."""
         response = self.knowledge.full_text_search(
             query=query, tenant_id=TENANT_CUSTOMERS, limit=limit, meta_data_to_get=[_PAYLOAD]
         )

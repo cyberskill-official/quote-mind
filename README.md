@@ -56,10 +56,10 @@ retrieval silently.
 
 | Open this | And you get |
 |---|---|
-| [`/`](https://quotemind.cyberskill.world/) | the operator dashboard: approval queue, quote detail, the critic's verdict beside the model's note, reasoning trace, waiver modal (FR-100..106) |
-| [`/eval`](https://quotemind.cyberskill.world/eval) | the 93%-vs-40% benchmark, rendered from a committed snapshot (FR-104). Public, deliberately: a claim you cannot check is a claim you have to take on faith |
-| [`/health`](https://quotemind.cyberskill.world/health) | version, the deployed git SHA, and the model ids actually in use — probed live from inside FC (FR-012) |
-| `/api/*` | `401` without `Authorization: Bearer $DEMO_API_TOKEN` (FR-010) |
+| [`/`](https://quotemind.cyberskill.world/) | the operator dashboard: approval queue, quote detail, the critic's verdict beside the model's note, reasoning trace, waiver modal (TASK-100..106) |
+| [`/eval`](https://quotemind.cyberskill.world/eval) | the 93%-vs-40% benchmark, rendered from a committed snapshot (TASK-104). Public, deliberately: a claim you cannot check is a claim you have to take on faith |
+| [`/health`](https://quotemind.cyberskill.world/health) | version, the deployed git SHA, and the model ids actually in use — probed live from inside FC (TASK-012) |
+| `/api/*` | `401` without `Authorization: Bearer $DEMO_API_TOKEN` (TASK-010) |
 
 The custom domain is not cosmetic. Function Compute injects `Content-Disposition: attachment` on
 every response from its default `*.fcapp.run` endpoint — a debugging endpoint Alibaba do not want
@@ -70,7 +70,7 @@ the two scripts that fix it end to end, are in
 
 `/health` currently reports `"unverified": []` and `"substitutions": {}`. That is not a hardcoded
 banner: on first need, the function probes every frozen model id from inside Function Compute
-(FR-012), and those two empty lists mean each one answered and no documented fallback was needed. If
+(TASK-012), and those two empty lists mean each one answered and no documented fallback was needed. If
 Alibaba retired `qwen-vl-ocr` tomorrow, `/health` would say so, name the substitute it switched to,
 and keep serving.
 
@@ -121,7 +121,7 @@ reproduce with `make eval && make eval-snapshot`.
 
 - [`docs/architecture.md`](docs/architecture.md) — the system, and the one idea it is built around
 - [`docs/known-limitations.md`](docs/known-limitations.md) — what we know is imperfect, and why we left it
-- [`docs/roadmap.html`](docs/roadmap.html) — live FR-by-FR progress
+- [`docs/roadmap.html`](docs/roadmap.html) — live TASK-by-FR progress
 - [`docs/demo-script.md`](docs/demo-script.md) — the ~3-minute demo
 - [`docs/submission-description.md`](docs/submission-description.md) — the submission text
 - [`docs/spec/`](docs/spec/) — QM-SPEC-001, the authoritative specification
@@ -130,5 +130,5 @@ reproduce with `make eval && make eval-snapshot`.
 
 Apache-2.0; see [`LICENSE`](LICENSE). Progress and decisions are in
 [`BUILD_LOG.md`](BUILD_LOG.md); dependency pins in
-[`docs/verification-log.md`](docs/verification-log.md); the FR-to-test map in
+[`docs/verification-log.md`](docs/verification-log.md); the TASK-to-test map in
 [`docs/traceability.csv`](docs/traceability.csv).

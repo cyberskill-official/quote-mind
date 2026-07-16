@@ -1,4 +1,4 @@
-"""FR-044/045/046: episodic memory, written on a human decision and recalled before the next one.
+"""TASK-044/045/046: episodic memory, written on a human decision and recalled before the next one.
 
 The scoring in `memory/episodic.py` has been correct and unit-tested since PR-4. It was also, until
 now, dead code: nothing called it. These tests cover the wiring, and in particular the two things
@@ -70,7 +70,7 @@ def _memory(
     )
 
 
-# --- FR-044: the write ---
+# --- TASK-044: the write ---
 def test_an_approval_is_remembered_with_its_importance() -> None:
     facade = FakeFacade()
     memory = write_episode(
@@ -86,7 +86,7 @@ def test_an_approval_is_remembered_with_its_importance() -> None:
     assert facade.written[0][1] == "cust_thanhcong"
     assert memory.outcome is Outcome.APPROVED
     assert memory.summary.vi == "Đã duyệt"  # diacritics intact through the whole path
-    assert memory.importance == 0.7  # FR-046 base for an approval
+    assert memory.importance == 0.7  # TASK-046 base for an approval
 
 
 def test_a_rejection_is_the_most_important_thing_to_remember() -> None:
@@ -102,7 +102,7 @@ def test_a_rejection_is_the_most_important_thing_to_remember() -> None:
         chat_client=FakeChat('{"vi": "Từ chối", "en": "Rejected"}'),
         embed_client=FakeEmbed(),
     )
-    assert memory.importance == 0.9  # a rejection outranks an approval, per FR-046
+    assert memory.importance == 0.9  # a rejection outranks an approval, per TASK-046
     assert memory.human_edits == "too expensive"
 
 
@@ -137,7 +137,7 @@ def test_the_summary_falls_back_rather_than_raising() -> None:
     assert summary.vi and summary.en
 
 
-# --- FR-045/046: the recall ---
+# --- TASK-045/046: the recall ---
 def test_recall_ranks_on_effective_score_not_on_similarity() -> None:
     # The bug this guards: a perfectly-matched, year-old, low-importance episode outranking last
     # week's rejection. Similarity alone would put `old` first. Effective score must not.
@@ -178,7 +178,7 @@ def test_recall_returns_at_most_three() -> None:
         now=NOW,
         embed_client=FakeEmbed(),
     )
-    assert len(recalls) == 3  # FR-045
+    assert len(recalls) == 3  # TASK-045
 
 
 def test_recall_carries_every_term_of_its_own_ranking() -> None:
@@ -200,7 +200,7 @@ def test_recall_carries_every_term_of_its_own_ranking() -> None:
 
 
 def test_the_token_budget_drops_the_weakest_memories_and_says_so() -> None:
-    # FR-049: a 1200-token budget. Each of these summaries costs ~600 tokens, so only two fit -
+    # TASK-049: a 1200-token budget. Each of these summaries costs ~600 tokens, so only two fit -
     # and it must be the two with the highest effective score, not the first two the store returned.
     hits = [
         (

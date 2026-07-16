@@ -1,4 +1,4 @@
-"""AGT-04 CatalogMatcher: the LLM selection step of hybrid matching (FR-042).
+"""AGT-04 CatalogMatcher: the LLM selection step of hybrid matching (TASK-042).
 
 Retrieval (vector + full-text) and the fusion/banding around this call are deterministic code in
 quotemind.tools. This module only asks the model to pick one of a fixed candidate list, and then
@@ -45,7 +45,7 @@ async def select_sku(
     *,
     usage: UsageSink | None = None,
 ) -> MatchSelection:
-    """FR-042 LLM select. Returns sku=None when nothing fits or the model invents a SKU."""
+    """TASK-042 LLM select. Returns sku=None when nothing fits or the model invents a SKU."""
     if not candidates:
         return MatchSelection(sku=None, confidence=0.0)
 

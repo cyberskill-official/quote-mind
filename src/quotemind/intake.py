@@ -1,9 +1,9 @@
-"""Intake classification and guards (FR-022, FR-024, FR-025).
+"""Intake classification and guards (TASK-022, TASK-024, TASK-025).
 
 Deterministic on purpose. Document type comes from the filename and content type, language from
 Vietnamese diacritics, urgency from keywords - none of that needs a model, and code cannot
 hallucinate a doc type. The customer match is left to the pipeline, which resolves it against the
-live customers tenant (FR-043) rather than guessing here.
+live customers tenant (TASK-043) rather than guessing here.
 """
 
 from __future__ import annotations
@@ -13,13 +13,13 @@ import re
 
 from .models import CustomerMatch, DocType, EmailMeta, IntakeResult, Language, Urgency
 
-MAX_UPLOAD_BYTES = 15 * 1024 * 1024  # FR-025: 15 MB
+MAX_UPLOAD_BYTES = 15 * 1024 * 1024  # TASK-025: 15 MB
 
 _EXTENSION_TYPES: dict[str, DocType] = {
     ".txt": DocType.EMAIL_TEXT,  # a dropped text file / saved email body
     ".eml": DocType.EMAIL_TEXT,
     ".md": DocType.EMAIL_TEXT,
-    ".pdf": DocType.PDF_DIGITAL,  # scan vs digital is decided by the rasteriser (FR-031)
+    ".pdf": DocType.PDF_DIGITAL,  # scan vs digital is decided by the rasteriser (TASK-031)
     ".xlsx": DocType.EXCEL,
     ".xlsm": DocType.EXCEL,
     ".png": DocType.IMAGE,
@@ -36,7 +36,7 @@ _WORD_PATTERN = re.compile(r"[^\W\d_]+", re.UNICODE)
 
 
 class UnsupportedPayloadError(ValueError):
-    """FR-025: the upload is too large or of a type we do not accept."""
+    """TASK-025: the upload is too large or of a type we do not accept."""
 
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
@@ -44,13 +44,13 @@ class UnsupportedPayloadError(ValueError):
 
 
 def payload_hash(payload: bytes | str) -> str:
-    """FR-024: sha256 of the raw payload, used to deduplicate re-posts."""
+    """TASK-024: sha256 of the raw payload, used to deduplicate re-posts."""
     data = payload.encode("utf-8") if isinstance(payload, str) else payload
     return hashlib.sha256(data).hexdigest()
 
 
 def doc_type_for(filename: str | None) -> DocType:
-    """FR-025: map a filename to a supported doc type, or reject it."""
+    """TASK-025: map a filename to a supported doc type, or reject it."""
     if filename is None:
         return DocType.EMAIL_TEXT
     lowered = filename.lower()
@@ -61,7 +61,7 @@ def doc_type_for(filename: str | None) -> DocType:
 
 
 def validate_upload(filename: str, size_bytes: int) -> DocType:
-    """FR-025: reject oversize or unsupported uploads before anything else happens."""
+    """TASK-025: reject oversize or unsupported uploads before anything else happens."""
     doc_type = doc_type_for(filename)
     if size_bytes > MAX_UPLOAD_BYTES:
         raise UnsupportedPayloadError(
@@ -84,7 +84,7 @@ def detect_language(text: str) -> Language:
 
 
 def detect_urgency(text: str) -> Urgency:
-    """FR-022 keyword heuristic."""
+    """TASK-022 keyword heuristic."""
     return Urgency.HIGH if _URGENT_PATTERN.search(text) else Urgency.NORMAL
 
 
@@ -94,7 +94,7 @@ def classify(
     filename: str | None = None,
     email_meta: EmailMeta | None = None,
 ) -> IntakeResult:
-    """FR-022: language, doc type, urgency. The customer match is resolved later by the pipeline."""
+    """TASK-022: language, doc type, urgency. The customer match is resolved later by the pipeline."""
     doc_type = doc_type_for(filename)
     body = text or ""
     return IntakeResult(

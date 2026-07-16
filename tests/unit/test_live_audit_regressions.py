@@ -170,7 +170,7 @@ def test_the_pdf_route_returns_a_signed_url_rather_than_redirecting_to_it() -> N
         assert response.status_code == 200  # not 302
         body = response.json()
         assert body["url"].startswith("https://")
-        assert body["expires_in"] == 600  # FR-091: short-lived
+        assert body["expires_in"] == 600  # TASK-091: short-lived
     finally:
         app.dependency_overrides.clear()
 

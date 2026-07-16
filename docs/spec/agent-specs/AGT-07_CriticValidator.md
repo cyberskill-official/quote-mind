@@ -1,6 +1,6 @@
 # AGT-07 — CriticValidator — Agent Behavior Specification
 
-**Document ID:** QM-AGT-07 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-07), FR-070..074
+**Document ID:** QM-AGT-07 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-07), TASK-070..074
 **Implements in:** `src/quotemind/agents/critic.py` · **Prompt file:** `src/quotemind/prompts/critic.md`
 
 ---
@@ -15,13 +15,13 @@ Independently verify the draft before any human sees it: recompute every monetar
 
 | Check | Rule | Failure class |
 |---|---|---|
-| Recompute (FR-070) | `pricing.engine.price(...)` re-run from persisted MatchResults + CustomerProfile + config; every line_total, vat_amount, subtotal, total must equal draft exactly (Decimal ==) | blocking `RECOMPUTE_MISMATCH` (→ critic_failed) |
-| Margin policy (FR-071) | any line or blended margin < MARGIN_FLOOR_PCT | blocking `MARGIN_BELOW_FLOOR` (approvable only with waiver) |
-| VAT category (FR-071) | line category vs vat_rate per App. B map | blocking `VAT_CATEGORY_MISMATCH` |
-| Mandatory fields (FR-071) | quote_number, validity, seller MST, customer name, ≥1 priced line, terms present | blocking `MISSING_FIELD:{name}` |
-| Bilingual parity (FR-072) | numbers/SKUs/dates extracted from vi and en fields must be identical sets (regex numeric extraction) | blocking `BILINGUAL_NUMERIC_MISMATCH` |
-| Encoding (FR-072) | no U+FFFD, no mojibake signatures in any text field | blocking `ENCODING_SUSPECT` |
-| Term bounds (FR-071) | validity 7–45 days; payment terms among SOP-known patterns | non-blocking `TERMS_OUT_OF_BOUNDS` |
+| Recompute (TASK-070) | `pricing.engine.price(...)` re-run from persisted MatchResults + CustomerProfile + config; every line_total, vat_amount, subtotal, total must equal draft exactly (Decimal ==) | blocking `RECOMPUTE_MISMATCH` (→ critic_failed) |
+| Margin policy (TASK-071) | any line or blended margin < MARGIN_FLOOR_PCT | blocking `MARGIN_BELOW_FLOOR` (approvable only with waiver) |
+| VAT category (TASK-071) | line category vs vat_rate per App. B map | blocking `VAT_CATEGORY_MISMATCH` |
+| Mandatory fields (TASK-071) | quote_number, validity, seller MST, customer name, ≥1 priced line, terms present | blocking `MISSING_FIELD:{name}` |
+| Bilingual parity (TASK-072) | numbers/SKUs/dates extracted from vi and en fields must be identical sets (regex numeric extraction) | blocking `BILINGUAL_NUMERIC_MISMATCH` |
+| Encoding (TASK-072) | no U+FFFD, no mojibake signatures in any text field | blocking `ENCODING_SUSPECT` |
+| Term bounds (TASK-071) | validity 7–45 days; payment terms among SOP-known patterns | non-blocking `TERMS_OUT_OF_BOUNDS` |
 | Citation validity | memory_citations ⊆ injected set (re-check) | non-blocking `CITATION_INVALID` |
 | Carried flags | needs_confirmation / no_match / UNKNOWN_CUSTOMER / QTY_MISSING / LEAD_TIME propagated | non-blocking (surface at HITL) |
 
@@ -88,9 +88,9 @@ Code post-validation: `passed` must equal Layer-1's verdict (LLM cannot override
 | Outcome | Next state |
 |---|---|
 | passed=true, no blocking | `pending_approval` (blocking=false payload) |
-| blocking present but waivable (MARGIN_BELOW_FLOOR only) | `pending_approval` with blocking flags; approve requires waiver (FR-083) |
+| blocking present but waivable (MARGIN_BELOW_FLOOR only) | `pending_approval` with blocking flags; approve requires waiver (TASK-083) |
 | RECOMPUTE_MISMATCH / VAT_CATEGORY_MISMATCH / MISSING_FIELD / BILINGUAL_NUMERIC_MISMATCH / ENCODING_SUSPECT | `critic_failed` (never reaches HITL as-is) |
-| FR-074 (P2) formatting-only defect | one drafter revision round, then re-validate; never for money/policy |
+| TASK-074 (P2) formatting-only defect | one drafter revision round, then re-validate; never for money/policy |
 
 ## 7. Fault-injection contract (EV-05)
 

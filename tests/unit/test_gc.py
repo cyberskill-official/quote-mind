@@ -1,4 +1,4 @@
-"""FR-046: gc prunes decayed episodic memories and flags compaction (SDK mocked)."""
+"""TASK-046: gc prunes decayed episodic memories and flags compaction (SDK mocked)."""
 
 from __future__ import annotations
 

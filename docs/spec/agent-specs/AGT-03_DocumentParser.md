@@ -1,6 +1,6 @@
 # AGT-03 — DocumentParser — Agent Behavior Specification
 
-**Document ID:** QM-AGT-03 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-03), FR-030..036
+**Document ID:** QM-AGT-03 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-03), TASK-030..036
 **Implements in:** `src/quotemind/agents/parser.py` + `src/quotemind/parsing/*` · **Prompt files:** `prompts/parser_text.md`, `prompts/parser_vision.md`
 
 ---
@@ -15,10 +15,10 @@ Turn any supported RFQ payload (email text, digital PDF, scanned PDF, image, xls
 |---|---|---|
 | email_text | `parsing/text.py` — one structured call | `MODEL_PARSER_TEXT` (qwen-plus) |
 | pdf_digital | pypdfium2 text-layer extract → same as email_text; if text ratio < 0.2 fallback to vision | qwen-plus |
-| pdf_scan / image | `parsing/raster.py` → `parsing/vision.py` per page | `MODEL_PARSER_VISION` (qwen-vl-ocr; fallback qwen3-vl-plus per FR-012) |
+| pdf_scan / image | `parsing/raster.py` → `parsing/vision.py` per page | `MODEL_PARSER_VISION` (qwen-vl-ocr; fallback qwen3-vl-plus per TASK-012) |
 | xlsx | `parsing/excel.py` openpyxl; LLM only for ambiguous headers | qwen-plus (headers only) |
 
-Rasterization (FR-031): 200 DPI, max 10 pages (page 11+ dropped with flag `PAGES_TRUNCATED`), long edge downscaled to ≤2560 px, PNG to `oss://quotemind-artifacts/pages/{quote_id}/p{n}.png`.
+Rasterization (TASK-031): 200 DPI, max 10 pages (page 11+ dropped with flag `PAGES_TRUNCATED`), long edge downscaled to ≤2560 px, PNG to `oss://quotemind-artifacts/pages/{quote_id}/p{n}.png`.
 
 ## 3. Construction
 
@@ -99,10 +99,10 @@ may be empty if this page has none).
 2. Merge: concatenate lines in page order; dedupe rule — two lines duplicate iff `normalize(description) == normalize(description)` (NFC, casefold, whitespace-collapse) AND quantity equal; keep first, record `merged_from`.
 3. Buyer fields: first non-null wins per field across pages; conflicts flagged `BUYER_FIELD_CONFLICT`.
 4. Unit normalization map applied (`cái/chiếc→cái` class kept original in `unit_original`); unknown units pass through.
-5. Gate FR-034: zero lines, or any line with null description → `needs_clarification` (`NO_LINE_ITEMS` / `LINE_MISSING_FIELDS`). Null quantity is allowed through with confidence forced ≤0.5 and flag `QTY_MISSING` (HITL will see it).
+5. Gate TASK-034: zero lines, or any line with null description → `needs_clarification` (`NO_LINE_ITEMS` / `LINE_MISSING_FIELDS`). Null quantity is allowed through with confidence forced ≤0.5 and flag `QTY_MISSING` (HITL will see it).
 6. MST validation: 10 or 13 digits pattern; invalid → keep raw, flag `MST_INVALID`.
 
-## 6. Excel path specifics (FR-033)
+## 6. Excel path specifics (TASK-033)
 
 Header row detection: scan first 10 rows for the row maximizing fuzzy hits against {stt, no, tên hàng, mô tả, description, item, sl, số lượng, qty, quantity, đvt, unit, đơn vị}; ratio ≥ 0.5 required, else LLM sees only the candidate header rows (never numeric cells) to pick one. Data rows read typed: quantity from cell value (int/float→Decimal), never from LLM. Merged cells unmerged forward-fill on description column only.
 
@@ -119,7 +119,7 @@ Header row detection: scan first 10 rows for the row maximizing fuzzy hits again
 | Event | Action |
 |---|---|
 | All pages fail vision | FAILED_PARSE, reason `VISION_ALL_PAGES_FAILED` |
-| Model unavailable | FR-012 fallback model; if fallback also fails ×2 → FAILED_PARSE `MODEL_UNAVAILABLE` |
+| Model unavailable | TASK-012 fallback model; if fallback also fails ×2 → FAILED_PARSE `MODEL_UNAVAILABLE` |
 | xlsx unreadable/corrupt | FAILED_PARSE `XLSX_CORRUPT` |
 | Text-layer probe wrong (digital pdf yields <2 lines) | auto-fallback to vision path once, flag `DIGITAL_FALLBACK_VISION` |
 

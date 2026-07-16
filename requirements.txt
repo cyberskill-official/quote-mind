@@ -1,4 +1,4 @@
-# Runtime dependencies for the Function Compute bundle (FR-003).
+# Runtime dependencies for the Function Compute bundle (TASK-003).
 #
 # `s build` installs these into the code directory before `s deploy` uploads it. Without this file
 # the bundle is source-only and the function dies at cold start on `import fastapi` - which is
@@ -47,12 +47,12 @@ certifi
 pyOpenSSL>=24.2
 cryptography>=42
 
-# Parsing: spreadsheets, digital PDF text, and scan rasterisation (FR-031/032)
+# Parsing: spreadsheets, digital PDF text, and scan rasterisation (TASK-031/032)
 openpyxl>=3.1
 pypdfium2>=5.9
 pillow>=10
 
-# PDF rendering (FR-090). NOTE: WeasyPrint needs native pango/cairo. It is imported lazily inside
+# PDF rendering (TASK-090). NOTE: WeasyPrint needs native pango/cairo. It is imported lazily inside
 # render_pdf, so the function boots and serves the API without it; if the runtime lacks the system
 # libraries, PDF generation is the only thing that fails, and it fails loudly rather than silently.
 weasyprint==68.*

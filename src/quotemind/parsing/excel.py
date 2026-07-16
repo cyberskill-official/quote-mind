@@ -1,4 +1,4 @@
-"""Deterministic .xlsx RFQ extraction (FR-033).
+"""Deterministic .xlsx RFQ extraction (TASK-033).
 
 openpyxl only, no LLM reads numeric cells. Header-row detection fuzzy-matches the Vietnamese
 and English column names; quantities are read straight from the cells. LLM normalization of

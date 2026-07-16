@@ -1,14 +1,14 @@
 """Durable quote persistence: qm_quotes, qm_audit, qm_counters (frozen table names, section 12.5).
 
-This is the state that makes FR-081 (durable pause and resume) real: the pipeline ends at the
+This is the state that makes TASK-081 (durable pause and resume) real: the pipeline ends at the
 approval gate and writes everything down, so a later approval call can be served by a completely
 different process. Nothing waits in memory.
 
 Two implementation notes, both deliberate and demo-scoped:
 - The Python Tablestore SDK cannot read back an atomically incremented value (ReturnType has no
-  RT_AFTER_MODIFY), so the per-year quote counter (FR-062) uses a bounded compare-and-set loop on
+  RT_AFTER_MODIFY), so the per-year quote counter (TASK-062) uses a bounded compare-and-set loop on
   qm_counters instead. It is still atomic: a losing writer retries against the new value.
-- Idempotency (FR-024) and the status queue (API-02) would each want a secondary index. Rather than
+- Idempotency (TASK-024) and the status queue (API-02) would each want a secondary index. Rather than
   add tables outside the frozen list, idempotency is a pointer row inside qm_quotes ("idem:{sha}")
   and the queue is a bounded range scan. Both are documented demo-scale choices.
 """
@@ -56,14 +56,14 @@ class CounterContentionError(RuntimeError):
 # is a column that exists in Tablestore and reaches nobody.
 PAYLOAD_COLUMNS = (
     "source_text",
-    "extraction_json",  # FR-064: what a revision re-drafts from
-    "matches_json",  # FR-042: what the matcher decided, and why - including when it refused
+    "extraction_json",  # TASK-064: what a revision re-drafts from
+    "matches_json",  # TASK-042: what the matcher decided, and why - including when it refused
     "quote_json",
     "critic_json",
     "trace_json",
     "html",
-    "plan_json",  # FR-131
-    "episodic_json",  # FR-045
+    "plan_json",  # TASK-131
+    "episodic_json",  # TASK-045
 )
 
 
@@ -110,7 +110,7 @@ class QuoteStore:
                     raise
         return created
 
-    # --- quote numbering (FR-062) ---
+    # --- quote numbering (TASK-062) ---
     def next_sequence(self, year: int) -> int:
         """Atomically advance and return the per-year quote sequence (compare-and-set)."""
         counter_id = f"quote:{year}"
@@ -230,7 +230,7 @@ class QuoteStore:
         records.sort(key=lambda item: item.updated_at, reverse=True)
         return records[:limit]
 
-    # --- idempotency (FR-024) ---
+    # --- idempotency (TASK-024) ---
     def put_idempotency(self, sha256_payload: str, quote_id: str) -> None:
         self.client.put_row(
             TABLE_QUOTES,
@@ -252,7 +252,7 @@ class QuoteStore:
         target = _columns(row).get("target_quote_id")
         return target if isinstance(target, str) else None
 
-    # --- audit chain (FR-094 / DM-12) ---
+    # --- audit chain (TASK-094 / DM-12) ---
     def append_audit(
         self,
         quote_id: str,

@@ -1,6 +1,6 @@
 # AGT-04 — CatalogMatcher — Agent Behavior Specification
 
-**Document ID:** QM-AGT-04 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-04), FR-040..043
+**Document ID:** QM-AGT-04 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-04), TASK-040..043
 **Implements in:** `src/quotemind/agents/matcher.py` · **Prompt file:** `src/quotemind/prompts/matcher.md`
 
 ---
@@ -100,7 +100,7 @@ Code-side post-validation: every returned `sku` and alternative sku must be ∈ 
 2. `search_more` ≤1 per line (middleware).
 3. Confidence calibration rule in code: status `matched` with confidence <0.75 is coerced to `needs_confirmation` (prompt asks for it; code guarantees it).
 4. The matcher never sees `cost_price`, `dealer_price`, or `list_price` — price-blind matching (candidates and get_product responses are redacted).
-5. Out-of-stock is NOT a match failure; stock_status flows through for FR-056 lead-time handling.
+5. Out-of-stock is NOT a match failure; stock_status flows through for TASK-056 lead-time handling.
 
 ## 8. Failure handling
 

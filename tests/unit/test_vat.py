@@ -1,4 +1,4 @@
-"""FR-052: Vietnam 2026 VAT rules and the policy note."""
+"""TASK-052: Vietnam 2026 VAT rules and the policy note."""
 
 from __future__ import annotations
 

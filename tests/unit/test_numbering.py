@@ -1,4 +1,4 @@
-"""FR-062 frozen quote numbering QM-YYYY-NNNN."""
+"""TASK-062 frozen quote numbering QM-YYYY-NNNN."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Function Compute entry module for the OSS-drop ingest function (FR-021).
+"""Function Compute entry module for the OSS-drop ingest function (TASK-021).
 
 Same reasoning as index.py: FC controls sys.path, so src/ is put on it explicitly here rather than
 through a PYTHONPATH we do not own.

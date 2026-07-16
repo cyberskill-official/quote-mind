@@ -1,4 +1,4 @@
-"""FR-033 deterministic Excel extraction and FR-034 validation gate."""
+"""TASK-033 deterministic Excel extraction and TASK-034 validation gate."""
 
 from __future__ import annotations
 
@@ -43,13 +43,13 @@ def test_vietnamese_headers_below_a_title_row() -> None:
     assert extraction.lines[0].unit == "cái"
     assert extraction.lines[0].unit_original == "cái"
     assert extraction.lines[0].confidence == 1.0
-    # Per-line language is a deterministic diacritic check (FR-035): the ASCII brand/model line
+    # Per-line language is a deterministic diacritic check (TASK-035): the ASCII brand/model line
     # reads EN, the line carrying Vietnamese diacritics reads VI. The drafter refines later.
     assert extraction.language_per_line == [Language.EN, Language.VI]
 
 
 def test_quantities_match_labels_exactly() -> None:
-    # FR-033 AC: quantity fields match labels 100%.
+    # TASK-033 AC: quantity fields match labels 100%.
     data = _xlsx(
         [
             ["Mô tả", "Số lượng"],

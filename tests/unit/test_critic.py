@@ -1,4 +1,4 @@
-"""FR-070 independent recomputation, FR-071 policy flags, FR-072 bilingual/mojibake checks."""
+"""TASK-070 independent recomputation, TASK-071 policy flags, TASK-072 bilingual/mojibake checks."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ def test_clean_quote_passes() -> None:
 
 
 def test_tampered_line_total_is_caught() -> None:
-    # FR-070 AC: one wrong line total -> critic_failed with the offending line id.
+    # TASK-070 AC: one wrong line total -> critic_failed with the offending line id.
     bad = _quote(
         lines=[
             _line(1, 10, 1_000_000, 9_999_999, 800_000),  # claimed total is wrong

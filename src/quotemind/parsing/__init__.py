@@ -1,6 +1,6 @@
-"""Document parsing (EP-03). Deterministic Excel extraction plus the FR-034 validation gate.
+"""Document parsing (EP-03). Deterministic Excel extraction plus the TASK-034 validation gate.
 
-Text/vision/PDF parsers (FR-030/031/032) call models and land with the agent path; they are not
+Text/vision/PDF parsers (TASK-030/031/032) call models and land with the agent path; they are not
 re-exported here so the light offline install stays import-clean.
 """
 

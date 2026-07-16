@@ -1,9 +1,9 @@
-"""Deterministic critic core (FR-070, FR-071, FR-072).
+"""Deterministic critic core (TASK-070, TASK-071, TASK-072).
 
 Pure re-checks over an assembled Quote (DM-10), producing a CriticReport (DM-11). Every money
 field is recomputed with the same pricing-engine functions (D-03), so the engine stays the single
 source of numeric truth and the LLM can never do arithmetic that ships. The LLM critic narrative
-(FR-073) is layered on top by AGT-07; this module is the code-enforced guardrail.
+(TASK-073) is layered on top by AGT-07; this module is the code-enforced guardrail.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from ..models import (
 )
 from ..pricing import line_total, quote_totals, vat_amount
 
-# FR-053/060 defaults mirror config (settings.margin_floor_pct=5). The agent injects live values;
+# TASK-053/060 defaults mirror config (settings.margin_floor_pct=5). The agent injects live values;
 # validity bounds come from SOP memory, so they are optional and only checked when supplied.
 DEFAULT_MARGIN_FLOOR_PCT = 5.0
 
@@ -34,18 +34,18 @@ MOJIBAKE = "MOJIBAKE"
 UNKNOWN_CUSTOMER = "UNKNOWN_CUSTOMER"
 NEEDS_CONFIRMATION = "NEEDS_CONFIRMATION"
 VALIDITY_OUT_OF_BOUNDS = "VALIDITY_OUT_OF_BOUNDS"
-LEAD_TIME = "LEAD_TIME"  # FR-056: a line the seller does not have on the shelf
+LEAD_TIME = "LEAD_TIME"  # TASK-056: a line the seller does not have on the shelf
 
 _NEEDS_CONFIRMATION_SOURCES = frozenset({LineSource.SUBSTITUTED, LineSource.NO_MATCH})
 _DIGIT_RE = re.compile(r"\d+")
-# Mojibake signature (FR-072): U+FFFD, a "â€" smart-punctuation artifact, or a Latin-1 high letter
+# Mojibake signature (TASK-072): U+FFFD, a "â€" smart-punctuation artifact, or a Latin-1 high letter
 # (U+00C0-U+00FF) immediately followed by a U+0080-U+00BF continuation byte. None of these occur in
 # correct NFC Vietnamese, where diacritic vowels are single precomposed code points.
 _MOJIBAKE_RE = re.compile("\ufffd|\u00e2\u20ac|[\u00c0-\u00ff][\u0080-\u00bf]")
 
 
 def recompute_diffs(quote: Quote) -> list[RecomputeDiff]:
-    """FR-070: recompute every money field from raw inputs; any != claimed is a diff (> 0 VND)."""
+    """TASK-070: recompute every money field from raw inputs; any != claimed is a diff (> 0 VND)."""
     diffs: list[RecomputeDiff] = []
     recomputed: list[QuoteLine] = []
     for line in quote.lines:
@@ -135,9 +135,9 @@ def policy_flags(
     validity_max_days: int | None = None,
     lead_time_lines: list[int] | None = None,
 ) -> tuple[list[str], list[str]]:
-    """FR-071 policy flags: (blocking, non_blocking). Validity checked only if SOP bounds given.
+    """TASK-071 policy flags: (blocking, non_blocking). Validity checked only if SOP bounds given.
 
-    `lead_time_lines` (FR-056) comes from the caller, because the critic sees the assembled Quote
+    `lead_time_lines` (TASK-056) comes from the caller, because the critic sees the assembled Quote
     and never the catalog - stock status is not a fact the quote itself carries. It is non-blocking:
     an out-of-stock item is a thing to tell the customer, not a thing that makes the quote wrong.
     """
@@ -156,7 +156,7 @@ def policy_flags(
         non_blocking.append(UNKNOWN_CUSTOMER)
     if any(line.source in _NEEDS_CONFIRMATION_SOURCES for line in quote.lines):
         non_blocking.append(NEEDS_CONFIRMATION)
-    if lead_time_lines:  # FR-056
+    if lead_time_lines:  # TASK-056
         non_blocking.append(LEAD_TIME)
     if validity_min_days is not None and validity_max_days is not None:
         if not validity_min_days <= quote.validity_days <= validity_max_days:
@@ -186,7 +186,7 @@ def _numeric_tokens(text: str) -> list[str]:
 
 
 def bilingual_number_mismatches(quote: Quote) -> list[str]:
-    """FR-072: field names whose vi and en numeric tokens disagree (regex diff, never the LLM)."""
+    """TASK-072: field names whose vi and en numeric tokens disagree (regex diff, never the LLM)."""
     return [
         name
         for name, text in _bilingual_pairs(quote)
@@ -195,7 +195,7 @@ def bilingual_number_mismatches(quote: Quote) -> list[str]:
 
 
 def mojibake_fields(quote: Quote) -> list[str]:
-    """FR-072: field names whose text shows an encoding artifact in either language."""
+    """TASK-072: field names whose text shows an encoding artifact in either language."""
     bad = [
         name
         for name, text in _bilingual_pairs(quote)
@@ -229,9 +229,9 @@ def run_critic(
     validity_max_days: int | None = None,
     lead_time_lines: list[int] | None = None,
 ) -> CriticReport:
-    """FR-070/071/072: assemble the deterministic CriticReport. passed only when nothing blocks.
+    """TASK-070/071/072: assemble the deterministic CriticReport. passed only when nothing blocks.
 
-    The FR-073 narrative is *not* produced here, and that is deliberate. This function is the
+    The TASK-073 narrative is *not* produced here, and that is deliberate. This function is the
     verdict; the narrative explains a verdict that already exists. Keeping them apart is what makes
     it structurally impossible for the model's prose to talk the system out of a blocking flag.
     """

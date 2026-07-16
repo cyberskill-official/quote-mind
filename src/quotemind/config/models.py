@@ -14,7 +14,7 @@ FALLBACKS: dict[str, str] = {
     "qwen-vl-ocr": "qwen3-vl-plus",
 }
 
-# Additive convenience view for /health (FR-009). Does not rename any frozen constant.
+# Additive convenience view for /health (TASK-009). Does not rename any frozen constant.
 MODEL_CONSTANTS: dict[str, str] = {
     "planner": MODEL_PLANNER,
     "classifier": MODEL_CLASSIFIER,

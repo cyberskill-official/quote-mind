@@ -1,4 +1,4 @@
-"""AGT-03 DocumentParser: vision extraction from scans (FR-032).
+"""AGT-03 DocumentParser: vision extraction from scans (TASK-032).
 
 A scanned công văn is a photograph of a document. `qwen-vl-ocr` reads it; everything else about the
 pipeline is unchanged, because the output is the same `RFQExtraction` the text parser produces.
@@ -96,7 +96,7 @@ def parse_page(raw: str, *, page: int) -> tuple[Buyer, list[RFQLine]]:
             continue
         description = (item.get("description_normalized") or item.get("raw_text") or "").strip()
         if not description:
-            continue  # a line with no description cannot be matched; the FR-034 gate will see it
+            continue  # a line with no description cannot be matched; the TASK-034 gate will see it
         lines.append(
             RFQLine(
                 raw_text=(item.get("raw_text") or description).strip(),
@@ -133,7 +133,7 @@ def merge_pages(pages: list[tuple[Buyer, list[RFQLine]]]) -> RFQExtraction:
             seen.add(key)
             lines.append(line)
 
-    # FR-035: a scanned công văn is Vietnamese by construction; per-line language is recorded so the
+    # TASK-035: a scanned công văn is Vietnamese by construction; per-line language is recorded so the
     # drafter can still handle an English product name inside a Vietnamese document.
     return RFQExtraction(
         buyer=buyer,
@@ -190,7 +190,7 @@ async def extract_scanned_rfq(
     usage: UsageSink | None = None,
     client: Any | None = None,
 ) -> RFQExtraction:
-    """FR-031 + FR-032: rasterise a scanned PDF and read every page with the vision model."""
+    """TASK-031 + TASK-032: rasterise a scanned PDF and read every page with the vision model."""
     return await _read_pages(rasterize_pdf(data), settings, usage=usage, client=client)
 
 
@@ -201,5 +201,5 @@ async def extract_image_rfq(
     usage: UsageSink | None = None,
     client: Any | None = None,
 ) -> RFQExtraction:
-    """FR-033: a photographed or screenshotted RFQ. One page, same reader."""
+    """TASK-033: a photographed or screenshotted RFQ. One page, same reader."""
     return await _read_pages([image_to_png(data)], settings, usage=usage, client=client)

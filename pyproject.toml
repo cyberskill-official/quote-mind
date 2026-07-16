@@ -36,7 +36,7 @@ dev = [
     "import-linter>=2.1",
     "hypothesis>=6.100",
     "types-PyYAML>=6",
-    # FR-124: the golden test asserts the brand fonts are *embedded* in the PDF, not merely
+    # TASK-124: the golden test asserts the brand fonts are *embedded* in the PDF, not merely
     # requested. A silent fallback to a system face is the failure mode that pin existed for.
     "pypdf>=5",
 ]
@@ -71,10 +71,10 @@ Homepage = "https://github.com/cyberskill-official/quote-mind"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-# FR-090 render assets ship inside the wheel (Jinja2 template + bundled fonts for WeasyPrint).
+# TASK-090 render assets ship inside the wheel (Jinja2 template + bundled fonts for WeasyPrint).
 [tool.setuptools.package-data]
 "quotemind.quote.render" = ["*.j2", "fonts/*"]
-# FR-106: the dashboard is served by the API itself, so it must travel with the code - and so must
+# TASK-106: the dashboard is served by the API itself, so it must travel with the code - and so must
 # the vendored CyberSkill design system it is styled with.
 "quotemind.web" = ["*.html"]
 "quotemind.web.vendor" = ["*.css", "*.svg", "*.json"]

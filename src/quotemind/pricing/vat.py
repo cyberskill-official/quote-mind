@@ -1,4 +1,4 @@
-"""Vietnam 2026 VAT rules (FR-052, Appendix B). Pure; the caller injects the quote date."""
+"""Vietnam 2026 VAT rules (TASK-052, Appendix B). Pure; the caller injects the quote date."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def is_reduction_active(on_date: date) -> bool:
 
 
 def is_excluded_category(product: CatalogProduct) -> bool:
-    """True when the line must carry the VAT_EXCLUDED_CATEGORY flag (FR-052)."""
+    """True when the line must carry the VAT_EXCLUDED_CATEGORY flag (TASK-052)."""
     return product.category in EXCLUDED_CATEGORIES
 
 
@@ -29,7 +29,7 @@ def vat_rate_for(
     on_date: date,
     default_override: int | None = None,
 ) -> int:
-    """FR-052 line VAT rate. Excluded categories force 10%; the 8% relief expires end-2026."""
+    """TASK-052 line VAT rate. Excluded categories force 10%; the 8% relief expires end-2026."""
     if product.vat_rate not in ALLOWED_VAT_RATES:
         raise ValueError(
             f"Unsupported VAT rate {product.vat_rate}; allowed {sorted(ALLOWED_VAT_RATES)}"
@@ -42,7 +42,7 @@ def vat_rate_for(
 
 
 def vat_policy_note(on_date: date) -> BilingualText:
-    """FR-052 footer legal-basis note, per Appendix B."""
+    """TASK-052 footer legal-basis note, per Appendix B."""
     if is_reduction_active(on_date):
         return BilingualText(
             vi=(

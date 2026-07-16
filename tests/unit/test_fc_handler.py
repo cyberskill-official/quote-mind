@@ -1,4 +1,4 @@
-"""FR-003: the Function Compute adapter.
+"""TASK-003: the Function Compute adapter.
 
 These tests exist because this adapter was wrong three times in production and each failure looked
 identical from outside: a 502 with no stack trace. The event envelope below is not invented - it is

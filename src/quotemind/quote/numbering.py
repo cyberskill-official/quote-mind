@@ -1,4 +1,4 @@
-"""Quote numbering (FR-062).
+"""Quote numbering (TASK-062).
 
 Frozen format ``QM-YYYY-NNNN`` (section 12). These helpers are pure: the per-year sequence itself
 comes from a Tablestore atomic counter row (qm_counters) at runtime; here we only format, parse, and

@@ -1,4 +1,4 @@
-"""FR-060 quote assembly + the pricing -> assembly -> critic -> render chain, offline."""
+"""TASK-060 quote assembly + the pricing -> assembly -> critic -> render chain, offline."""
 
 from __future__ import annotations
 
@@ -167,7 +167,7 @@ def test_flags_vat_excluded_and_lead_time() -> None:
         ),
     ]
     quote = _assemble(lines)
-    assert quote.lines[0].vat_rate == 10  # telecom_service forced to the standard rate (FR-052)
+    assert quote.lines[0].vat_rate == 10  # telecom_service forced to the standard rate (TASK-052)
     assert VAT_EXCLUDED_CATEGORY in quote.flags
     assert LEAD_TIME in quote.flags
 

@@ -1,91 +1,91 @@
-fr_id,priority,pr,branch,module,test,status
-FR-001,P0,PR-1,feat/FR-001-scaffold,LICENSE + README + pyproject + Makefile,tests/unit/test_health.py,implemented
-FR-002,P0,PR-1,feat/FR-001-scaffold,src/quotemind/config/settings.py,tests/unit/test_settings.py,implemented
-FR-003,P0,EP-01,feat/vision-ocr,deploy/s.yaml + src/quotemind/api/fc.py,tests/unit/test_fc_handler.py,implemented (LIVE: FC 3.0 HTTP event envelope adapter; endpoint verified)
-FR-004,P0,PR-4,fix/memory-search-metadata,deploy/provision.py,,live-verified (2 buckets + tables, ap-southeast-1)
-FR-005,P0,EP-01,feat/deploy-proof,src/quotemind/cloud/alibaba_proof.py,,implemented (live: 8/8 checks PASS on ap-southeast-1)
-FR-006,P0,EP-01,feat/PR-1-scaffold,Makefile + src/quotemind/config/settings.py,tests/unit/test_settings.py,implemented (make dev; QM_ENV=local, same code paths)
-FR-007,P1,EP-01,feat/PR-1-scaffold,.github/workflows/ci.yml,,implemented (ruff + mypy + import-linter + pytest + smoke eval on every PR)
-FR-008,P0,PR-1,feat/FR-001-scaffold,src/quotemind/obs/log.py,tests/unit/test_logging.py,implemented
-FR-009,P0,PR-1,feat/FR-001-scaffold,src/quotemind/api/app.py,tests/unit/test_health.py,implemented
-FR-010,P0,PR-1,feat/FR-001-scaffold,src/quotemind/api/auth.py,tests/unit/test_auth.py,implemented
-FR-011,P0,EP-01,feat/eval-harness,src/quotemind/seed/data.py,tests/unit/test_eval.py,implemented (61 SKUs + 8 customers per Appendix A.1/A.2)
-FR-012,P0,EP-01,feat/vision-ocr,src/quotemind/config/bootstrap.py + api/app.py,tests/unit/test_bootstrap.py,implemented (LIVE on FC: unverified=[], substitutions={}; probe runs on first need, not only from the FC initializer)
-FR-020,P0,EP-02,feat/intake-hitl,src/quotemind/api/app.py (POST /api/rfq),tests/unit/test_api_quotes.py,implemented (live)
-FR-021,P0,EP-02,feat/file-intake,deploy/ingest.py,tests/unit/test_file_intake.py,implemented (LIVE: OSS drop -> quote at the approval gate; trigger per docs/deploy/oss-trigger.md)
-FR-022,P0,EP-02,feat/file-intake,src/quotemind/api/app.py,tests/unit/test_file_intake.py,implemented (upload routed by doc type: text/excel/pdf/image)
-FR-023,P1,EP-02,feat/intake-hitl,src/quotemind/api/app.py (email_meta),tests/unit/test_api_quotes.py,implemented
-FR-024,P0,EP-02,feat/file-intake,src/quotemind/service.py,tests/unit/test_file_intake.py,implemented (idempotency hashes the file's bytes, not its filename)
-FR-025,P1,EP-02,feat/intake-hitl,src/quotemind/intake.py (validate_upload),tests/unit/test_intake.py,implemented
-FR-030,P0,EP-03,feat/agent-layer,src/quotemind/agents/parser.py,tests/unit/test_orchestrator.py,implemented (live-verified)
-FR-031,P1,EP-03,feat/vision-ocr,src/quotemind/parsing/raster.py,tests/unit/test_vision.py,implemented (200 DPI raster; 10-page cap)
-FR-032,P1,EP-03,feat/vision-ocr,src/quotemind/agents/vision.py,tests/unit/test_vision.py,implemented (qwen-vl-ocr; 5/5 scanned cases quoted)
-FR-033,P1,EP-03,feat/file-intake,src/quotemind/agents/vision.py,tests/unit/test_file_intake.py,implemented (a photographed RFQ is a one-page scan, same vision reader)
-FR-034,P0,EP-03,feat/FR-033-excel-parser,src/quotemind/parsing/validate.py,tests/unit/test_excel_parser.py,implemented
-FR-035,P1,EP-03,feat/agents,src/quotemind/agents/parser.py,tests/unit/test_models_roundtrip.py + tests/unit/test_excel_parser.py,implemented (language_per_line on RFQExtraction)
-FR-040,P0,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented; live vector+text search verified (meta_data_to_get fix)
-FR-041,P0,EP-04,feat/agent-layer,src/quotemind/memory/embedding.py,tests/unit/test_embedding.py,implemented (live-verified)
-FR-042,P0,EP-04,feat/agent-layer,src/quotemind/tools/matching.py + src/quotemind/agents/matcher.py,tests/unit/test_matching.py + test_agents.py,implemented (fusion+banding+LLM select; live-verified)
-FR-043,P0,EP-04,fix/live-audit,src/quotemind/orchestrator.py,tests/unit/test_customer_resolution.py,implemented (LIVE fix: every signal searched and unioned; an unmatched name no longer shadows an exact email match)
-FR-044,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py,tests/unit/test_recall.py,implemented (LIVE: episode written on approve/reject; bilingual LLM summary)
-FR-045,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py + orchestrator.py,tests/unit/test_recall.py,implemented (LIVE: top-3 re-ranked by effective score, 1200-token budget, memory ids in the trace; memories inform the reviewer - never the price - see recall.py)
-FR-046,P0,EP-04,feat/memory-planner,src/quotemind/memory/episodic.py,tests/unit/test_recall.py,implemented (importance + decay now actually drive retrieval)
-FR-047,P0,EP-04,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented (MemoryStore Session per quote)
-FR-049,P1,EP-04,feat/EP-04-forgetting,src/quotemind/memory/budget.py,tests/unit/test_budget.py,implemented
-FR-050,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py,tests/unit/test_pricing.py,implemented
-FR-051,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (unit_price),tests/unit/test_pricing.py,implemented
-FR-052,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/vat.py,tests/unit/test_vat.py,implemented
-FR-053,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (margin),tests/unit/test_pricing.py,implemented
-FR-054,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (to_usd/format),tests/unit/test_pricing.py,implemented
-FR-055,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/words_vi.py,tests/unit/test_words_vi.py,implemented
-FR-060,P0,EP-06,feat/FR-060-assemble,src/quotemind/quote/assemble.py,tests/unit/test_assemble.py,implemented (deterministic; NL fields injected)
-FR-061,P0,EP-09,feat/quote-assembly,src/quotemind/models/common.py + quote/render,tests/unit/test_render.py,implemented (BilingualText everywhere; vi governs)
-FR-062,P0,EP-06,feat/intake-hitl,src/quotemind/memory/quotes.py (next_sequence CAS),tests/unit/test_numbering.py,implemented (live atomic counter)
-FR-063,P0,EP-06,feat/quote-assembly,src/quotemind/quote/assemble.py,tests/unit/test_assemble.py,implemented (bilingual note on every substituted line)
-FR-070,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (recompute_diffs),tests/unit/test_critic.py,implemented
-FR-071,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (policy_flags),tests/unit/test_critic.py,implemented (subset; VAT-category deferred to pricing/agent)
-FR-072,P0,EP-07,feat/FR-070-critic,src/quotemind/quote/critic.py (bilingual/mojibake),tests/unit/test_critic.py,implemented
-FR-080,P0,PR-2,feat/PR-2-models,src/quotemind/models/quote_record.py (Status machine),tests/unit/test_state_machine.py,implemented
-FR-081,P0,EP-08,feat/intake-hitl,src/quotemind/service.py + memory/quotes.py,tests/unit/test_service.py,implemented (live: fresh process resumes)
-FR-082,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (review),tests/unit/test_api_quotes.py,implemented
-FR-083,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (approve/reject),tests/unit/test_api_quotes.py,implemented (live; waivers audited)
-FR-084,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (revise),tests/unit/test_service.py,implemented
-FR-085,P1,EP-08,feat/roadmap-finish,src/quotemind/service.py + web/index.html,tests/unit/test_roadmap_finish.py,"implemented (log event + queue badge: a quote nobody has answered in 4h is visible as such)"
-FR-090,P0,EP-09,feat/roadmap-finish,src/quotemind/quote/render/,tests/unit/test_render_pdf.py,"implemented (live; Be Vietnam Pro bundled under the OFL - FR-124)"
-FR-091,P1,EP-12,fix/live-audit,src/quotemind/api/app.py,tests/unit/test_live_audit_regressions.py,implemented (returns the short-lived signed URL; FC's default domain forbids the 302 and an <a href> carries no bearer token)
-FR-092,P0,EP-09,feat/dispatch,src/quotemind/dispatch.py,tests/unit/test_dispatch.py,implemented (smtp path untested against DirectMail)
-FR-093,P1,EP-12,fix/live-audit,src/quotemind/service.py,tests/unit/test_live_audit_regressions.py,implemented (no recipient = dispatch.skipped, not failed_dispatch; the reviewer supplies an address at the gate)
-FR-094,P0,EP-09,feat/intake-hitl,src/quotemind/memory/quotes.py (append_audit),tests/unit/test_service.py,implemented (live; chain verified)
-FR-100,P0,EP-10,feat/observability-dashboard,web/index.html (queue),,implemented (5s polling; status filters)
-FR-101,P0,EP-10,feat/observability-dashboard,web/index.html (detail),,implemented (bilingual lines, flags, totals, margin)
-FR-102,P0,EP-10,feat/observability-dashboard,web/index.html (action bar + waiver modal),,implemented
-FR-103,P0,EP-10,feat/observability-dashboard,web/index.html (trace panel),,implemented (steps, tokens, cost, duration)
-FR-105,P1,EP-10,feat/design-system-ui,src/quotemind/web/,tests/unit/test_dashboard_route.py,implemented (CyberSkill design system vendored verbatim + hash-checked; AI disclosure; HumanReviewGate; dark theme; keyboard review)
-FR-106,P1,EP-10,feat/design-system-ui,src/quotemind/web/index.html + api/app.py GET /,tests/unit/test_dashboard_route.py,implemented (LIVE: served same-origin by the API; design system inlined at serve time)
-FR-110,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/otel.py,tests/unit/test_obs.py,implemented (span names + attributes; exporter optional)
-FR-111,P0,EP-11,feat/observability-dashboard,src/quotemind/obs/trace.py + service.py (_persist_trace) + api (API-05),tests/unit/test_obs.py + tests/unit/test_service.py,implemented
-FR-112,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/cost.py + config/model_prices.yaml,tests/unit/test_obs.py,implemented (real provider token counts; list prices)
-FR-113,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/errors.py,tests/unit/test_obs.py,implemented (model/tool calls only; 1s/4s backoff)
-FR-120,P0,EP-12,feat/eval-harness,src/quotemind/seed/generate.py + eval/dataset/,tests/unit/test_eval.py,implemented (30 cases; all 30 runnable since FR-032 landed, 5 blocked on FR-032)
-FR-121,P0,EP-12,feat/eval-harness,src/quotemind/eval_/run.py + metrics.py,tests/unit/test_eval.py,implemented (live: eval/reports/)
-FR-122,P0,EP-12,feat/eval-harness,src/quotemind/eval_/baseline.py,tests/unit/test_eval.py,implemented (live: pipeline vs single-agent delta)
-FR-123,P0,EP-12,feat/eval-harness,src/quotemind/eval_/cassette.py + deploy/record_cassettes.py,tests/integration/test_smoke_eval.py,implemented (5 recorded cases; no model in CI)
-FR-124,P1,EP-12,feat/roadmap-finish,tests/golden/test_golden_pdf.py + quote/render/fonts/,tests/unit/test_roadmap_finish.py,"implemented (Be Vietnam Pro Regular/SemiBold/Bold + OFL.txt bundled in the wheel; WeasyPrint no longer falls back)"
-FR-130,P0,EP-13,feat/agent-layer,src/quotemind/orchestrator.py,tests/unit/test_orchestrator.py,implemented (live end-to-end)
-FR-131,P0,EP-05,feat/memory-planner,src/quotemind/agents/planner.py,tests/unit/test_planner.py,implemented (LIVE: AgentScope PlanNotebook; subtasks closed by the pipeline that ran; trivial quotes skip with a logged reason)
-FR-132,P0,EP-05,feat/agents,src/quotemind/tools/,tests/unit/test_agents.py,implemented (one Toolkit per agent - build_agent constructs a fresh Toolkit)
+task_id,priority,pr,branch,module,test,status
+TASK-001,P0,PR-1,feat/TASK-001-scaffold,LICENSE + README + pyproject + Makefile,tests/unit/test_health.py,implemented
+TASK-002,P0,PR-1,feat/TASK-001-scaffold,src/quotemind/config/settings.py,tests/unit/test_settings.py,implemented
+TASK-003,P0,EP-01,feat/vision-ocr,deploy/s.yaml + src/quotemind/api/fc.py,tests/unit/test_fc_handler.py,implemented (LIVE: FC 3.0 HTTP event envelope adapter; endpoint verified)
+TASK-004,P0,PR-4,fix/memory-search-metadata,deploy/provision.py,,live-verified (2 buckets + tables, ap-southeast-1)
+TASK-005,P0,EP-01,feat/deploy-proof,src/quotemind/cloud/alibaba_proof.py,,implemented (live: 8/8 checks PASS on ap-southeast-1)
+TASK-006,P0,EP-01,feat/PR-1-scaffold,Makefile + src/quotemind/config/settings.py,tests/unit/test_settings.py,implemented (make dev; QM_ENV=local, same code paths)
+TASK-007,P1,EP-01,feat/PR-1-scaffold,.github/workflows/ci.yml,,implemented (ruff + mypy + import-linter + pytest + smoke eval on every PR)
+TASK-008,P0,PR-1,feat/TASK-001-scaffold,src/quotemind/obs/log.py,tests/unit/test_logging.py,implemented
+TASK-009,P0,PR-1,feat/TASK-001-scaffold,src/quotemind/api/app.py,tests/unit/test_health.py,implemented
+TASK-010,P0,PR-1,feat/TASK-001-scaffold,src/quotemind/api/auth.py,tests/unit/test_auth.py,implemented
+TASK-011,P0,EP-01,feat/eval-harness,src/quotemind/seed/data.py,tests/unit/test_eval.py,implemented (61 SKUs + 8 customers per Appendix A.1/A.2)
+TASK-012,P0,EP-01,feat/vision-ocr,src/quotemind/config/bootstrap.py + api/app.py,tests/unit/test_bootstrap.py,implemented (LIVE on FC: unverified=[], substitutions={}; probe runs on first need, not only from the FC initializer)
+TASK-020,P0,EP-02,feat/intake-hitl,src/quotemind/api/app.py (POST /api/rfq),tests/unit/test_api_quotes.py,implemented (live)
+TASK-021,P0,EP-02,feat/file-intake,deploy/ingest.py,tests/unit/test_file_intake.py,implemented (LIVE: OSS drop -> quote at the approval gate; trigger per docs/deploy/oss-trigger.md)
+TASK-022,P0,EP-02,feat/file-intake,src/quotemind/api/app.py,tests/unit/test_file_intake.py,implemented (upload routed by doc type: text/excel/pdf/image)
+TASK-023,P1,EP-02,feat/intake-hitl,src/quotemind/api/app.py (email_meta),tests/unit/test_api_quotes.py,implemented
+TASK-024,P0,EP-02,feat/file-intake,src/quotemind/service.py,tests/unit/test_file_intake.py,implemented (idempotency hashes the file's bytes, not its filename)
+TASK-025,P1,EP-02,feat/intake-hitl,src/quotemind/intake.py (validate_upload),tests/unit/test_intake.py,implemented
+TASK-030,P0,EP-03,feat/agent-layer,src/quotemind/agents/parser.py,tests/unit/test_orchestrator.py,implemented (live-verified)
+TASK-031,P1,EP-03,feat/vision-ocr,src/quotemind/parsing/raster.py,tests/unit/test_vision.py,implemented (200 DPI raster; 10-page cap)
+TASK-032,P1,EP-03,feat/vision-ocr,src/quotemind/agents/vision.py,tests/unit/test_vision.py,implemented (qwen-vl-ocr; 5/5 scanned cases quoted)
+TASK-033,P1,EP-03,feat/file-intake,src/quotemind/agents/vision.py,tests/unit/test_file_intake.py,implemented (a photographed RFQ is a one-page scan, same vision reader)
+TASK-034,P0,EP-03,feat/TASK-033-excel-parser,src/quotemind/parsing/validate.py,tests/unit/test_excel_parser.py,implemented
+TASK-035,P1,EP-03,feat/agents,src/quotemind/agents/parser.py,tests/unit/test_models_roundtrip.py + tests/unit/test_excel_parser.py,implemented (language_per_line on RFQExtraction)
+TASK-040,P0,PR-4,fix/memory-search-metadata,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented; live vector+text search verified (meta_data_to_get fix)
+TASK-041,P0,EP-04,feat/agent-layer,src/quotemind/memory/embedding.py,tests/unit/test_embedding.py,implemented (live-verified)
+TASK-042,P0,EP-04,feat/agent-layer,src/quotemind/tools/matching.py + src/quotemind/agents/matcher.py,tests/unit/test_matching.py + test_agents.py,implemented (fusion+banding+LLM select; live-verified)
+TASK-043,P0,EP-04,fix/live-audit,src/quotemind/orchestrator.py,tests/unit/test_customer_resolution.py,implemented (LIVE fix: every signal searched and unioned; an unmatched name no longer shadows an exact email match)
+TASK-044,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py,tests/unit/test_recall.py,implemented (LIVE: episode written on approve/reject; bilingual LLM summary)
+TASK-045,P0,EP-04,feat/memory-planner,src/quotemind/memory/recall.py + orchestrator.py,tests/unit/test_recall.py,implemented (LIVE: top-3 re-ranked by effective score, 1200-token budget, memory ids in the trace; memories inform the reviewer - never the price - see recall.py)
+TASK-046,P0,EP-04,feat/memory-planner,src/quotemind/memory/episodic.py,tests/unit/test_recall.py,implemented (importance + decay now actually drive retrieval)
+TASK-047,P0,EP-04,feat/PR-4-memory,src/quotemind/memory/store.py,tests/unit/test_memory_store.py,implemented (MemoryStore Session per quote)
+TASK-049,P1,EP-04,feat/EP-04-forgetting,src/quotemind/memory/budget.py,tests/unit/test_budget.py,implemented
+TASK-050,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py,tests/unit/test_pricing.py,implemented
+TASK-051,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (unit_price),tests/unit/test_pricing.py,implemented
+TASK-052,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/vat.py,tests/unit/test_vat.py,implemented
+TASK-053,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (margin),tests/unit/test_pricing.py,implemented
+TASK-054,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/engine.py (to_usd/format),tests/unit/test_pricing.py,implemented
+TASK-055,P0,PR-3,feat/PR-3-pricing,src/quotemind/pricing/words_vi.py,tests/unit/test_words_vi.py,implemented
+TASK-060,P0,EP-06,feat/TASK-060-assemble,src/quotemind/quote/assemble.py,tests/unit/test_assemble.py,implemented (deterministic; NL fields injected)
+TASK-061,P0,EP-09,feat/quote-assembly,src/quotemind/models/common.py + quote/render,tests/unit/test_render.py,implemented (BilingualText everywhere; vi governs)
+TASK-062,P0,EP-06,feat/intake-hitl,src/quotemind/memory/quotes.py (next_sequence CAS),tests/unit/test_numbering.py,implemented (live atomic counter)
+TASK-063,P0,EP-06,feat/quote-assembly,src/quotemind/quote/assemble.py,tests/unit/test_assemble.py,implemented (bilingual note on every substituted line)
+TASK-070,P0,EP-07,feat/TASK-070-critic,src/quotemind/quote/critic.py (recompute_diffs),tests/unit/test_critic.py,implemented
+TASK-071,P0,EP-07,feat/TASK-070-critic,src/quotemind/quote/critic.py (policy_flags),tests/unit/test_critic.py,implemented (subset; VAT-category deferred to pricing/agent)
+TASK-072,P0,EP-07,feat/TASK-070-critic,src/quotemind/quote/critic.py (bilingual/mojibake),tests/unit/test_critic.py,implemented
+TASK-080,P0,PR-2,feat/PR-2-models,src/quotemind/models/quote_record.py (Status machine),tests/unit/test_state_machine.py,implemented
+TASK-081,P0,EP-08,feat/intake-hitl,src/quotemind/service.py + memory/quotes.py,tests/unit/test_service.py,implemented (live: fresh process resumes)
+TASK-082,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (review),tests/unit/test_api_quotes.py,implemented
+TASK-083,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (approve/reject),tests/unit/test_api_quotes.py,implemented (live; waivers audited)
+TASK-084,P0,EP-08,feat/intake-hitl,src/quotemind/service.py (revise),tests/unit/test_service.py,implemented
+TASK-085,P1,EP-08,feat/roadmap-finish,src/quotemind/service.py + web/index.html,tests/unit/test_roadmap_finish.py,"implemented (log event + queue badge: a quote nobody has answered in 4h is visible as such)"
+TASK-090,P0,EP-09,feat/roadmap-finish,src/quotemind/quote/render/,tests/unit/test_render_pdf.py,"implemented (live; Be Vietnam Pro bundled under the OFL - TASK-124)"
+TASK-091,P1,EP-12,fix/live-audit,src/quotemind/api/app.py,tests/unit/test_live_audit_regressions.py,implemented (returns the short-lived signed URL; FC's default domain forbids the 302 and an <a href> carries no bearer token)
+TASK-092,P0,EP-09,feat/dispatch,src/quotemind/dispatch.py,tests/unit/test_dispatch.py,implemented (smtp path untested against DirectMail)
+TASK-093,P1,EP-12,fix/live-audit,src/quotemind/service.py,tests/unit/test_live_audit_regressions.py,implemented (no recipient = dispatch.skipped, not failed_dispatch; the reviewer supplies an address at the gate)
+TASK-094,P0,EP-09,feat/intake-hitl,src/quotemind/memory/quotes.py (append_audit),tests/unit/test_service.py,implemented (live; chain verified)
+TASK-100,P0,EP-10,feat/observability-dashboard,web/index.html (queue),,implemented (5s polling; status filters)
+TASK-101,P0,EP-10,feat/observability-dashboard,web/index.html (detail),,implemented (bilingual lines, flags, totals, margin)
+TASK-102,P0,EP-10,feat/observability-dashboard,web/index.html (action bar + waiver modal),,implemented
+TASK-103,P0,EP-10,feat/observability-dashboard,web/index.html (trace panel),,implemented (steps, tokens, cost, duration)
+TASK-105,P1,EP-10,feat/design-system-ui,src/quotemind/web/,tests/unit/test_dashboard_route.py,implemented (CyberSkill design system vendored verbatim + hash-checked; AI disclosure; HumanReviewGate; dark theme; keyboard review)
+TASK-106,P1,EP-10,feat/design-system-ui,src/quotemind/web/index.html + api/app.py GET /,tests/unit/test_dashboard_route.py,implemented (LIVE: served same-origin by the API; design system inlined at serve time)
+TASK-110,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/otel.py,tests/unit/test_obs.py,implemented (span names + attributes; exporter optional)
+TASK-111,P0,EP-11,feat/observability-dashboard,src/quotemind/obs/trace.py + service.py (_persist_trace) + api (API-05),tests/unit/test_obs.py + tests/unit/test_service.py,implemented
+TASK-112,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/cost.py + config/model_prices.yaml,tests/unit/test_obs.py,implemented (real provider token counts; list prices)
+TASK-113,P1,EP-11,feat/observability-dashboard,src/quotemind/obs/errors.py,tests/unit/test_obs.py,implemented (model/tool calls only; 1s/4s backoff)
+TASK-120,P0,EP-12,feat/eval-harness,src/quotemind/seed/generate.py + eval/dataset/,tests/unit/test_eval.py,implemented (30 cases; all 30 runnable since TASK-032 landed, 5 blocked on TASK-032)
+TASK-121,P0,EP-12,feat/eval-harness,src/quotemind/eval_/run.py + metrics.py,tests/unit/test_eval.py,implemented (live: eval/reports/)
+TASK-122,P0,EP-12,feat/eval-harness,src/quotemind/eval_/baseline.py,tests/unit/test_eval.py,implemented (live: pipeline vs single-agent delta)
+TASK-123,P0,EP-12,feat/eval-harness,src/quotemind/eval_/cassette.py + deploy/record_cassettes.py,tests/integration/test_smoke_eval.py,implemented (5 recorded cases; no model in CI)
+TASK-124,P1,EP-12,feat/roadmap-finish,tests/golden/test_golden_pdf.py + quote/render/fonts/,tests/unit/test_roadmap_finish.py,"implemented (Be Vietnam Pro Regular/SemiBold/Bold + OFL.txt bundled in the wheel; WeasyPrint no longer falls back)"
+TASK-130,P0,EP-13,feat/agent-layer,src/quotemind/orchestrator.py,tests/unit/test_orchestrator.py,implemented (live end-to-end)
+TASK-131,P0,EP-05,feat/memory-planner,src/quotemind/agents/planner.py,tests/unit/test_planner.py,implemented (LIVE: AgentScope PlanNotebook; subtasks closed by the pipeline that ran; trivial quotes skip with a logged reason)
+TASK-132,P0,EP-05,feat/agents,src/quotemind/tools/,tests/unit/test_agents.py,implemented (one Toolkit per agent - build_agent constructs a fresh Toolkit)
 DM-01..14,P0,PR-2,feat/PR-2-models,src/quotemind/models/ (all aggregates),tests/unit/test_models_roundtrip.py,implemented
 DM-12,P0,PR-2,feat/PR-2-models,src/quotemind/models/audit.py (hash chain),tests/unit/test_audit_chain.py,implemented
-FR-036,P2,-,-,-,-,not implemented (P2: multi-RFQ splitting; one document = one quote in the demo)
-FR-048,P1,EP-04,feat/roadmap-finish,src/quotemind/memory/sop.py + seed/sop.py,tests/unit/test_roadmap_finish.py,"implemented (procedural memory: terms retrieved per topic from the sop tenant; falls back to the seeded defaults when the tenant is empty)"
-FR-056,P1,EP-05,feat/roadmap-finish,src/quotemind/quote/assemble.py + critic.py,tests/unit/test_roadmap_finish.py,"implemented (out-of-stock lines carry a bilingual lead-time note; LEAD_TIME is non-blocking)"
-FR-064,P1,EP-12,fix/live-audit,src/quotemind/orchestrator.py (quote_from_revision) + service.py,tests/unit/test_live_audit_regressions.py,"implemented (re-drafts from the stored extraction; max 3 then needs_manual)"
-FR-065,P1,EP-09,feat/roadmap-finish,src/quotemind/seed/sop.py + quote/render/quote.html.j2,tests/unit/test_render.py,"implemented (the template holds fixed skeletons; the prose is now SOP text written in the trang trong register, not model freestyle - the LLM fills slots)"
-FR-073,P1,EP-07,feat/roadmap-finish,src/quotemind/agents/reviewer.py,tests/unit/test_roadmap_finish.py,"implemented (bilingual review note, 80-word cap enforced in code; written AFTER the verdict, from it, and cannot change it)"
-FR-074,P2,-,-,-,-,not implemented (P2: auto-fix loop; every defect goes to the human instead - a deliberate choice, not a gap)
-FR-104,P1,EP-10,feat/roadmap-finish,src/quotemind/eval_/report.py + api/app.py GET /eval,tests/unit/test_roadmap_finish.py,"implemented (LIVE and public at /eval: metric table + per-case grid, rendered from a committed snapshot so the site and the submission cannot drift)"
-FR-133,P0,EP-03,feat/agent-layer,src/quotemind/agents/parser.py + matcher.py + eval_/baseline.py,tests/unit/test_agents.py + tests/unit/test_roadmap_finish.py,"partial (structured_model= at the text parser, the matcher and the baseline; vision hand-parses JSON because qwen-vl-ocr is an OCR model, not a tool-calling chat model - see agents/vision.py VISION_SYS)"
-FR-134,P1,EP-13,feat/roadmap-finish,src/quotemind/api/app.py + service.py (cancel),tests/unit/test_roadmap_finish.py,"partial by design (POST /cancel ends a quote at the gate as human.cancel - distinct from a rejection on the audit trail and NOT remembered as a pricing signal. An in-flight run returns 409: FC background tasks are not interruptible and the frozen status enum has no cancelled state - see the route docstring)"
+TASK-036,P2,-,-,-,-,not implemented (P2: multi-RFQ splitting; one document = one quote in the demo)
+TASK-048,P1,EP-04,feat/roadmap-finish,src/quotemind/memory/sop.py + seed/sop.py,tests/unit/test_roadmap_finish.py,"implemented (procedural memory: terms retrieved per topic from the sop tenant; falls back to the seeded defaults when the tenant is empty)"
+TASK-056,P1,EP-05,feat/roadmap-finish,src/quotemind/quote/assemble.py + critic.py,tests/unit/test_roadmap_finish.py,"implemented (out-of-stock lines carry a bilingual lead-time note; LEAD_TIME is non-blocking)"
+TASK-064,P1,EP-12,fix/live-audit,src/quotemind/orchestrator.py (quote_from_revision) + service.py,tests/unit/test_live_audit_regressions.py,"implemented (re-drafts from the stored extraction; max 3 then needs_manual)"
+TASK-065,P1,EP-09,feat/roadmap-finish,src/quotemind/seed/sop.py + quote/render/quote.html.j2,tests/unit/test_render.py,"implemented (the template holds fixed skeletons; the prose is now SOP text written in the trang trong register, not model freestyle - the LLM fills slots)"
+TASK-073,P1,EP-07,feat/roadmap-finish,src/quotemind/agents/reviewer.py,tests/unit/test_roadmap_finish.py,"implemented (bilingual review note, 80-word cap enforced in code; written AFTER the verdict, from it, and cannot change it)"
+TASK-074,P2,-,-,-,-,not implemented (P2: auto-fix loop; every defect goes to the human instead - a deliberate choice, not a gap)
+TASK-104,P1,EP-10,feat/roadmap-finish,src/quotemind/eval_/report.py + api/app.py GET /eval,tests/unit/test_roadmap_finish.py,"implemented (LIVE and public at /eval: metric table + per-case grid, rendered from a committed snapshot so the site and the submission cannot drift)"
+TASK-133,P0,EP-03,feat/agent-layer,src/quotemind/agents/parser.py + matcher.py + eval_/baseline.py,tests/unit/test_agents.py + tests/unit/test_roadmap_finish.py,"partial (structured_model= at the text parser, the matcher and the baseline; vision hand-parses JSON because qwen-vl-ocr is an OCR model, not a tool-calling chat model - see agents/vision.py VISION_SYS)"
+TASK-134,P1,EP-13,feat/roadmap-finish,src/quotemind/api/app.py + service.py (cancel),tests/unit/test_roadmap_finish.py,"partial by design (POST /cancel ends a quote at the gate as human.cancel - distinct from a rejection on the audit trail and NOT remembered as a pricing signal. An in-flight run returns 409: FC background tasks are not interruptible and the frozen status enum has no cancelled state - see the route docstring)"
 E.1,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified
 E.2,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (live DashScope)
 E.3,-,PR-4,feat/PR-4-memory,docs/verification-log.md,,verified (AgentScope structured output)

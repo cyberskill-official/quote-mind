@@ -1,4 +1,4 @@
-"""FR-031: PDF rasterization.
+"""TASK-031: PDF rasterization.
 
 Pages become PNGs at 200 DPI, downscaled so the long edge is at most 2560 px, capped at 10 pages.
 

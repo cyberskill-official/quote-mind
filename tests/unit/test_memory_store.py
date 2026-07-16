@@ -1,4 +1,4 @@
-"""FR-040..043: the memory adapter translates DM models to and from the SDK records.
+"""TASK-040..043: the memory adapter translates DM models to and from the SDK records.
 
 The SDK stores are mocked; these tests exercise the translation logic (Document build,
 payload round-trip, hit mapping, session/message shaping), not live Tablestore.

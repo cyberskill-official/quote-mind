@@ -1,4 +1,4 @@
-"""Agent-layer guardrails: base-URL derivation (FR-012) and the FR-042 SKU whitelist."""
+"""Agent-layer guardrails: base-URL derivation (TASK-012) and the TASK-042 SKU whitelist."""
 
 from __future__ import annotations
 

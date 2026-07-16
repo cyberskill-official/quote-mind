@@ -1,4 +1,4 @@
-"""Persisted reasoning trace (FR-111).
+"""Persisted reasoning trace (TASK-111).
 
 Every model call, tool call and memory retrieval on a quote's path becomes an ordered TraceStep
 (DM-14) with tokens, cost and duration. The document is written to
@@ -24,7 +24,7 @@ from .otel import OP_CHAT, OP_EMBEDDINGS, OP_EXECUTE_TOOL, genai_span
 
 
 class StepContent(BaseModel):
-    """Only populated when TRACE_CONTENT=1 (FR-111)."""
+    """Only populated when TRACE_CONTENT=1 (TASK-111)."""
 
     seq: int
     prompt: str | None = None

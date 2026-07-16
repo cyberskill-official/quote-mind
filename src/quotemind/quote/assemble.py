@@ -1,8 +1,8 @@
-"""Deterministic quote assembly (FR-060).
+"""Deterministic quote assembly (TASK-060).
 
 Turns resolved, matched lines plus the pricing engine into a complete Quote (DM-10). Every number
 is produced by the engine here - the drafter LLM only supplies natural-language fields (line
-description/unit phrasing, notes, terms), which arrive as inputs. The critic (FR-070) later
+description/unit phrasing, notes, terms), which arrive as inputs. The critic (TASK-070) later
 recomputes these same numbers, so assembly and critic must agree by construction.
 """
 
@@ -58,7 +58,7 @@ class AssemblyLine(BaseModel):
 
 
 def lead_time_lines(lines: list[AssemblyLine]) -> list[int]:
-    """FR-056: the 1-based indexes of lines whose product is not on the shelf.
+    """TASK-056: the 1-based indexes of lines whose product is not on the shelf.
 
     The critic never sees the catalog - it only sees the assembled Quote - so the caller that *did*
     resolve the products has to say which lines carry a lead time. Returning indexes rather than a
@@ -72,7 +72,7 @@ def lead_time_lines(lines: list[AssemblyLine]) -> list[int]:
 
 
 def _line_note(item: AssemblyLine) -> BilingualText | None:
-    """FR-056: an out-of-stock line says so, on the line, in both languages.
+    """TASK-056: an out-of-stock line says so, on the line, in both languages.
 
     A quote whose delivery terms promise seven working days while one of its lines is a made-to-
     order server is a quote that makes a promise the business cannot keep. The lead time belongs
@@ -109,14 +109,14 @@ def assemble_quote(
     fx_usd_vnd: int | None = None,
     project_discount_pct: float = DEFAULT_PROJECT_DISCOUNT_PCT,
 ) -> Quote:
-    """FR-060: build a fully-priced Quote. All money comes from the pricing engine (D-03)."""
+    """TASK-060: build a fully-priced Quote. All money comes from the pricing engine (D-03)."""
     quote_lines: list[QuoteLine] = []
     margin_pairs: list[tuple[Decimal | int, Decimal | int]] = []
     per_line_margin: list[float] = []
 
     for index, item in enumerate(lines, start=1):
         product = item.product
-        item = item.model_copy(update={"note": _line_note(item)})  # FR-056  # noqa: PLW2901
+        item = item.model_copy(update={"note": _line_note(item)})  # TASK-056  # noqa: PLW2901
         price = unit_price(product, item.tier, project_discount_pct)
         rate = vat_rate_for(product, on_date)
         amount = line_total(item.qty, price, item.discount_pct)

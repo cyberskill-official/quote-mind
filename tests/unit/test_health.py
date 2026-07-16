@@ -1,4 +1,4 @@
-"""FR-009 / API-11: /health is unauthenticated and returns the frozen model constants."""
+"""TASK-009 / API-11: /health is unauthenticated and returns the frozen model constants."""
 
 from __future__ import annotations
 

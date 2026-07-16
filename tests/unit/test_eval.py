@@ -1,4 +1,4 @@
-"""EP-12: the dataset (FR-120) and the metric definitions (FR-121).
+"""EP-12: the dataset (TASK-120) and the metric definitions (TASK-121).
 
 These tests guard the thing an eval can most easily get wrong: scoring itself generously.
 """
@@ -16,7 +16,7 @@ from quotemind.seed.data import BY_SKU, CATALOG, CUSTOMERS
 from quotemind.seed.generate import ALL_CASES, build_case
 
 
-# --- FR-120: the dataset ---
+# --- TASK-120: the dataset ---
 def test_dataset_matches_the_composition_the_spec_asks_for() -> None:
     kinds = [case.kind for case in ALL_CASES]
     assert len(ALL_CASES) == 30
@@ -54,7 +54,7 @@ def test_the_catalog_is_big_enough_for_the_metric_to_mean_something() -> None:
 
 
 def test_nothing_is_blocked_now_that_vision_ocr_exists() -> None:
-    # The 5 scanned cases waited on FR-032. They no longer do, so the whole 30 are scored and the
+    # The 5 scanned cases waited on TASK-032. They no longer do, so the whole 30 are scored and the
     # denominator is the real one. If a case ever *is* blocked again, it must be declared here
     # rather than quietly dropped - a shrinking denominator is the easiest way to flatter an eval.
     built = [build_case(case) for case in ALL_CASES]
@@ -67,7 +67,7 @@ def test_the_generator_is_deterministic() -> None:
     assert first == second
 
 
-# --- FR-121: the metrics ---
+# --- TASK-121: the metrics ---
 def _case(*lines: tuple[str, int], customer: str = "cust_thanhcong") -> EvalCase:
     return EvalCase(
         case_id="t",
@@ -114,7 +114,7 @@ def test_skipped_cases_never_enter_the_denominator() -> None:
     # The temptation an eval must resist: shrinking the denominator to flatter the score.
     results = [
         CaseResult(case_id="a", success=True, predicted=[("A", "1")], expected=[("A", "1")]),
-        CaseResult(case_id="b", skipped=True, skip_reason="FR-032 not implemented"),
+        CaseResult(case_id="b", skipped=True, skip_reason="TASK-032 not implemented"),
     ]
     agg = aggregate(results)
     assert agg["cases"] == 1

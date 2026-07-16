@@ -1,4 +1,4 @@
-"""FR-034/FR-042: when the system refuses to quote, it has to say why.
+"""TASK-034/TASK-042: when the system refuses to quote, it has to say why.
 
 Found by re-running the eval against the shipped code. `adv_002` asks for a "Dell Latitude 5450 RAM
 64GB SSD 2TB" - a configuration the catalogue does not sell. The matcher is shown the closest thing

@@ -1,4 +1,4 @@
-"""FR-010: /api/* requires a valid bearer token; errors use the frozen error shape."""
+"""TASK-010: /api/* requires a valid bearer token; errors use the frozen error shape."""
 
 from __future__ import annotations
 

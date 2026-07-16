@@ -22,7 +22,7 @@ class CriticReport(BaseModel):
     non_blocking: list[str] = Field(default_factory=list)
     recompute_diffs: list[RecomputeDiff] = Field(default_factory=list)
     note: BilingualText
-    # FR-073: the model's account of the verdict above - written *after* it, from it, and unable to
+    # TASK-073: the model's account of the verdict above - written *after* it, from it, and unable to
     # change it. Optional because it is an aid: if the call fails the quote is unaffected and the
     # gate still shows the flags and the diffs, which are the parts that carry authority.
     narrative: BilingualText | None = None

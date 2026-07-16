@@ -1,4 +1,4 @@
-"""FR-090 bilingual HTML render (Appendix C). Deterministic; asserts byte-exact Vietnamese."""
+"""TASK-090 bilingual HTML render (Appendix C). Deterministic; asserts byte-exact Vietnamese."""
 
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ def test_render_html_is_bilingual_and_byte_exact() -> None:
 
 def test_render_html_numbers_and_vat_breakdown() -> None:
     html = render_html(_quote(), vat_policy_note=_VAT_NOTE)
-    assert "11.000.000 đ" in html  # subtotal, dot thousands (FR-055)
+    assert "11.000.000 đ" in html  # subtotal, dot thousands (TASK-055)
     assert "11.900.000 đ" in html  # grand total
     assert "Thuế GTGT 8% / VAT 8%" in html
     assert "Thuế GTGT 10% / VAT 10%" in html

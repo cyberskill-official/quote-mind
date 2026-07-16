@@ -1,4 +1,4 @@
-# Continuous deployment to Function Compute (FR-003).
+# Continuous deployment to Function Compute (TASK-003).
 #
 # This exists because merging a PR did not deploy anything. Every release so far went out because a
 # human remembered to run `s deploy` from a laptop - which means the honest answer to "what code is

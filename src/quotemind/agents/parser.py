@@ -1,7 +1,7 @@
-"""AGT-03 DocumentParser: text RFQ extraction (FR-030).
+"""AGT-03 DocumentParser: text RFQ extraction (TASK-030).
 
 The model returns a structured RFQExtraction (DM-03) directly - it never computes anything. The
-deterministic FR-034 gate in quotemind.parsing decides whether the result may proceed.
+deterministic TASK-034 gate in quotemind.parsing decides whether the result may proceed.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from .model import UsageSink, build_agent
 async def extract_text_rfq(
     text: str, settings: Settings, *, usage: UsageSink | None = None
 ) -> RFQExtraction:
-    """FR-030: extract an RFQExtraction from Vietnamese or English RFQ text."""
+    """TASK-030: extract an RFQExtraction from Vietnamese or English RFQ text."""
     agent = build_agent(
         name="parser",
         sys_prompt=PARSER_SYS,

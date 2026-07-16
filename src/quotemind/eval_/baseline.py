@@ -1,4 +1,4 @@
-"""FR-122: the single-agent baseline.
+"""TASK-122: the single-agent baseline.
 
 This is the honest control. One monolithic ReActAgent gets the same models, the same catalog, and
 the same task - read the RFQ, pick the SKUs, price it - but with the architecture removed:

@@ -1,4 +1,4 @@
-"""Function Compute entry module (FR-003).
+"""Function Compute entry module (TASK-003).
 
 FC imports the handler relative to the code root, and its Python runtime controls `sys.path` itself
 - it prepends `/code` and `/code/python` and does not reliably honour a `PYTHONPATH` we set in the

@@ -1,17 +1,17 @@
-"""FR-123: recorded model responses, so CI can run the pipeline without a model.
+"""TASK-123: recorded model responses, so CI can run the pipeline without a model.
 
 A cassette is the model half of one case, frozen: the parser's RFQExtraction and, per line, the
 matcher's MatchSelection and the SKUs retrieval returned. Replaying it exercises everything the
-pipeline does *around* the model - the FR-034 validation gate, RRF fusion, the SKU whitelist,
+pipeline does *around* the model - the TASK-034 validation gate, RRF fusion, the SKU whitelist,
 assembly, VAT, the critic's recompute, the renderer - with no API key, no cost, and no flakiness.
 
 What this does and does not prove is worth being blunt about. It cannot tell you the model got
-better or worse; only the live eval (FR-121) does that. What it catches is the regression that would
+better or worse; only the live eval (TASK-121) does that. What it catches is the regression that would
 otherwise ship silently: someone refactors the pricing engine, or the fusion, or the critic, and the
 arithmetic quietly changes while every unit test still passes. The cassettes pin the *deterministic*
 half of the pipeline to known-good output.
 
-Cassettes are harvested from a live run's own trace (FR-111 with TRACE_CONTENT=1), so they are real
+Cassettes are harvested from a live run's own trace (TASK-111 with TRACE_CONTENT=1), so they are real
 recorded responses rather than hand-written fictions of what the model might say.
 """
 

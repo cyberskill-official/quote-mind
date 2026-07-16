@@ -1,4 +1,4 @@
-"""Deterministic catalog-matching helpers (FR-042).
+"""Deterministic catalog-matching helpers (TASK-042).
 
 The CatalogMatcher agent (AGT-04) runs vector_search + full_text_search against the live catalog,
 then an LLM selects the best SKU with a confidence. The code-enforced parts - fusing the two
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from ..models import BilingualText, MatchAlternative, MatchResult, MatchStatus
 
-CONFIDENCE_THRESHOLD = 0.75  # FR-042: below this (or on a spec conflict) -> needs_confirmation
+CONFIDENCE_THRESHOLD = 0.75  # TASK-042: below this (or on a spec conflict) -> needs_confirmation
 _RRF_K = 60  # standard reciprocal-rank-fusion damping constant
 _MAX_ALTERNATIVES = 3
 
@@ -61,7 +61,7 @@ def build_match_result(
     specs_conflict: bool = False,
     said: BilingualText | None = None,
 ) -> MatchResult:
-    """FR-042 banding: MATCHED, or NEEDS_CONFIRMATION (< 0.75 or spec conflict, with <=3 alts), or
+    """TASK-042 banding: MATCHED, or NEEDS_CONFIRMATION (< 0.75 or spec conflict, with <=3 alts), or
     NO_MATCH when nothing was selected (near-misses surfaced as alternatives).
 
     The *band* is deterministic and stays that way: the model proposes a SKU and a confidence, and

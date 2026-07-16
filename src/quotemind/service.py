@@ -1,7 +1,7 @@
 """Quote lifecycle service: intake, the persisted pipeline, and the human approval gate.
 
-Every status change goes through the frozen state machine (FR-080) and is written to Tablestore with
-a hash-chained audit event (FR-094) before the call returns. That is what makes FR-081 real: the
+Every status change goes through the frozen state machine (TASK-080) and is written to Tablestore with
+a hash-chained audit event (TASK-094) before the call returns. That is what makes TASK-081 real: the
 pipeline stops at `pending_approval` and nothing waits in memory, so an approval minutes later is
 served by a different process that simply loads the record.
 """
@@ -50,8 +50,8 @@ from .pricing import vat_policy_note
 from .quote import format_quote_number, parse_quote_number
 from .quote.render import render_pdf
 
-MAX_REVISIONS = 3  # FR-064: after this many revisions the quote goes to a human
-PENDING_REMINDER_HOURS = 4  # FR-085
+MAX_REVISIONS = 3  # TASK-064: after this many revisions the quote goes to a human
+PENDING_REMINDER_HOURS = 4  # TASK-085
 
 SYSTEM = Actor(kind="system")
 HUMAN = Actor(kind="human")
@@ -65,7 +65,7 @@ class QuoteNotFoundError(KeyError):
 
 
 class ApprovalBlockedError(RuntimeError):
-    """FR-083: blocking critic flags must be explicitly waived before approval."""
+    """TASK-083: blocking critic flags must be explicitly waived before approval."""
 
     def __init__(self, flags: list[str]) -> None:
         super().__init__(f"blocking flags require a waiver: {flags}")
@@ -77,18 +77,18 @@ def _now() -> datetime:
 
 
 def _context_columns(result: PipelineResult) -> dict[str, str]:
-    """FR-131 + FR-045: the plan and the recalled memories, persisted with the quote.
+    """TASK-131 + TASK-045: the plan and the recalled memories, persisted with the quote.
 
     They are stored rather than merely traced because the reviewer needs them at the moment of the
     decision, not in a debugging artifact afterwards. A memory that only a developer can find is a
     memory the business never gets to use.
     """
-    # FR-064: what a revision re-drafts from. A quote's document is read exactly once - the bytes
+    # TASK-064: what a revision re-drafts from. A quote's document is read exactly once - the bytes
     # are not kept, and for a file drop `source_text` is only a placeholder - so if the extraction
     # is not written down here, there is nothing left to amend later.
     columns: dict[str, str] = {"extraction_json": result.extraction.model_dump_json()}
 
-    # FR-042. The matcher's decision *and its reason*, kept - including when the decision was to
+    # TASK-042. The matcher's decision *and its reason*, kept - including when the decision was to
     # refuse. This used to be thrown away on the refusal path, which is precisely the path where it
     # was needed: the system would work out that a customer had asked for a 64GB machine we do not
     # sell, decline to substitute a 32GB one, and then tell the reviewer "no quote was produced".
@@ -137,12 +137,12 @@ class QuoteService:
         self.revision_pipeline = revision_pipeline
         self._artifacts = artifacts
 
-        # FR-021/022/033: which parser runs is decided *here*, once, and both intake channels - the
+        # TASK-021/022/033: which parser runs is decided *here*, once, and both intake channels - the
         # API upload and the OSS drop - go through it.
         #
         # They did not, and why the bug survived is worth recording. Both channels used to do
         # `raw.decode("utf-8", errors="replace")` behind a comment saying PDF and Excel parsing
-        # would "land with FR-031/032". Those FRs landed. The comments did not. So a spreadsheet
+        # would "land with TASK-031/032". Those tasks landed. The comments did not. So a spreadsheet
         # dropped into the inbox was decoded as mojibake, parsed as prose, and parked - while the
         # eval reported 97% on that very file, because the eval calls `quote_from_excel` directly.
         # The harness proved the parsers and never once touched the seam that was broken.
@@ -177,7 +177,7 @@ class QuoteService:
         payload: dict[str, Any] | None = None,
         **columns: Any,
     ) -> QuoteRecord:
-        assert_transition(record.status, target)  # FR-080: illegal transitions raise
+        assert_transition(record.status, target)  # TASK-080: illegal transitions raise
         record.status = target
         record.updated_at = _now()
         record.actor_last = actor.name or actor.kind
@@ -185,7 +185,7 @@ class QuoteService:
         self.store.append_audit(record.quote_id, actor=actor, event=event, payload_json=payload)
         return record
 
-    # --- intake (FR-020, FR-022, FR-024) ---
+    # --- intake (TASK-020, TASK-022, TASK-024) ---
     def submit(
         self,
         *,
@@ -200,19 +200,19 @@ class QuoteService:
     ) -> tuple[QuoteRecord, bool]:
         """Register an RFQ -> (record, created). A re-post of the same bytes is not a new quote.
 
-        `digest_payload` is what FR-024 deduplicates on, and for a file it must be the file's own
+        `digest_payload` is what TASK-024 deduplicates on, and for a file it must be the file's own
         bytes. `text` is only what a human sees on the record: for a binary drop it is a
         placeholder, and hashing *that* would mean two different spreadsheets sharing a filename
         collapsed into one quote, while the same spreadsheet renamed became two.
         """
         digest = payload_hash(text if digest_payload is None else digest_payload)
         existing_id = self.store.get_idempotency(digest)
-        if existing_id is not None:  # FR-024
+        if existing_id is not None:  # TASK-024
             return self._load(existing_id)["record"], False
 
         intake = classify(text=text, filename=filename, email_meta=email_meta)
         today = on_date or date_type.today()
-        sequence = self.store.next_sequence(today.year)  # FR-062: atomic per-year counter
+        sequence = self.store.next_sequence(today.year)  # TASK-062: atomic per-year counter
 
         record = QuoteRecord(
             quote_id=new_ulid(),
@@ -284,7 +284,7 @@ class QuoteService:
 
         trace_json = self._persist_trace(record, result)
 
-        if result.clarification_reasons:  # FR-034
+        if result.clarification_reasons:  # TASK-034
             # A refusal is a decision, and a decision the reviewer has to act on. It gets the same
             # context every other outcome gets - the extraction, the matches, the reasons - because
             # "no quote was produced" is not an answer, it is the absence of one.
@@ -332,9 +332,9 @@ class QuoteService:
         record.flags = [*critic.blocking, *critic.non_blocking]
         record.totals_json = totals_of(quote_json)
 
-        # FR-070: a recompute mismatch is a hard failure - the arithmetic did not survive an
-        # independent check, so the draft is rejected outright. Policy flags (FR-071) are different:
-        # they still reach the human, who may waive them explicitly at the gate (FR-083).
+        # TASK-070: a recompute mismatch is a hard failure - the arithmetic did not survive an
+        # independent check, so the draft is rejected outright. Policy flags (TASK-071) are different:
+        # they still reach the human, who may waive them explicitly at the gate (TASK-083).
         if critic.recompute_diffs:
             return self._transition(
                 record,
@@ -367,7 +367,7 @@ class QuoteService:
         )
 
     def _persist_trace(self, record: QuoteRecord, result: PipelineResult) -> str | None:
-        """FR-111: write trace.json to OSS. A trace failure must never fail a quote."""
+        """TASK-111: write trace.json to OSS. A trace failure must never fail a quote."""
         if result.trace is None:
             return None
         document = result.trace.model_copy(update={"quote_id": record.quote_id})
@@ -392,7 +392,7 @@ class QuoteService:
         document: dict[str, Any] = json.loads(raw)
         return document
 
-    # --- review payload (FR-082) ---
+    # --- review payload (TASK-082) ---
     def review(self, quote_id: str) -> dict[str, Any]:
         """Everything the reviewer needs on one screen."""
         stored = self._load(quote_id)
@@ -418,7 +418,7 @@ class QuoteService:
         return self.store.list_quotes(status=status, limit=limit)
 
     def stale_pending(self, hours: int = PENDING_REMINDER_HOURS) -> list[QuoteRecord]:
-        """FR-085: quotes that have been waiting on a human for too long.
+        """TASK-085: quotes that have been waiting on a human for too long.
 
         Logged as well as returned. A quote nobody has looked at in four hours is the failure mode
         an approval gate *creates*: the system did its job, stopped, and asked - and the asking went
@@ -441,12 +441,12 @@ class QuoteService:
         return stale
 
     def is_stale(self, record: QuoteRecord, hours: int = PENDING_REMINDER_HOURS) -> bool:
-        """FR-085: has this one been sitting at the gate too long? Drives the queue badge."""
+        """TASK-085: has this one been sitting at the gate too long? Drives the queue badge."""
         return record.status is Status.PENDING_APPROVAL and record.updated_at < _now() - timedelta(
             hours=hours
         )
 
-    # --- the human gate (FR-083, FR-084) ---
+    # --- the human gate (TASK-083, TASK-084) ---
     def approve(
         self,
         quote_id: str,
@@ -455,7 +455,7 @@ class QuoteService:
         waive_flags: list[str] | None = None,
         reason: str | None = None,
     ) -> QuoteRecord:
-        """FR-083. Blocking flags must be waived explicitly, and the waiver is audited."""
+        """TASK-083. Blocking flags must be waived explicitly, and the waiver is audited."""
         stored = self._load(quote_id)
         record: QuoteRecord = stored["record"]
 
@@ -474,7 +474,7 @@ class QuoteService:
             payload["waiver_reason"] = reason
         record = self._transition(record, Status.APPROVED, HUMAN, "human.approved", payload)
 
-        # FR-046 distinguishes an approval from an *edited* approval, and the difference is real: a
+        # TASK-046 distinguishes an approval from an *edited* approval, and the difference is real: a
         # quote a human had to waive a flag on, or send back for revision first, is a more
         # interesting memory than one they nodded through.
         edited = bool(waived) or record.revision > 0
@@ -494,7 +494,7 @@ class QuoteService:
         *,
         human_edits: str | None,
     ) -> None:
-        """FR-044: write the episode the human just decided.
+        """TASK-044: write the episode the human just decided.
 
         Never raises. The human's decision is the thing that matters and it is already durably
         recorded on the audit chain; losing a *memory* of it must not lose the decision itself. A
@@ -519,7 +519,7 @@ class QuoteService:
                 error=f"{type(exc).__name__}: {exc}",
             )
 
-    # --- dispatch (FR-090..094) ---
+    # --- dispatch (TASK-090..094) ---
     def quote_of(self, quote_id: str) -> Quote:
         """The stored Quote aggregate. Raises if the pipeline never produced one."""
         stored = self._load(quote_id)
@@ -529,7 +529,7 @@ class QuoteService:
         return Quote.model_validate_json(raw)
 
     def pdf_url(self, quote_id: str) -> str:
-        """API-09 / FR-091: a fresh presigned GET, rendering and storing the PDF if needed."""
+        """API-09 / TASK-091: a fresh presigned GET, rendering and storing the PDF if needed."""
         quote = self.quote_of(quote_id)
         key = artifact_key(quote.quote_number)
         if not self.artifacts.exists(key):
@@ -551,7 +551,7 @@ class QuoteService:
         return email if isinstance(email, str) and email else None
 
     def dispatch(self, quote_id: str, *, recipient: str | None = None) -> QuoteRecord:
-        """FR-090..093: render, store privately, presign, and send. Every step is audited.
+        """TASK-090..093: render, store privately, presign, and send. Every step is audited.
 
         A quote with no recipient is NOT dispatched and is NOT a failure. It used to be: approval
         scheduled a dispatch, the dispatch found no address, and an approved quote landed in
@@ -577,10 +577,10 @@ class QuoteService:
 
         try:
             pdf = self._render(quote)
-            key = self.artifacts.put_pdf(quote.quote_number, pdf)  # FR-091: private object
+            key = self.artifacts.put_pdf(quote.quote_number, pdf)  # TASK-091: private object
             link = self.artifacts.presigned_get(key)
 
-            result = send_quote(  # FR-092 / FR-093
+            result = send_quote(  # TASK-092 / TASK-093
                 quote,
                 settings=self.settings,
                 artifacts=self.artifacts,
@@ -621,13 +621,13 @@ class QuoteService:
         record = self._transition(
             record, Status.REJECTED, HUMAN, "human.rejected", {"comment": comment}
         )
-        # FR-044/046: a rejection is the *most* important thing to remember (importance 0.9). It is
+        # TASK-044/046: a rejection is the *most* important thing to remember (importance 0.9). It is
         # the only signal that says this quote, for this customer, was wrong.
         self._remember(record, stored, Outcome.REJECTED, human_edits=comment)
         return record
 
     def cancel(self, quote_id: str, *, comment: str | None = None) -> QuoteRecord:
-        """FR-134: the operator stops this quote. Ends it, and says on the record that they did.
+        """TASK-134: the operator stops this quote. Ends it, and says on the record that they did.
 
         A cancel lands in `rejected` because that is what the frozen status enum calls "ended by a
         human without sending" - but the audit event is `human.cancel`, not `human.rejected`, so a
@@ -650,7 +650,7 @@ class QuoteService:
     async def revise(
         self, quote_id: str, *, instruction: str, on_date: date_type | None = None
     ) -> QuoteRecord:
-        """FR-064/FR-084: re-draft honouring the instruction. After MAX_REVISIONS a human takes it.
+        """TASK-064/TASK-084: re-draft honouring the instruction. After MAX_REVISIONS a human takes it.
 
         The re-draft starts from the stored *extraction*, not from the source document, because for
         every channel except a pasted email there is no source document to start from: the bytes
@@ -668,7 +668,7 @@ class QuoteService:
         )
 
         record.revision += 1
-        if record.revision > MAX_REVISIONS:  # FR-064
+        if record.revision > MAX_REVISIONS:  # TASK-064
             return self._transition(
                 record,
                 Status.NEEDS_MANUAL,

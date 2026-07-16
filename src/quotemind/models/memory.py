@@ -36,7 +36,7 @@ class SOPSnippet(BaseModel):
     topic: SopTopic
     text: BilingualText
     embedding: list[float] | None = None
-    # FR-048. Which goods this term is *allowed* to apply to. Empty means universal.
+    # TASK-048. Which goods this term is *allowed* to apply to. Empty means universal.
     #
     # This is a rule, not a similarity, and it exists because similarity got it wrong: asked for the
     # payment terms on a Dell PowerEdge server, the vector search returned "software licences and
@@ -51,7 +51,7 @@ class SOPSnippet(BaseModel):
 
 
 class EpisodicRecall(BaseModel):
-    """FR-045: one retrieved memory, and every term that decided where it ranked.
+    """TASK-045: one retrieved memory, and every term that decided where it ranked.
 
     The components are carried separately rather than collapsed into a single number, because a
     reviewer looking at the trace should be able to see *why* a memory surfaced - a strong match on

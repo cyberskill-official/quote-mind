@@ -1,4 +1,4 @@
-"""Deterministic pricing surface (FR-050..055). Pure functions; the money source of truth."""
+"""Deterministic pricing surface (TASK-050..055). Pure functions; the money source of truth."""
 
 from __future__ import annotations
 

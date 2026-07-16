@@ -1,4 +1,4 @@
-"""Deterministic customer resolution (FR-043).
+"""Deterministic customer resolution (TASK-043).
 
 Resolve a buyer against candidate profiles from the ``customers`` tenant by email domain, then fuzzy
 name, then a free-text hint. Unresolved falls back to the ``end_customer`` tier with the
@@ -18,7 +18,7 @@ NAME_MATCH_THRESHOLD = 0.8
 
 
 class CustomerResolution(BaseModel):
-    """Result of FR-043: the matched profile (if any), the effective tier, and the unknown flag."""
+    """Result of TASK-043: the matched profile (if any), the effective tier, and the unknown flag."""
 
     profile: CustomerProfile | None = None
     tier: Tier
@@ -48,7 +48,7 @@ def resolve_customer(
     hint: str | None = None,
     name_threshold: float = NAME_MATCH_THRESHOLD,
 ) -> CustomerResolution:
-    """FR-043: resolve by email domain, then fuzzy name, then hint; else end_customer + unknown."""
+    """TASK-043: resolve by email domain, then fuzzy name, then hint; else end_customer + unknown."""
     domain = _domain(email)
     if domain:
         for candidate in candidates:

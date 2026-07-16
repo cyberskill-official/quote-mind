@@ -1,4 +1,4 @@
-"""FR-121 metrics.
+"""TASK-121 metrics.
 
 The definitions are the whole argument, so they are written down rather than left implicit:
 

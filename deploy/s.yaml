@@ -1,7 +1,7 @@
-# FR-003: Serverless Devs descriptor for Function Compute 3.0, ap-southeast-1 (Singapore).
+# TASK-003: Serverless Devs descriptor for Function Compute 3.0, ap-southeast-1 (Singapore).
 #
 #   s deploy                      deploy both functions
-#   s quotemind-api logs --tail   follow the API's JSON log lines (FR-008)
+#   s quotemind-api logs --tail   follow the API's JSON log lines (TASK-008)
 #
 # Two functions, because they have genuinely different shapes:
 #
@@ -25,7 +25,7 @@ access: default
 vars:
   region: ap-southeast-1
   runtime: python3.12
-  # Every P0 variable from section 4.7. A missing one fails fast at cold start (FR-002) rather than
+  # Every P0 variable from section 4.7. A missing one fails fast at cold start (TASK-002) rather than
   # surfacing later as a confusing 500 halfway through someone's quote.
   environmentVariables:
     DASHSCOPE_API_KEY: ${env('DASHSCOPE_API_KEY')}
@@ -44,7 +44,7 @@ vars:
     DEMO_API_TOKEN: ${env('DEMO_API_TOKEN')}
     # DIRECTMAIL_USER / DIRECTMAIL_PASSWORD are deliberately NOT injected here.
     #
-    # They are empty in .env because the demo default is the stub mail transport (FR-093), and
+    # They are empty in .env because the demo default is the stub mail transport (TASK-093), and
     # Serverless Devs treats an empty environment variable as *missing* and aborts the whole deploy
     # rather than passing through the empty string. Listing an optional secret here therefore makes
     # the deploy fail for everyone who has not configured a feature they do not need.
@@ -82,7 +82,7 @@ resources:
       runtime: ${vars.runtime}
       code: ../
       handler: index.handler
-      # FR-012: the initializer probes every frozen model id once per cold start and activates the
+      # TASK-012: the initializer probes every frozen model id once per cold start and activates the
       # documented fallback if a primary has been retired. It never raises - see api/app.py.
       #
       # This lives under instanceLifecycleConfig because that is where FC *3.0* keeps it. The FC 2.0
@@ -101,7 +101,7 @@ resources:
       # headroom. It is a ceiling for a stuck call, not a target.
       timeout: 300
       environmentVariables: ${vars.environmentVariables}
-      # FR-008: the app emits JSON lines to stdout; this is what collects them into SLS.
+      # TASK-008: the app emits JSON lines to stdout; this is what collects them into SLS.
       #
       # It must be declared HERE, not just enabled in the console: `s deploy` writes the function's
       # whole configuration, so a logConfig that exists only in the console is silently erased on
@@ -118,11 +118,11 @@ resources:
         - triggerName: http
           triggerType: http
           triggerConfig:
-            authType: anonymous  # the app enforces bearer auth itself (FR-010); see the note below
+            authType: anonymous  # the app enforces bearer auth itself (TASK-010); see the note below
             methods:
               - GET
               - POST
-              - OPTIONS  # CORS preflight from the OSS-hosted dashboard (FR-106)
+              - OPTIONS  # CORS preflight from the OSS-hosted dashboard (TASK-106)
 
   quotemind-ingest:
     component: fc3
@@ -166,7 +166,7 @@ resources:
 # glossed over. FC's own gateway auth signs requests with the account's AK/SK, which the browser
 # dashboard cannot hold and the demo's reviewers cannot use. So the function is reachable and the
 # *application* is the authorization boundary: every /api/* route requires
-# `Authorization: Bearer $DEMO_API_TOKEN` and returns 401 otherwise (FR-010), and /health is
+# `Authorization: Bearer $DEMO_API_TOKEN` and returns 401 otherwise (TASK-010), and /health is
 # deliberately open so a judge can verify the deployment without a credential. This is demo-grade by
 # design and section 3.2 says so; a production tenant would put this behind API Gateway with a real
 # identity provider. What it is not is an accident.

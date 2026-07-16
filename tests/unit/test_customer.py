@@ -1,4 +1,4 @@
-"""FR-043 customer resolution: email domain -> fuzzy name -> hint, else end_customer + unknown."""
+"""TASK-043 customer resolution: email domain -> fuzzy name -> hint, else end_customer + unknown."""
 
 from __future__ import annotations
 

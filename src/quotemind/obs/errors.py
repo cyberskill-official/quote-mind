@@ -1,4 +1,4 @@
-"""Error taxonomy and retry policy (FR-113).
+"""Error taxonomy and retry policy (TASK-113).
 
 The rule that matters: **only model and tool calls are retried.** Deterministic steps - pricing,
 assembly, the critic recompute - are never retried, because if they failed the input was wrong and
@@ -15,11 +15,11 @@ from typing import TypeVar
 
 T = TypeVar("T")
 
-RETRY_DELAYS: tuple[float, ...] = (1.0, 4.0)  # FR-113: two retries, exponential
+RETRY_DELAYS: tuple[float, ...] = (1.0, 4.0)  # TASK-113: two retries, exponential
 
 
 class ErrorCode(str, Enum):
-    """FR-113 taxonomy. Every failure the pipeline can record maps to one of these."""
+    """TASK-113 taxonomy. Every failure the pipeline can record maps to one of these."""
 
     PARSE_FAIL = "PARSE_FAIL"
     MATCH_FAIL = "MATCH_FAIL"
@@ -76,7 +76,7 @@ async def retry_model_call(
     delays: tuple[float, ...] = RETRY_DELAYS,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> T:
-    """FR-113: run a model/tool call, retrying transient failures with 1s then 4s backoff.
+    """TASK-113: run a model/tool call, retrying transient failures with 1s then 4s backoff.
 
     A non-transient failure is raised immediately - there is no point asking a model the same broken
     question three times.

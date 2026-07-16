@@ -1138,10 +1138,10 @@
       "tags": [
         "pdf_scan",
         "vi",
-        "blocked_on:FR-032"
+        "blocked_on:TASK-032"
       ],
       "skipped": true,
-      "skip_reason": "FR-032 not implemented",
+      "skip_reason": "TASK-032 not implemented",
       "error": null,
       "predicted": [],
       "expected": [],
@@ -1165,10 +1165,10 @@
       "tags": [
         "pdf_scan",
         "vi",
-        "blocked_on:FR-032"
+        "blocked_on:TASK-032"
       ],
       "skipped": true,
-      "skip_reason": "FR-032 not implemented",
+      "skip_reason": "TASK-032 not implemented",
       "error": null,
       "predicted": [],
       "expected": [],
@@ -1192,10 +1192,10 @@
       "tags": [
         "pdf_scan",
         "vi",
-        "blocked_on:FR-032"
+        "blocked_on:TASK-032"
       ],
       "skipped": true,
-      "skip_reason": "FR-032 not implemented",
+      "skip_reason": "TASK-032 not implemented",
       "error": null,
       "predicted": [],
       "expected": [],
@@ -1219,10 +1219,10 @@
       "tags": [
         "pdf_scan",
         "vi",
-        "blocked_on:FR-032"
+        "blocked_on:TASK-032"
       ],
       "skipped": true,
-      "skip_reason": "FR-032 not implemented",
+      "skip_reason": "TASK-032 not implemented",
       "error": null,
       "predicted": [],
       "expected": [],
@@ -1246,10 +1246,10 @@
       "tags": [
         "pdf_scan",
         "vi",
-        "blocked_on:FR-032"
+        "blocked_on:TASK-032"
       ],
       "skipped": true,
-      "skip_reason": "FR-032 not implemented",
+      "skip_reason": "TASK-032 not implemented",
       "error": null,
       "predicted": [],
       "expected": [],

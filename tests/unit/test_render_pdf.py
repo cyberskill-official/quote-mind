@@ -1,4 +1,4 @@
-"""FR-090: WeasyPrint renders a real PDF and copy-pasted text keeps its Vietnamese diacritics."""
+"""TASK-090: WeasyPrint renders a real PDF and copy-pasted text keeps its Vietnamese diacritics."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def extracted() -> str:
 
 
 def test_extracted_text_preserves_diacritics_byte_exact(extracted: str) -> None:
-    # FR-090 AC: "copy-pasted text preserves diacritics".
+    # TASK-090 AC: "copy-pasted text preserves diacritics".
     squashed = _squash(extracted)
     for vietnamese in [
         "BÁO GIÁ",

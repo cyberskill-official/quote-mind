@@ -1,4 +1,4 @@
-"""Bearer authentication for /api/* routes (FR-010, NFR-006)."""
+"""Bearer authentication for /api/* routes (TASK-010, NFR-006)."""
 
 from __future__ import annotations
 

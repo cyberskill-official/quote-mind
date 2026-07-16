@@ -1,4 +1,4 @@
-"""FR-044/045: writing an episode when a human decides, and recalling episodes before drafting.
+"""TASK-044/045: writing an episode when a human decides, and recalling episodes before drafting.
 
 `episodic.py` next to this file holds the pure scoring - importance, recency decay, effective score.
 It has been correct and tested since PR-4, and it has also, until now, been dead: nothing called it.
@@ -11,7 +11,7 @@ inside the arithmetic path, which is the one thing this whole architecture exist
 recall feeds the *reviewer*: the memories, their scores, and the reasons they ranked where they did
 are attached to the quote and rendered beside it, and every one of them is recorded in the trace.
 
-That is a deliberate divergence from FR-045's literal wording, which says to inject the memories
+That is a deliberate divergence from TASK-045's literal wording, which says to inject the memories
 into "the drafter context". There is no LLM drafter to inject into - the quote is assembled
 deterministically - and inventing one so a memory could influence a price would be a strictly worse
 system. The retrieval, the ranking, the 1200-token budget and the trace record are all exactly as
@@ -43,7 +43,7 @@ from .embedding import embed_text
 from .episodic import age_in_days, effective_score, initial_importance, recency_decay
 from .store import MemoryFacade
 
-TOP_K = 3  # FR-045: top-3 episodic memories for the resolved customer
+TOP_K = 3  # TASK-045: top-3 episodic memories for the resolved customer
 _SEARCH_K = 10  # over-fetch, because the vector store ranks on similarity alone and we re-rank
 
 SUMMARY_SYS = """Bạn tóm tắt một báo giá đã được con người quyết định, để lần sau nhớ lại.
@@ -79,7 +79,7 @@ def summarize(
     *,
     client: Any | None = None,
 ) -> BilingualText:
-    """FR-044: a bilingual summary of the episode, at most 120 words per language.
+    """TASK-044: a bilingual summary of the episode, at most 120 words per language.
 
     Falls back to a deterministic summary if the model does not return usable JSON. A memory that
     fails to write is a memory that is silently never recalled, and losing the episode entirely
@@ -125,7 +125,7 @@ def write_episode(
     chat_client: Any | None = None,
     embed_client: Any | None = None,
 ) -> EpisodicQuoteMemory:
-    """FR-044: on approval or rejection, remember what happened and how the human decided."""
+    """TASK-044: on approval or rejection, remember what happened and how the human decided."""
     summary = summarize(quote, outcome, human_edits, settings, client=chat_client)
     memory = EpisodicQuoteMemory(
         memory_id=new_ulid(),
@@ -164,10 +164,10 @@ def recall_episodes(
     top_k: int = TOP_K,
     embed_client: Any | None = None,
 ) -> tuple[list[EpisodicRecall], bool]:
-    """FR-045: the top-3 episodes for this customer, re-ranked and fitted to the token budget.
+    """TASK-045: the top-3 episodes for this customer, re-ranked and fitted to the token budget.
 
     The vector store ranks on similarity alone, so it is over-fetched and re-ranked here by the
-    FR-046 effective score - similarity x recency_decay x importance. Without that, a perfectly
+    TASK-046 effective score - similarity x recency_decay x importance. Without that, a perfectly
     matched but year-old episode outranks last week's rejection, which is exactly backwards.
 
     Returns (recalls, truncated); `truncated` is True when the budget dropped something.

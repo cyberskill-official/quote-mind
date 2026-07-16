@@ -30,7 +30,7 @@ def _dummy_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 @pytest.fixture(autouse=True)
 def _no_model_probe() -> Iterator[None]:
-    """FR-012's probe now runs on first need, so /health would otherwise reach DashScope in tests.
+    """TASK-012's probe now runs on first need, so /health would otherwise reach DashScope in tests.
 
     Marking it already-attempted keeps the suite offline and hermetic. A test that wants the probe
     resets `_PROBE_ATTEMPTED` itself, which makes that intent explicit at the point of use.

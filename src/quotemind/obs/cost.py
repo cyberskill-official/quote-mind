@@ -1,4 +1,4 @@
-"""Cost accounting (FR-112).
+"""Cost accounting (TASK-112).
 
 Token counts times a checked-in price table. Money again, so again Decimal: a float would drift and
 the eval report would be quietly wrong. Unknown models cost nothing rather than crashing a quote -

@@ -1,4 +1,4 @@
-"""FR-049: the context budget guard."""
+"""TASK-049: the context budget guard."""
 
 from __future__ import annotations
 

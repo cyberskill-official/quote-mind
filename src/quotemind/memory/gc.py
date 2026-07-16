@@ -1,4 +1,4 @@
-"""Memory garbage collection (FR-046).
+"""Memory garbage collection (TASK-046).
 
 `python -m quotemind.memory.gc` runs run_gc against live Tablestore. Pruning is deterministic:
 a memory is hard-deleted when its effective ceiling (importance x recency decay) falls below the
@@ -18,7 +18,7 @@ from .store import MemoryFacade
 
 
 def needs_compaction(memory_count: int, limit: int = COMPACTION_LIMIT) -> bool:
-    """FR-046: a customer's episodic memories should be compacted once they exceed the limit."""
+    """TASK-046: a customer's episodic memories should be compacted once they exceed the limit."""
     return memory_count > limit
 
 

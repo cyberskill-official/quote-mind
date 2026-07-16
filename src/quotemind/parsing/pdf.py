@@ -1,12 +1,12 @@
-"""FR-031: digital PDF text extraction.
+"""TASK-031: digital PDF text extraction.
 
 A born-digital PDF already carries its text; the job is only to get it out in reading order and hand
-it to the text parser (FR-030). No model call, no OCR, no cost.
+it to the text parser (TASK-030). No model call, no OCR, no cost.
 
 The distinction that matters is digital vs scanned. A scanned PDF is a picture of a document: it has
 pages but no extractable text, and pretending otherwise would hand the parser an empty string and
 produce a confidently empty quote. So `is_scanned()` is checked first and a scanned file is refused
-here, to be routed to vision OCR (FR-032) instead of silently parsed into nothing.
+here, to be routed to vision OCR (TASK-032) instead of silently parsed into nothing.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ MIN_TEXT_CHARS = 40  # below this a "digital" PDF is really a scan with a stray 
 
 
 class ScannedPdfError(ValueError):
-    """The PDF carries no extractable text - it needs OCR (FR-032), not text extraction."""
+    """The PDF carries no extractable text - it needs OCR (TASK-032), not text extraction."""
 
 
 def extract_pdf_text(data: bytes) -> str:

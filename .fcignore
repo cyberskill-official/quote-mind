@@ -25,7 +25,7 @@ node_modules/
 
 # NOT excluded: src/quotemind/web/. The dashboard used to live in a top-level web/ directory and this
 # file excluded it - correctly, when it was uploaded to OSS separately. It is now served by the API
-# (FR-106), so it must travel in the bundle, and a bare `web/` pattern here would match it at any
+# (TASK-106), so it must travel in the bundle, and a bare `web/` pattern here would match it at any
 # depth and strip it right back out. The dashboard would 500 on a missing file, in production only.
 
 # Never ship secrets into a function bundle - the values arrive as environment variables instead.

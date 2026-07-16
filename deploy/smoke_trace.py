@@ -1,4 +1,4 @@
-"""Live smoke for FR-111/112: run one real RFQ and prove the trace is persisted, with real costs.
+"""Live smoke for TASK-111/112: run one real RFQ and prove the trace is persisted, with real costs.
 
     python deploy/smoke_trace.py
 

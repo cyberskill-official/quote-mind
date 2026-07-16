@@ -1,4 +1,4 @@
-"""FR-104: freeze the newest eval run into the snapshot the deployed /eval page renders.
+"""TASK-104: freeze the newest eval run into the snapshot the deployed /eval page renders.
 
     make eval-snapshot
 

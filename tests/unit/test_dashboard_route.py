@@ -1,4 +1,4 @@
-"""FR-106: the dashboard, and the design system it is bound to.
+"""TASK-106: the dashboard, and the design system it is bound to.
 
 Two classes of failure are guarded here.
 

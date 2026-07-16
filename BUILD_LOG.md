@@ -3,10 +3,10 @@
 Running record of what shipped per PR, deviations with justification, and open questions.
 Spec of record: QM-SPEC-001 v1.0.0 (`docs/spec/`). Repository blueprint: QM-REPO-001.
 
-## 2026-07-11 - PR-1 (branch feat/FR-001-scaffold)
+## 2026-07-11 - PR-1 (branch feat/TASK-001-scaffold)
 
-FRs: FR-001 (repo scaffold), FR-002 (config), FR-008 (structured logging), FR-009
-(health and version), FR-010 (auth middleware). Bootstrap order per QM-REPO-001 section 9.
+tasks: TASK-001 (repo scaffold), TASK-002 (config), TASK-008 (structured logging), TASK-009
+(health and version), TASK-010 (auth middleware). Bootstrap order per QM-REPO-001 section 9.
 
 Delivered:
 - Root: LICENSE (Apache-2.0), README.md, pyproject.toml, Makefile, .env.example, merged
@@ -20,7 +20,7 @@ Delivered:
 - Spec pack arranged into docs/spec/ (the .zip is removed).
 
 Decisions (logged per the working method):
-1. FR-009 and FR-010 name FR-003 (s.yaml) as a dependency, but QM-REPO-001 section 9 places
+1. TASK-009 and TASK-010 name TASK-003 (s.yaml) as a dependency, but QM-REPO-001 section 9 places
    health and auth in PR-1 and the FC descriptor in PR-5. Both are implemented at the app
    layer and proven by the test client; the FC handler shim and s.yaml land in PR-5. No frozen
    contract is touched.
@@ -31,11 +31,11 @@ Decisions (logged per the working method):
    4.4 version stays pinned.
 3. Structured logging lives at obs/log.py. The frozen tree names obs/ but not this file, so it
    is an addition, not a rename.
-4. CI ships only the jobs PR-1 can pass. smoke-eval (FR-123), golden-pdf (FR-124), and
+4. CI ships only the jobs PR-1 can pass. smoke-eval (TASK-123), golden-pdf (TASK-124), and
    diagrams (SUB-03) are TODO in their PRs, and CI installs `.[all,dev]` once a heavy import
    lands (PR-4 memory or EP-02 agents).
 5. /health returns both `version` and `git_sha` so it satisfies API-11 ({status, version,
-   models}) and FR-009 (status, git SHA, model constants) at the same time.
+   models}) and TASK-009 (status, git SHA, model constants) at the same time.
 
 Findings:
 - agentscope 1.0.9 requires Python >=3.11, so the spec's optional FC python3.10 fallback
@@ -66,7 +66,7 @@ Delivered:
   extraction.py (DM-03), catalog.py (DM-05/06), memory.py (DM-07/08), matching.py (DM-09),
   quote.py (DM-10), critic.py (DM-11), audit.py (DM-12 + hash chain), eval.py (DM-13),
   trace.py (DM-14), and __init__.py re-exporting the public surface.
-- Tests: exhaustive legal and illegal Status transitions (FR-080 AC, all pairs), DM schema
+- Tests: exhaustive legal and illegal Status transitions (TASK-080 AC, all pairs), DM schema
   round-trips (EV-02), and the audit hash chain build/verify/tamper.
 
 Decisions (logged):
@@ -79,7 +79,7 @@ Decisions (logged):
    ensure_ascii off) excluding the hash field; genesis prev_hash is 64 zeros. The spec fixes
    "sha256 chain" but not the encoding, so this is the chosen, documented canonicalization.
 4. A few categorical values not fixed by section 7 (Channel, DocType, Urgency, SopTopic,
-   customer match method) use sensible enum values; revisit if a later FR pins them.
+   customer match method) use sensible enum values; revisit if a later task pins them.
 
 Verification (2026-07-11, Python 3.10 sandbox): ruff clean, mypy clean (36 files), import-linter
 4 of 4 kept, pytest 18 passed. UP042 (enum.StrEnum) is ignored alongside UP017 so the code runs
@@ -87,25 +87,25 @@ on the 3.10 gate; (str, Enum) is valid on 3.12.
 
 ## 2026-07-11 - PR-3 (branch feat/PR-3-pricing, stacked on feat/PR-2-models)
 
-Scope: the deterministic pricing engine (FR-050..055), per QM-REPO-001 section 9. Pure Decimal
+Scope: the deterministic pricing engine (TASK-050..055), per QM-REPO-001 section 9. Pure Decimal
 math; pricing imports only models and never the network, agents, or an LLM (D-03).
 
 Delivered:
-- pricing/engine.py: unit_price (FR-051 tiers + dealer fallback), line_total, vat_amount,
-  quote_totals (per-rate VAT breakdown), margin + blended_margin (FR-053), to_usd (FR-054),
-  format_vnd / format_usd (FR-055). All quantized to whole đồng.
+- pricing/engine.py: unit_price (TASK-051 tiers + dealer fallback), line_total, vat_amount,
+  quote_totals (per-rate VAT breakdown), margin + blended_margin (TASK-053), to_usd (TASK-054),
+  format_vnd / format_usd (TASK-055). All quantized to whole đồng.
 - pricing/vat.py: allowed rates {0,5,8,10}, the 2025-07-01..2026-12-31 reduction window, telecom
   forced to 10%, and vat_policy_note (Appendix B footer).
 - pricing/words_vi.py: Vietnamese amount-in-words converter.
 - Tests: tiered pricing + fallback, totals grouping, a hypothesis property test (totals equal the
-  sum of parts, VND integers) for FR-050, VAT rules with the date switch, and 28 amount-in-words
+  sum of parts, VND integers) for TASK-050, VAT rules with the date switch, and 28 amount-in-words
   cases plus the negative guard. Pricing has 100% branch coverage, now enforced in CI.
 
 Decisions and flags:
 1. amount_in_words_vi follows the single worked example in the spec (1234000 ->
    "Một triệu hai trăm ba mươi bốn nghìn đồng"): 4 -> "bốn", tens+1 -> "mốt", tens+5 -> "lăm",
    a missing tens digit -> "linh", zero hundreds in a non-leading group -> "không trăm". The
-   FR-055 30-case table is not in the spec pack, so these cases are my own derivation. If the
+   TASK-055 30-case table is not in the spec pack, so these cases are my own derivation. If the
    official table prefers "tư" or "lẻ" in some positions, that is a localized wording tweak, not a
    logic change. FLAGGED for Stephen's review as the native-language authority.
 2. unit_price takes an optional project_discount_pct (default 3) so the frozen two-arg call still
@@ -128,7 +128,7 @@ Delivered:
   plus filterable scalars plus embedding; sessions and messages go to MemoryStore. Frozen tenant
   names catalog/customers/episodic:{id}/sop (parent 12.5). from_settings builds the OTSClient and
   stores (vector dim 1024, multi-tenant); init_tables provisions them.
-- deploy/provision.py: FR-004 idempotent OSS bucket and Tablestore table/index creation, using the
+- deploy/provision.py: TASK-004 idempotent OSS bucket and Tablestore table/index creation, using the
   oss2 ProviderAuthV4 + StaticCredentialsProvider API verified against oss2 2.19.1. Written, not run.
 - Tests: mocked-store unit tests exercise the DM<->SDK translation (Document build, payload round
   trip, hit mapping, session/message shaping, init_tables). No live calls.
@@ -139,7 +139,7 @@ Decisions and findings:
    absorbs the drift (Risk #2). Real paths and signatures are in docs/verification-log.md.
 2. SDK metadata holds only scalar values, so each aggregate is persisted as a payload_json string
    plus filterable scalars and reconstructed on read.
-3. run_gc (FR-046 forgetting) and episodic importance-decay retrieval (FR-044/045) are EP-04 proper
+3. run_gc (TASK-046 forgetting) and episodic importance-decay retrieval (TASK-044/045) are EP-04 proper
    and land in a later PR; PR-4 is the adapter plus provisioning per the blueprint.
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (40 files), import-linter 4/4 kept,
@@ -178,114 +178,114 @@ Scope (offline, out of strict PR-1..5 order): the pure memory-decay and budget l
 OSS activation is pending so no time is lost.
 
 Delivered:
-- memory/episodic.py: initial_importance (FR-046), recency_decay 0.5^(age/90), effective_score
+- memory/episodic.py: initial_importance (TASK-046), recency_decay 0.5^(age/90), effective_score
   (similarity x decay x importance), effective_ceiling, should_prune, rank_by_effective_score.
 - memory/budget.py: estimate_tokens (~4 chars/token heuristic) and budget_trim keeping the highest
-  effective-score items within a token cap, flagging truncation (FR-049; 2500 context / 1200
+  effective-score items within a token cap, flagging truncation (TASK-049; 2500 context / 1200
   episodic budgets).
 - memory/gc.py: run_gc prunes episodic memories whose effective ceiling is below 0.05 and counts
   customers past the compaction limit; `python -m quotemind.memory.gc` entry. The live scan/delete
   path uses the facade; compaction (an LLM profile summary) is flagged for the agent path.
-- Tests: importance/decay/score/ceiling/ranking (including the FR-046 AC that a fresh memory
+- Tests: importance/decay/score/ceiling/ranking (including the TASK-046 AC that a fresh memory
   outranks a 200-day-old one of equal similarity), budget trim, and a mocked-facade gc prune.
 
 Fixes and notes:
-- The FR-002 missing-variable test now runs in an isolated cwd so a real .env at the repo root no
+- The TASK-002 missing-variable test now runs in an isolated cwd so a real .env at the repo root no
   longer supplies the value (pydantic-settings reads .env; os.environ still wins for the other
   tests). This surfaced once the live-verification .env was created.
-- Faithfulness note: with the FR-046 importance floor of 0.7 for episodic memories, the prune
+- Faithfulness note: with the TASK-046 importance floor of 0.7 for episodic memories, the prune
   ceiling (<0.05) is only reached past ~340 days, so the gc demo relies on the seed setting low
   importances or old ages. The gc functions implement the formula exactly.
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (43 files), import-linter 4/4 kept,
 pytest 80 passed.
 
-## 2026-07-11 - EP-03 Excel parser + extraction gate (branch feat/FR-033-excel-parser)
+## 2026-07-11 - EP-03 Excel parser + extraction gate (branch feat/TASK-033-excel-parser)
 
-Scope (offline, out of strict PR-1..5 order): FR-033 deterministic .xlsx extraction and the FR-034
+Scope (offline, out of strict PR-1..5 order): TASK-033 deterministic .xlsx extraction and the TASK-034
 validation gate - both pure and fully unit-testable, so they land while OSS activation is pending.
 
 Delivered:
-- parsing/excel.py (FR-033): openpyxl-only parse_excel(bytes) -> RFQExtraction. Fuzzy header-row
+- parsing/excel.py (TASK-033): openpyxl-only parse_excel(bytes) -> RFQExtraction. Fuzzy header-row
   detection over the first 15 rows against the Vietnamese and English column names in the spec
   ({stt, ten hang, mo ta, description, qty, so luong, dvt, unit}); a row is the header once it
   carries both a description and a quantity column, so title rows above the table are skipped.
-  Quantities are read straight from the cells (no LLM touches numeric cells, per the FR): ints and
+  Quantities are read straight from the cells (no LLM touches numeric cells, per the task): ints and
   integral floats normalize to a clean Decimal, text digits parse, junk -> None. Fully blank rows
   are dropped; confidence is 1.0 (deterministic). HeaderNotFoundError when no header row is found.
-- parsing/validate.py (FR-034): validation_reasons / needs_clarification returning the reason codes
+- parsing/validate.py (TASK-034): validation_reasons / needs_clarification returning the reason codes
   NO_LINE_ITEMS, MISSING_DESCRIPTION, MISSING_QUANTITY. The pipeline maps a non-empty result to
   status needs_clarification (it does not proceed to matching). Empty-body AC -> NO_LINE_ITEMS.
 - parsing/__init__.py re-exports the deterministic surface only; the text/vision/PDF parsers
-  (FR-030/031/032) call models and land with the agent path.
+  (TASK-030/031/032) call models and land with the agent path.
 - Tests (6): Vietnamese headers under a title row, quantities matching labels exactly incl. an
-  integral-float row (FR-033 AC), English headers with a blank row skipped, missing-header raise,
-  and the FR-034 gate (empty -> NO_LINE_ITEMS, missing-quantity flagged, complete line passes).
+  integral-float row (TASK-033 AC), English headers with a blank row skipped, missing-header raise,
+  and the TASK-034 gate (empty -> NO_LINE_ITEMS, missing-quantity flagged, complete line passes).
 
 Decisions / notes (logged, not frozen-registry items):
-- Per-line language (FR-035) is a deterministic diacritic check: a line carrying Vietnamese
+- Per-line language (TASK-035) is a deterministic diacritic check: a line carrying Vietnamese
   diacritics reads VI, otherwise EN. A diacritic-free brand/model line (e.g. "Laptop Dell Latitude
   5450") therefore reads EN; the drafter agent refines language later. This keeps the parser
   LLM-free while still populating language_per_line.
-- LLM normalization of genuinely ambiguous headers (the second half of FR-033) is deferred to the
+- LLM normalization of genuinely ambiguous headers (the second half of TASK-033) is deferred to the
   agent path; deterministic fuzzy matching covers the labeled fixtures.
 - CI and Makefile now install the parse extra (openpyxl) alongside memory so import-linter builds
-  the full graph and the tests run. Makefile `gc` target now invokes the real FR-046 module.
+  the full graph and the tests run. Makefile `gc` target now invokes the real TASK-046 module.
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (45 files), import-linter 4/4 kept,
 pytest 86 passed.
 
-## 2026-07-11 - EP-07 critic core (branch feat/FR-070-critic)
+## 2026-07-11 - EP-07 critic core (branch feat/TASK-070-critic)
 
 Scope (offline, out of strict PR-1..5 order): the deterministic, code-enforced half of the critic -
-FR-070 independent recomputation, the computable subset of FR-071 policy flags, and FR-072 bilingual
+TASK-070 independent recomputation, the computable subset of TASK-071 policy flags, and TASK-072 bilingual
 number + mojibake checks. Pure functions over an assembled Quote (DM-10) -> CriticReport (DM-11); no
-network, no LLM. The LLM critic narrative (FR-073) layers on top in AGT-07.
+network, no LLM. The LLM critic narrative (TASK-073) layers on top in AGT-07.
 
 Delivered (src/quotemind/quote/critic.py):
-- FR-070 recompute_diffs(quote): recomputes each line total and VAT, then subtotal / per-rate VAT
+- TASK-070 recompute_diffs(quote): recomputes each line total and VAT, then subtotal / per-rate VAT
   breakdown / grand total, using the SAME pricing-engine functions (line_total, vat_amount,
   quote_totals) so the engine stays the single source of numeric truth (D-03, hard rule 2). Any
   claimed value that differs by > 0 VND becomes a RecomputeDiff (field, expected, actual, line_idx);
-  run_critic then adds the blocking RECOMPUTE_MISMATCH. Meets the FR-070 AC (a tampered line total
+  run_critic then adds the blocking RECOMPUTE_MISMATCH. Meets the TASK-070 AC (a tampered line total
   fails with the offending line id).
-- FR-071 policy_flags(quote, ...): MARGIN_BELOW_FLOOR (blocking; blended or any per-line margin
+- TASK-071 policy_flags(quote, ...): MARGIN_BELOW_FLOOR (blocking; blended or any per-line margin
   below floor, default 5 from settings) and MISSING_MANDATORY_FIELDS (blocking); UNKNOWN_CUSTOMER,
   NEEDS_CONFIRMATION (any substituted/no-match line), and VALIDITY_OUT_OF_BOUNDS (non-blocking).
-- FR-072 bilingual_number_mismatches + mojibake_fields: vi/en fields must carry the same numeric
+- TASK-072 bilingual_number_mismatches + mojibake_fields: vi/en fields must carry the same numeric
   tokens (regex/numeric diff after stripping thousands separators, never the LLM); mojibake detected
   by U+FFFD, a "â€" artifact, or a Latin-1 high letter followed by a U+0080-U+00BF byte - none of
   which occur in correct NFC Vietnamese. Both raise blocking flags.
 - run_critic(...) -> CriticReport: passed only when nothing blocks; carries a deterministic bilingual
-  summary note (the rich narrative is FR-073, the agent's job).
+  summary note (the rich narrative is TASK-073, the agent's job).
 - quote/__init__.py exports the critic surface.
-- Tests (10): clean pass; tampered line total (FR-070 AC), subtotal+total, and VAT breakdown; margin
+- Tests (10): clean pass; tampered line total (TASK-070 AC), subtotal+total, and VAT breakdown; margin
   floor; the three non-blocking flags together (which do not fail the quote); bilingual number
   mismatch; mojibake; missing mandatory field.
 
 Decisions / notes (logged, not frozen-registry items):
-- FR-071 VAT_EXCLUDED_CATEGORY mismatch and the SOP validity bounds need data the Quote does not
-  carry (line category; SOP min/max). Category enforcement stays in pricing (FR-052, where category
+- TASK-071 VAT_EXCLUDED_CATEGORY mismatch and the SOP validity bounds need data the Quote does not
+  carry (line category; SOP min/max). Category enforcement stays in pricing (TASK-052, where category
   exists); the validity check runs only when the agent passes SOP bounds. Logged as a deliberate
   subset; the rest lands with the agent path.
 - Mojibake and bilingual-number disagreements are treated as BLOCKING: corrupted governing
   Vietnamese or numbers that disagree across languages are integrity failures that must not ship.
-  FR-072 does not label blocking-ness, so this is a documented choice.
+  TASK-072 does not label blocking-ness, so this is a documented choice.
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (46 files), import-linter 4/4 kept,
 pytest 96 passed.
 
-## 2026-07-11 - EP-06/EP-09 numbering + bilingual HTML render (branch feat/FR-090-render)
+## 2026-07-11 - EP-06/EP-09 numbering + bilingual HTML render (branch feat/TASK-090-render)
 
-Scope (offline): FR-062 quote numbering (pure format) and the FR-090 render's deterministic half -
+Scope (offline): TASK-062 quote numbering (pure format) and the TASK-090 render's deterministic half -
 the bilingual HTML per the normative Appendix C layout. Jinja2 is a core dependency, so the HTML
 render needs no extra; the WeasyPrint PDF byte-generation is a lazy live path behind the pdf extra.
 
 Delivered:
-- quote/numbering.py (FR-062): format_quote_number / parse_quote_number / is_valid_quote_number for
+- quote/numbering.py (TASK-062): format_quote_number / parse_quote_number / is_valid_quote_number for
   the frozen QM-YYYY-NNNN format (seq zero-padded to 4, widening past 9999). The per-year atomic
   counter (qm_counters) stays a runtime concern; only the format lives here, tested offline.
-- quote/render/quote.html.j2 (FR-090): A4 bilingual layout following Appendix C section by section -
+- quote/render/quote.html.j2 (TASK-090): A4 bilingual layout following Appendix C section by section -
   Umber #45210E header band with an Ochre #F4BA17 rule, seller/customer blocks, meta row, the
   STT|Mô tả/Description|ĐVT/Unit|SL/Qty|Đơn giá/Unit price|Thành tiền/Amount table with zebra rows
   and indented Ochre-bordered note rows, right-aligned totals with a per-rate "Thuế GTGT n% / VAT n%"
@@ -312,18 +312,18 @@ Decisions / notes (logged):
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (47 files), import-linter 4/4 kept,
 pytest 103 passed.
 
-## 2026-07-11 - EP-04 matcher fusion + customer resolution (branch feat/FR-042-matcher)
+## 2026-07-11 - EP-04 matcher fusion + customer resolution (branch feat/TASK-042-matcher)
 
-The deterministic, code-enforced half of catalog matching (FR-042) and customer resolution (FR-043),
+The deterministic, code-enforced half of catalog matching (TASK-042) and customer resolution (TASK-043),
 in the tools layer where the agents will call them. No model calls; the LLM select is injected.
 
 Delivered:
-- tools/matching.py (FR-042): reciprocal_rank_fusion / fuse_candidates over the vector and full-text
+- tools/matching.py (TASK-042): reciprocal_rank_fusion / fuse_candidates over the vector and full-text
   SKU rankings (RRF, k=60, deterministic SKU tie-break); build_match_result bands a selection into a
   MatchResult (DM-09) - MATCHED, or NEEDS_CONFIRMATION when confidence < 0.75 or specs conflict (with
   up to 3 alternatives excluding the chosen SKU and a bilingual reason), or NO_MATCH when nothing was
   selected (near-misses surfaced as alternatives). top_candidate gives a no-LLM default selection.
-- tools/customer.py (FR-043): resolve_customer picks from candidate profiles by email domain, then
+- tools/customer.py (TASK-043): resolve_customer picks from candidate profiles by email domain, then
   fuzzy name (difflib ratio over accent-folded names, threshold 0.8), then a free-text hint; falls
   back to tier end_customer with unknown_customer=true. CustomerResolution carries profile/tier/flag.
 - tools/__init__.py exports both.
@@ -336,16 +336,16 @@ feed AssemblyLine, and unknown_customer feeds the critic's non-blocking flag.
 
 Verification (Python 3.10 sandbox): ruff clean, mypy clean (48 files), import-linter 4/4 kept,
 pytest 114 passed.
-## 2026-07-11 - EP-06 quote assembly (branch feat/FR-060-assemble)
+## 2026-07-11 - EP-06 quote assembly (branch feat/TASK-060-assemble)
 
-FR-060, the keystone that turns matched, priced lines into a Quote (DM-10) and ties the whole
+TASK-060, the keystone that turns matched, priced lines into a Quote (DM-10) and ties the whole
 deterministic chain together: pricing -> assembly -> critic -> render.
 
 Delivered (src/quotemind/quote/assemble.py):
 - AssemblyLine: one resolved RFQ line (CatalogProduct + qty + tier + line discount + optional NL
   overrides for description/unit/note + source). Description/unit default to the catalog values, so
   assembly is usable without the drafter and the drafter can override later.
-- assemble_quote(...): for each line applies unit_price (FR-051 tiered), vat_rate_for (FR-052,
+- assemble_quote(...): for each line applies unit_price (TASK-051 tiered), vat_rate_for (TASK-052,
   telecom forced to 10%), line_total and vat_amount, then quote_totals for subtotal / per-rate VAT /
   grand total, amount_in_words_vi for the bang chu, to_usd for the optional USD reference, and
   margin/blended_margin for MarginInfo. Every number is engine-produced; the LLM only supplies the
@@ -366,7 +366,7 @@ the live provision + catalog round-trip that had been blocked.
 
 Live verification (Mac .venv against real ap-southeast-1 cloud):
 - deploy/provision.py: created quotemind-inbox and quotemind-artifacts (both private); Tablestore
-  tables/indexes initialized at vector dim 1024; exit 0. Re-run is idempotent (FR-004 AC).
+  tables/indexes initialized at vector dim 1024; exit 0. Re-run is idempotent (TASK-004 AC).
 - Catalog round-trip: embedded 3 products with text-embedding-v4 (dim 1024), put_catalog, then
   get_catalog (equal round-trip) and search_catalog_vector - top hit DELL-LAT-5450 @ 0.85 for a
   "laptop Dell doanh nghiep i5 16GB" query, correctly ranked ahead of the monitor and switch, with
@@ -396,20 +396,20 @@ Delivered:
 - agents/model.py: AgentScope factory. Model names come from the frozen registry; the native
   DashScope base (/api/v1) that AgentScope needs is derived from the OpenAI-compatible base already
   in .env, so there is no second endpoint env var to drift.
-- memory/embedding.py (FR-041): embed_texts at the frozen model + dimension (text-embedding-v4,
+- memory/embedding.py (TASK-041): embed_texts at the frozen model + dimension (text-embedding-v4,
   1024), batched at 10 per call, input order restored from the response index.
-- agents/parser.py (FR-030): text RFQ -> RFQExtraction via structured output.
-- agents/matcher.py (FR-042 select): the LLM picks one SKU from the fused candidate list, and the
+- agents/parser.py (TASK-030): text RFQ -> RFQExtraction via structured output.
+- agents/matcher.py (TASK-042 select): the LLM picks one SKU from the fused candidate list, and the
   code then *enforces* the whitelist - a SKU the model invents is discarded, never trusted.
-- memory/store.py: added search_customers_text (FR-043 candidates) and made catalog_text public so
+- memory/store.py: added search_customers_text (TASK-043 candidates) and made catalog_text public so
   seeding embeds exactly the text the store indexes; put_customer now indexes name + domains +
   emails so a buyer can be found by any of them.
-- orchestrator.py (FR-130): parse -> FR-034 gate -> resolve customer -> per line (embed, vector +
+- orchestrator.py (TASK-130): parse -> TASK-034 gate -> resolve customer -> per line (embed, vector +
   full-text search, RRF fuse, LLM select, band) -> assemble -> critic -> render.
-- deploy/seed.py (FR-011): 8 demo catalog products + 2 customers, embedded and written.
+- deploy/seed.py (TASK-011): 8 demo catalog products + 2 customers, embedded and written.
 - Tests (+11): base-URL derivation, the SKU-whitelist guardrail (a hallucinated SKU is rejected),
   embedding batching/order/dimension, and the whole orchestrator end to end with the model AND the
-  cloud mocked - plus the FR-034 clarification path and the no-match path.
+  cloud mocked - plus the TASK-034 clarification path and the no-match path.
 
 Live end-to-end run (real DashScope + real ap-southeast-1, 34s):
   Vietnamese RFQ email -> qwen-plus extracted 3 lines with exact quantities and intact diacritics ->
@@ -421,13 +421,13 @@ Live end-to-end run (real DashScope + real ap-southeast-1, 34s):
 
 Notes / deferred:
 - AgentScope prints agent turns to stdout; that noise should be silenced before the serverless
-  deploy (FR-008 structured logging owns the log surface).
-- Terms and quote notes still use documented defaults; SOP memory (FR-048) and the bilingual drafter
-  (FR-061) will replace them. The quote is already bilingual because catalog names are BilingualText.
-- Vision/PDF parsers (FR-031/032), episodic memory (FR-044/045), and the planner handoff (FR-131)
+  deploy (TASK-008 structured logging owns the log surface).
+- Terms and quote notes still use documented defaults; SOP memory (TASK-048) and the bilingual drafter
+  (TASK-061) will replace them. The quote is already bilingual because catalog names are BilingualText.
+- Vision/PDF parsers (TASK-031/032), episodic memory (TASK-044/045), and the planner handoff (TASK-131)
   remain.
 
-Also added docs/roadmap.html - a self-contained view of all 13 epics / 82 FRs with live status.
+Also added docs/roadmap.html - a self-contained view of all 13 epics / 82 tasks with live status.
 
 Verification: ruff clean, mypy clean (54 files), import-linter 4/4 kept, pytest 128 passed,
 pricing branch coverage 100%.
@@ -439,42 +439,42 @@ numbered, run to the approval gate, and can be approved by a completely differen
 
 Delivered:
 - memory/quotes.py: QuoteStore over the three frozen tables (qm_quotes, qm_audit, qm_counters).
-  FR-062 numbering now uses a real atomic per-year counter - the Python Tablestore SDK cannot read
+  TASK-062 numbering now uses a real atomic per-year counter - the Python Tablestore SDK cannot read
   back an incremented value (ReturnType has no RT_AFTER_MODIFY), so it is a bounded compare-and-set
-  loop, which is still atomic: a losing writer retries against the new value. Idempotency (FR-024)
+  loop, which is still atomic: a losing writer retries against the new value. Idempotency (TASK-024)
   is a pointer row inside qm_quotes rather than a fourth table, and the queue is a bounded scan;
   both are documented demo-scale choices that keep the frozen table list intact. put_quote uses
   update_row (not put_row) so a status change cannot wipe the stored quote/critic/html.
-- intake.py (FR-022/024/025): deterministic classification - doc type from the filename, language
+- intake.py (TASK-022/024/025): deterministic classification - doc type from the filename, language
   from Vietnamese diacritics (vi/en/mixed), urgency from keywords. No model needed, and code cannot
   hallucinate a doc type. Oversize (>15 MB) and unsupported types are rejected before anything else.
 - service.py: QuoteService, the only writer of quote state. Every transition goes through the frozen
-  state machine (FR-080) and writes a hash-chained audit event (FR-094) before returning. submit
-  (idempotent), process (persists each stage), review (FR-082), approve/reject (FR-083), revise
-  (FR-084, capped at 3 revisions), stale_pending (FR-085).
-- api/app.py: API-01..08. POST /api/rfq returns 202 and runs the pipeline in the background (FR-020).
+  state machine (TASK-080) and writes a hash-chained audit event (TASK-094) before returning. submit
+  (idempotent), process (persists each stage), review (TASK-082), approve/reject (TASK-083), revise
+  (TASK-084, capped at 3 revisions), stale_pending (TASK-085).
+- api/app.py: API-01..08. POST /api/rfq returns 202 and runs the pipeline in the background (TASK-020).
   FastAPI cannot mix a JSON body model with File/Form on one route, so the content type is dispatched
-  by hand to satisfy FR-020's "multipart OR JSON" requirement.
-- models/common.py: added Language.MIXED and DocType.IMAGE, which FR-022 requires and the DM enums
+  by hand to satisfy TASK-020's "multipart OR JSON" requirement.
+- models/common.py: added Language.MIXED and DocType.IMAGE, which TASK-022 requires and the DM enums
   had omitted.
 
 Spec correction worth noting: an earlier reading sent every quote with a blocking flag to
-critic_failed. That is wrong. FR-070 (a recompute mismatch) is a hard failure - the arithmetic did
-not survive an independent check. FR-071 policy flags (e.g. MARGIN_BELOW_FLOOR) are different: the
+critic_failed. That is wrong. TASK-070 (a recompute mismatch) is a hard failure - the arithmetic did
+not survive an independent check. TASK-071 policy flags (e.g. MARGIN_BELOW_FLOOR) are different: the
 quote still reaches the human, who may waive them explicitly at the gate, and the waiver is audited
-(FR-083). The code now does exactly that.
+(TASK-083). The code now does exactly that.
 
 Live run (real Tablestore):
   tables created -> submit -> QM-2026-0001 from the atomic counter -> re-post returns the same id
-  (FR-024) -> pipeline to pending_approval, total 248,400,000 VND -> a BRAND NEW QuoteService (new
+  (TASK-024) -> pipeline to pending_approval, total 248,400,000 VND -> a BRAND NEW QuoteService (new
   client, new objects) loads the quote from Tablestore, verifies the 7-event hash chain, and approves
-  it. That is FR-081 durable pause and resume, proven rather than asserted.
+  it. That is TASK-081 durable pause and resume, proven rather than asserted.
 
 Tests: +18 (146 total). Intake classification and guards; the service lifecycle against real
 assembled/critiqued quotes including the blocking-flag waiver path and an illegal transition; the API
 surface end to end with a fake store (202, idempotent re-post, 409 with the flag list, 404, 422, 401).
 
-Deferred: OSS drop channel (FR-021), FR-085's log event and dashboard badge, and dispatch (PDF,
+Deferred: OSS drop channel (TASK-021), TASK-085's log event and dashboard badge, and dispatch (PDF,
 presigned URL, email) which is the next batch.
 
 Verification: ruff clean, mypy clean (57 files), import-linter 4/4 kept, pytest 146 passed.
@@ -488,21 +488,21 @@ whole path by itself.
 Delivered:
 - cloud/oss.py: ArtifactStore over the two buckets. Artifacts land at the frozen keys
   quotes/{quote_number}.pdf and outbox/{quote_number}.eml; presigned GETs are V4-signed with
-  slash_safe=True and a 600s TTL (FR-091). The inbox side lists and reads rfq/ objects (FR-021).
-- quote/render/render_pdf (FR-090): WeasyPrint over the existing Appendix C template. Verified the
+  slash_safe=True and a 600s TTL (TASK-091). The inbox side lists and reads rfq/ objects (TASK-021).
+- quote/render/render_pdf (TASK-090): WeasyPrint over the existing Appendix C template. Verified the
   way the AC asks - the PDF text is extracted back out with pypdfium2 and every Vietnamese string
   (BÁO GIÁ, Mô tả hàng hóa, Bằng chữ, the bang chu total, Thanh toán trong 30 ngày) still carries its
   diacritics byte-exact. The brand TTFs are not committed (binary assets); WeasyPrint falls back to
   the system sans and diacritics still render - see quote/render/fonts/README.md.
-- dispatch.py (FR-092/093): one bilingual MIME message, two transports. Vietnamese leads (it is the
+- dispatch.py (TASK-092/093): one bilingual MIME message, two transports. Vietnamese leads (it is the
   governing language), English follows, the presigned link is in both parts, and the PDF is attached
   only when <= 3 MB. `smtp` goes through DirectMail over SSL 465; `stub` writes the identical message
   to oss://quotemind-artifacts/outbox/ and is audited as sent_stub, so demos are deterministic.
 - service.dispatch: approved -> dispatching -> sent, with every step audited and any failure landing
   durably in failed_dispatch. pdf_url renders on demand if the object is missing.
 - api: API-09 GET /api/quotes/{id}/pdf returns 302 to a fresh presigned URL; approval now triggers
-  dispatch in the background (FR-083).
-- deploy/ingest.py (FR-021): one code path, two entry points - an FC OSS trigger handler and a
+  dispatch in the background (TASK-083).
+- deploy/ingest.py (TASK-021): one code path, two entry points - an FC OSS trigger handler and a
   `python deploy/ingest.py` scan. The dropped key becomes source_uri and channel is oss_drop, so a
   file-borne RFQ is indistinguishable downstream from an API one.
 
@@ -518,52 +518,52 @@ dropped into oss://quotemind-inbox/rfq/ was ingested by deploy/ingest.py and ran
 pending_approval as QM-2026-0003. The rendered PDF is committed at docs/sample-quote.pdf.
 
 Deferred: the DirectMail smtp path is implemented but untested against a live verified sender (the
-demo default is stub); brand TTFs; FR-085's log event and badge.
+demo default is stub); brand TTFs; TASK-085's log event and badge.
 
 Verification: ruff clean, mypy clean (59 files), import-linter 4/4 kept, pytest 155 passed, pricing
 branch coverage 100%. CI now installs pango/cairo before the pdf extra so WeasyPrint runs there too.
 
 ## Batch: observability + review dashboard (EP-11, EP-10) - feat/observability-dashboard
 
-FR-110/111/112/113 + FR-100/101/102/103/105/106. The demo's money shot: the reviewer can see not
+TASK-110/111/112/113 + TASK-100/101/102/103/105/106. The demo's money shot: the reviewer can see not
 just the quote, but every step that produced it, priced.
 
-- obs/otel.py (FR-110): GenAI semantic conventions - `chat qwen3-max`, `execute_tool vector_search`,
+- obs/otel.py (TASK-110): GenAI semantic conventions - `chat qwen3-max`, `execute_tool vector_search`,
   `gen_ai.provider.name` / `gen_ai.operation.name` / `gen_ai.request.model` / `gen_ai.usage.*`. The
   OTel SDK is optional: with no exporter installed the span is a no-op, so nothing on the quote path
   depends on a collector being up. The name/attribute builders are pure, so the convention itself is
   unit-tested rather than asserted in a comment.
-- obs/trace.py (FR-111): every model call, tool call and memory read on a quote's path becomes an
+- obs/trace.py (TASK-111): every model call, tool call and memory read on a quote's path becomes an
   ordered TraceStep (DM-14) with tokens, cost and duration. Written to
   oss://quotemind-artifacts/traces/{quote_id}.json and served by API-05. Prompt and response bodies
   are excluded by default - an RFQ carries a real customer's details and a trace is not the place to
   leak them; TRACE_CONTENT=1 turns them on for debugging.
-- obs/cost.py + config/model_prices.yaml (FR-112): token counts times a checked-in price table, in
+- obs/cost.py + config/model_prices.yaml (TASK-112): token counts times a checked-in price table, in
   Decimal. Two decisions worth stating plainly. First, the token counts are the provider's own,
   read off ChatResponse.usage via a DashScopeChatModel subclass - not estimated, because a
   fabricated cost number in an eval report is worse than none. Second, the prices are Alibaba's
   published *list* prices for the International (Singapore) endpoint, dated in the file; batch
   inference, context caching and the free quota all discount them, so what QuoteMind reports is an
   honest upper bound, not a bill.
-- obs/errors.py (FR-113): the taxonomy plus a retry policy with one load-bearing rule - only model
+- obs/errors.py (TASK-113): the taxonomy plus a retry policy with one load-bearing rule - only model
   and tool calls are retried (1s, then 4s). Deterministic steps are never retried, because if
   pricing or the critic recompute failed, the input was wrong and running the arithmetic again just
   produces the same wrong answer more slowly, while hiding the bug.
 - service.py: the trace is persisted next to the quote, and a trace write failure can never fail a
   quote - it lands as a `trace.persist_failed` audit event and the quote still reaches the human.
   Observability that can take down the product is worse than no observability.
-- web/index.html (FR-100..103, FR-105): one self-contained file, no build step. Queue with status
+- web/index.html (TASK-100..103, TASK-105): one self-contained file, no build step. Queue with status
   filters and 5s polling; detail with the bilingual line table, confidence and flag chips, totals,
   margin and amount-in-words; an action bar whose approve button opens a waiver modal *only* when
   the critic raised a blocking flag (and a 409 from the server if a waiver is skipped); and the
   collapsible reasoning-trace panel showing each step with its tokens, cost and duration. CDS
   Umber/Ochre, light theme.
-- deploy/upload_site.py (FR-106): substitutes the API base and token at upload time and publishes
+- deploy/upload_site.py (TASK-106): substitutes the API base and token at upload time and publishes
   the page as the only public object in the artifacts bucket. Quotes, traces and outbox messages
   stay private behind presigned URLs. The API gained CORS for exactly this reason - the token, not
   the origin, is the security boundary.
 
-Deferred: FR-104 (realtime push) polls at 5s instead of using SSE/WebSocket - a demo-scale choice,
+Deferred: TASK-104 (realtime push) polls at 5s instead of using SSE/WebSocket - a demo-scale choice,
 and honest about it in the roadmap.
 
 Live (real cloud, `python deploy/smoke_trace.py`): a two-line Vietnamese RFQ ran to
@@ -589,7 +589,7 @@ branch coverage 100%.
 
 ## Batch: evaluation harness (EP-12) - feat/eval-harness
 
-FR-120/121/122/123/124, plus FR-031 and a real FR-011 catalog. This is the batch that turns the
+TASK-120/121/122/123/124, plus TASK-031 and a real TASK-011 catalog. This is the batch that turns the
 Track-4 claim from an assertion into a measurement.
 
 ### The headline
@@ -659,20 +659,20 @@ and lets the customer find out on delivery.
   is a genuine invoice-fraud exposure: a quote PDF carries payment instructions. All of it is now
   clearly-marked SAMPLE data in `config/seller.py` (which also lets the eval build quotes without
   importing the API layer). Real tenant identity belongs in deploy-time config, never in source.
-- **FR-011: the catalog is now 61 SKUs and 8 customers** (Appendix A.1/A.2). The old 8-SKU catalog
+- **TASK-011: the catalog is now 61 SKUs and 8 customers** (Appendix A.1/A.2). The old 8-SKU catalog
   made "top-1 SKU accuracy" meaningless - almost any retrieval would land on the right row. The new
   one is built with deliberately confusable families (Latitude 5450 i5 / 5450 i7 / 5440 / 7450;
   P2422H / P2423D / P2723DE) so the matcher actually has to discriminate.
-- **FR-031: digital PDF extraction.** Text is lifted out with pypdfium2 and handed to the normal text
+- **TASK-031: digital PDF extraction.** Text is lifted out with pypdfium2 and handed to the normal text
   path. A scanned PDF raises `ScannedPdfError` rather than being parsed into a confidently empty
-  quote - it needs vision OCR (FR-032), which is what the 5 skipped cases are waiting on.
+  quote - it needs vision OCR (TASK-032), which is what the 5 skipped cases are waiting on.
 - **Orchestrator entry points** for text, spreadsheet and PDF now converge on one shared
   `quote_from_extraction`. A channel with its own pricing path would be a channel that could disagree.
-- **FR-123: CI cassettes.** Five cases recorded from a live run's own trace (FR-111 with
+- **TASK-123: CI cassettes.** Five cases recorded from a live run's own trace (TASK-111 with
   TRACE_CONTENT=1 - so what CI replays is what the models really said) and replayed with no API key,
   no cost and no network. The thresholds are exact, not approximate: given the same recorded model
   output the deterministic half must produce the same quote to the đồng, every time.
-- **FR-124: the golden PDF.** Rendered, rasterised and pixel-diffed at 2%. It exercises both VAT
+- **TASK-124: the golden PDF.** Rendered, rasterised and pixel-diffed at 2%. It exercises both VAT
   bands (8% goods + 10% telecom) so a VAT regression shows up as a picture. Caveat stated rather than
   hidden: the golden is font-dependent - recorded on macOS it differs from Linux by ~25% of pixels,
   which is font fallback, not layout - so it is pinned to the CI platform until the Be Vietnam Pro
@@ -683,9 +683,9 @@ branch coverage 100%.
 
 ## Batch: deployment proof and submission artifacts (EP-01, SUB-*) - feat/deploy-proof
 
-FR-003, FR-005, FR-012, and SUB-02..06.
+TASK-003, TASK-005, TASK-012, and SUB-02..06.
 
-### FR-005: the Alibaba proof, and why it asserts on content
+### TASK-005: the Alibaba proof, and why it asserts on content
 
 `src/quotemind/cloud/alibaba_proof.py` is the file the hackathon asks for - "a link to a code file
 demonstrating use of Alibaba Cloud services and APIs". It is deliberately one module with no
@@ -702,7 +702,7 @@ Live: **8/8 PASS on ap-southeast-1, exit 0.** DashScope chat (`qwen3-max`, 'OK' 
 embedding (1024 dims); OSS put -> V4-presigned GET -> HTTP 200 -> byte-match -> delete; Tablestore
 create -> put -> get (byte-exact) -> delete.
 
-### FR-012: the cold-start check caught itself being wrong, twice
+### TASK-012: the cold-start check caught itself being wrong, twice
 
 The model-availability probe is supposed to detect a retired model id and swap in the documented
 fallback. Running it live against the real gateway, it did something worse than nothing: it reported
@@ -723,7 +723,7 @@ a fallback. So the probe now fails closed on absence (`model_not_found`, `does n
 on argument: a 400 about a parameter counts as reachable. Without that distinction the check is
 fragile in the worst possible direction - any future tightening of an input rule by Model Studio
 would silently reroute production traffic onto a different model, which is precisely the outcome
-FR-012 exists to prevent.
+TASK-012 exists to prevent.
 
 Live, after the fix: **all four frozen model ids verified, zero substitutions, nothing unverified.**
 
@@ -732,7 +732,7 @@ cold start (a boot check that can take the API down is a liability, not a safegu
 substitution is visible on `/health` (a silent fallback is how you spend a day debugging a quality
 regression before noticing you have been on a different model since Tuesday).
 
-### FR-003: two functions, one pipeline
+### TASK-003: two functions, one pipeline
 
 `deploy/s.yaml` (Serverless Devs 3.0.0, `fc3`) deploys `quotemind-api` on an HTTP trigger and
 `quotemind-ingest` on an OSS object-created trigger over `quotemind-inbox/rfq/`. They share one
@@ -743,7 +743,7 @@ drift from the one every test exercises.
 
 The `authType: anonymous` trigger is argued for in the file rather than glossed over: FC's gateway
 auth signs with the account AK/SK, which a browser dashboard cannot hold and a judge cannot use, so
-the *application* is the authorization boundary (bearer token on every `/api/*` route, FR-010) and
+the *application* is the authorization boundary (bearer token on every `/api/*` route, TASK-010) and
 `/health` is deliberately open so the deployment can be verified without a credential. Demo-grade by
 design, and section 3.2 says so.
 
@@ -770,9 +770,9 @@ branch coverage 100%. Live: alibaba_proof 8/8, /health reports 4/4 models verifi
 
 ## Batch: vision OCR + the deployment made real (feat/vision-ocr)
 
-FR-031/032, and FR-003/FR-012/FR-106 taken from "descriptor exists" to "you can click it".
+TASK-031/032, and TASK-003/TASK-012/TASK-106 taken from "descriptor exists" to "you can click it".
 
-**Vision OCR (FR-031/032).** Scanned RFQs are rasterised at 200 DPI (10-page cap) and read by
+**Vision OCR (TASK-031/032).** Scanned RFQs are rasterised at 200 DPI (10-page cap) and read by
 `qwen-vl-ocr`. The prompt demands JSON only; `strip_fence` removes a code fence and nothing else -
 it never "repairs" malformed JSON, because a parser that guesses at a price is worse than one that
 refuses. An unreadable quantity becomes `None`, never a guess. This unblocked the 5 scanned cases the
@@ -815,7 +815,7 @@ and the useful part of this entry is that the first three were guesses:
 The lesson recorded for its own sake: three deploys were spent guessing because the function's logs
 were unavailable, and I kept proposing fixes instead of first fixing the reason I was blind.
 
-**FR-012 was never running in production.** `/health` reported every model `unverified` - correctly,
+**TASK-012 was never running in production.** `/health` reported every model `unverified` - correctly,
 and I nearly dismissed it as cosmetic. `initializer:` / `initializationTimeout:` is the FC *2.0*
 spelling; Serverless Devs accepted the keys, dropped them, and deployed a function with **no
 initializer at all** (`s info` confirmed it). Fixing the YAML (`instanceLifecycleConfig`) was
@@ -824,7 +824,7 @@ from silently not running again. The probe now runs on first need, and the initi
 it. Live, `/health` reports `unverified: []`, `substitutions: {}` - every frozen model id answered
 from inside FC, which also proves FC -> DashScope connectivity that had never been exercised.
 
-**FR-106 dashboard: served by the API, not by OSS.** OSS refused `Put public object acl` - the
+**TASK-106 dashboard: served by the API, not by OSS.** OSS refused `Put public object acl` - the
 artifacts bucket has Block Public Access on. The right response was not to switch it off: that bucket
 holds customer quote PDFs, handed out as 10-minute presigned URLs precisely because they must not be
 world-readable. A bucket configured to host a public dashboard is a bucket that would just as happily
@@ -839,17 +839,17 @@ branch coverage 100%. Live: `/` serves the dashboard, `/health` 200 with 0 unver
 
 ## Batch: the file channels actually read files (feat/file-intake)
 
-FR-021/022/024/033. This batch exists because the autopilot loop did not work, and finding out why
+TASK-021/022/024/033. This batch exists because the autopilot loop did not work, and finding out why
 was worse than the bug.
 
 **The bug.** Both intake channels - `POST /api/rfq` with a file, and the OSS drop - did this:
 
 ```python
-# Only text-bearing uploads run today; PDF and image parsing land with FR-031/032.
+# Only text-bearing uploads run today; PDF and image parsing land with TASK-031/032.
 text = raw.decode("utf-8", errors="replace")
 ```
 
-FR-031/032/033 landed. The comments did not. So a spreadsheet dropped into `quotemind-inbox/rfq/`
+TASK-031/032/033 landed. The comments did not. So a spreadsheet dropped into `quotemind-inbox/rfq/`
 was decoded as mojibake, parsed as prose, and parked at `received` - a numbered quote, forever
 stuck, with nothing in it. The one intake channel that exists *specifically for files* was the only
 one that could not read a file.
@@ -863,10 +863,10 @@ out", which was true of the broken code too.
 
 **The fix.** Parser routing now lives in one place, `QuoteService._pipelines`, keyed by `DocType`,
 and both channels call it. A `DocType` with no route is a `KeyError`, and a test asserts the map is
-total. `quote_from_image` (FR-033) was added: a photographed RFQ is a one-page scan, so it goes
+total. `quote_from_image` (TASK-033) was added: a photographed RFQ is a one-page scan, so it goes
 through the same vision reader as a scanned PDF rather than a second copy of that loop.
 
-**FR-024 was wrong for files, too.** `submit()` hashed the *placeholder text*, so two different
+**TASK-024 was wrong for files, too.** `submit()` hashed the *placeholder text*, so two different
 spreadsheets that happened to share a filename collided into one quote - the second customer would
 have silently received the first customer's prices - while the same spreadsheet renamed became two
 quotes. It now hashes the bytes that actually arrived.
@@ -885,12 +885,12 @@ approval gate flagged `UNKNOWN_CUSTOMER`. That flag is correct - a bare file dro
 so the system refuses to guess a pricing tier and asks a human instead.
 
 Verification: ruff clean, mypy clean (77 files), import-linter 4/4 kept, pytest 280 passed, pricing
-branch coverage 100%. Traceability backfilled: 84 rows, up from 65 - several FRs were built but had
+branch coverage 100%. Traceability backfilled: 84 rows, up from 65 - several tasks were built but had
 no evidence row, which is its own kind of untruth.
 
 ## Batch: the last two P0s (feat/memory-planner)
 
-FR-044/045/046 (episodic memory) and FR-131 (the planner). Both were "built" in the sense that the
+TASK-044/045/046 (episodic memory) and TASK-131 (the planner). Both were "built" in the sense that the
 hard parts existed and nothing called them.
 
 **Episodic memory was dead code.** `memory/episodic.py` has had correct, unit-tested importance
@@ -899,19 +899,19 @@ and `search_episodic` for just as long. Nothing invoked any of it. The system co
 single decision a human had ever made.
 
 Now: on approve or reject, `QuoteService` writes an episode - a bilingual LLM summary (<=120 words),
-the items, the outcome, the human's own words, and an importance from FR-046 (approved 0.7, edited
+the items, the outcome, the human's own words, and an importance from TASK-046 (approved 0.7, edited
 0.8, rejected 0.9, +0.1 over 100M VND). An approval that needed a waiver, or that followed a
 revision, is recorded as *edited* rather than *approved*: a quote a human had to argue with is a more
 interesting memory than one they nodded through. The write never raises - the decision is already on
 the audit chain, and losing the memory of it must not lose the decision.
 
 Before quoting a known customer, the orchestrator recalls the top 3. The vector store ranks on
-similarity alone, so it is over-fetched and re-ranked by the FR-046 effective score
+similarity alone, so it is over-fetched and re-ranked by the TASK-046 effective score
 (similarity x recency_decay x importance) - without that, a perfectly-matched year-old episode
-outranks last week's rejection, which is exactly backwards. The 1200-token budget (FR-049) drops the
+outranks last week's rejection, which is exactly backwards. The 1200-token budget (TASK-049) drops the
 weakest, and says so. Every recalled memory id lands in the trace.
 
-**Where memory is not allowed to go.** A recalled episode never touches the money. FR-045 says to
+**Where memory is not allowed to go.** A recalled episode never touches the money. TASK-045 says to
 inject the memories into "the drafter context"; there is no LLM drafter to inject into, because the
 quote is assembled deterministically, and inventing one so that a retrieved document could nudge a
 price would put a similarity search inside the arithmetic path - the one thing this architecture
@@ -919,7 +919,7 @@ exists to prevent. The retrieval, the ranking, the budget and the trace record a
 specified. What the memories inform is the human, not the total. That divergence is argued for in
 `memory/recall.py` rather than hidden.
 
-**The planner, and how it nearly became theatre.** FR-131 asks for AgentScope's PlanNotebook. The
+**The planner, and how it nearly became theatre.** TASK-131 asks for AgentScope's PlanNotebook. The
 easy version generates a plan, never consults it, and always reports itself complete - a confident
 lie in the one artifact a reviewer opens to find out what happened. So: the plan's subtasks are
 closed by the pipeline that actually ran, and a subtask nobody closed still says `todo`. Two things
@@ -931,7 +931,7 @@ fell out of building it honestly:
   therefore in *execution* order, not reading order. It was not, and the plan reported the customer
   resolution as still running after it had finished. A test now pins the order.
 
-Trivial quotes skip the plan with a logged reason (FR-131 allows the fast path). The flags that can
+Trivial quotes skip the plan with a logged reason (TASK-131 allows the fast path). The flags that can
 gate a plan are the ones that exist at *intake* - line count, a scanned source, an unreadable
 quantity, a parser that was unsure. A NO_MATCH line cannot gate it, because NO_MATCH comes from the
 matcher, and the plan exists to organise the matcher: planning cannot wait on the result of the thing
@@ -954,7 +954,7 @@ branch coverage 100%.
 
 ## Batch: the dashboard adopts the CyberSkill design system (feat/design-system-ui)
 
-FR-105/106. The dashboard was hand-styled with hardcoded hex values that happened to *resemble*
+TASK-105/106. The dashboard was hand-styled with hardcoded hex values that happened to *resemble*
 Umber and Ochre. It now uses the real design system - and the design system turned out to have
 opinions that changed what the page says, not just how it looks.
 
@@ -1030,12 +1030,12 @@ address. The customer was flagged UNKNOWN_CUSTOMER, quoted at **list price inste
 tier**, and their history was never recalled, because recall needs a resolved customer. Every signal
 is now searched and unioned.
 
-**3. The PDF button had never worked, for two independent reasons.** FR-091 specifies a 302 to a
+**3. The PDF button had never worked, for two independent reasons.** TASK-091 specifies a 302 to a
 presigned OSS URL. Function Compute's default domain refuses cross-domain redirects
 (`ExternalRedirectForbidden`), so the route returned 400 once deployed - it passed under uvicorn. And
 the dashboard linked to it with a plain `<a href>`, which sends no Authorization header, so it would
 have 401'd anyway. The route now returns the signed URL; the client fetches it with its token and
-opens it. The object stays private and the URL short-lived, which is what FR-091 is *for*.
+opens it. The object stays private and the URL short-lived, which is what TASK-091 is *for*.
 
 **4. An approved quote could land in `failed_dispatch`.** An RFQ dropped as a file has no sender.
 Approval auto-dispatched, dispatch found no address, and a good approved quote turned red. Nothing had
@@ -1092,9 +1092,9 @@ rather than dropping it, and the test drives a fake Tablestore client to assert 
 read side looks for is a column the write side actually sent. A typed signature could not express that
 property, which is why it did not hold.
 
-**Also.** `traceability.csv` was missing ten spec FRs entirely - including FR-133, a P0. A matrix that
+**Also.** `traceability.csv` was missing ten spec tasks entirely - including TASK-133, a P0. A matrix that
 omits its own failures is not a matrix. They are in it now, honestly marked: four not implemented,
-three partial (FR-133 among them: `structured_model=` at the text parser, the matcher and the baseline,
+three partial (TASK-133 among them: `structured_model=` at the text parser, the matcher and the baseline,
 but the vision reader hand-parses JSON, because `qwen-vl-ocr` is an OCR model, not a tool-calling chat
 model).
 
@@ -1105,9 +1105,9 @@ all three lines survive, the monitor drops 8 -> 2, and the total is recomputed d
 
 ## Batch: the roadmap, finished (feat/roadmap-finish)
 
-Seven FRs. One of them changed how the product reads, and it is worth saying which and why.
+Seven tasks. One of them changed how the product reads, and it is worth saying which and why.
 
-**FR-048 - the terms on a quote are retrieved, not hardcoded.** `DEFAULT_TERMS` was a module-level
+**TASK-048 - the terms on a quote are retrieved, not hardcoded.** `DEFAULT_TERMS` was a module-level
 constant, so every quote said "giao hàng trong vòng 7 ngày làm việc / delivery within 7 working
 days" - *including* a quote for a made-to-order server with a six-week manufacturer lead time. That
 is not a formatting problem. It is a promise the business cannot keep, printed on a document the
@@ -1124,7 +1124,7 @@ This gives the system its third kind of memory, and they are worth naming togeth
 customer - `memory/recall.py`), and **semantic** (what the products are - the catalog). All three
 inform the draft. None of them is allowed near the arithmetic.
 
-**FR-073 - the critic explains itself, and cannot argue with itself.** The order is load-bearing:
+**TASK-073 - the critic explains itself, and cannot argue with itself.** The order is load-bearing:
 `run_critic` reaches the verdict, in code; *then* `agents/reviewer.py` is handed the finished report
 and asked to explain it. The model cannot set `passed`, cannot add or drop a flag, and never sees a
 number it could recompute. If the call fails the quote is unaffected. The 80-word cap is enforced
@@ -1137,27 +1137,27 @@ the verdict and cannot change it. Collapsing them into one block of prose would 
 distinction the whole architecture is built on, at the one moment a human is deciding whether to
 trust it.
 
-**FR-056** - an out-of-stock line carries its lead time, in both languages, *appended* to whatever
+**TASK-056** - an out-of-stock line carries its lead time, in both languages, *appended* to whatever
 note it already had (a substitution note, typically) rather than replacing it. Two things can be
 true about one line. `LEAD_TIME` is non-blocking: it is news, not an error.
 
-**FR-085** - a quote nobody has answered in four hours is badged in the queue and logged. This is
+**TASK-085** - a quote nobody has answered in four hours is badged in the queue and logged. This is
 the failure mode an approval gate *creates*: the system did its job, stopped, and asked - and the
 asking went unheard.
 
-**FR-104** - `/eval` is public, like `/health`, and for the same reason: the headline of this whole
+**TASK-104** - `/eval` is public, like `/health`, and for the same reason: the headline of this whole
 project is 97% against 40%, and a benchmark a judge has to take on faith is not a benchmark. It
 renders a *committed snapshot* rather than running the eval, so the number on the site and the
 number in the submission cannot drift apart without a commit saying so. 17 of the 30 cases are ones
 we price exactly and the single agent does not.
 
-**FR-124** - Be Vietnam Pro is bundled (Regular / SemiBold / Bold + `OFL.txt`). It was left out on
+**TASK-124** - Be Vietnam Pro is bundled (Regular / SemiBold / Bold + `OFL.txt`). It was left out on
 the reasoning that the repo stays source-only, which was the wrong call for this asset: WeasyPrint's
 fallback keeps the diacritics byte-exact, so nothing was broken, but a quotation rendered in whatever
 sans-serif the host happens to have is the difference between a document that looks like it came
 from a company and one that looks like it came from a script.
 
-**FR-134 - cancel, and the half of it that cannot be built honestly.** A quote at the gate is
+**TASK-134 - cancel, and the half of it that cannot be built honestly.** A quote at the gate is
 cancellable: it ends as `rejected` (the frozen enum's word for "ended, not sent"), but the audit
 event is `human.cancel`, so "the operator dropped this" and "the reviewer judged the price wrong"
 stay two different facts forever. Only one of them is evidence about the pricing, so a cancel is
@@ -1172,7 +1172,7 @@ landing an interrupted run in `failed_parse` would put a lie on a hash-chained a
 make one P1 fit is exactly the change section 12 says to stop and ask about. **This is a decision for
 Stephen, not for me.**
 
-**FR-036 and FR-074 remain unbuilt, on purpose.** Both are P2. FR-074 is the auto-fix loop - a critic
+**TASK-036 and TASK-074 remain unbuilt, on purpose.** Both are P2. TASK-074 is the auto-fix loop - a critic
 that sends work back to the drafter before a human sees it. Given that this project's entire argument
 is that the model does not get to talk its way past the guardrail, an auto-fix loop is a feature I
 would want to argue for out loud rather than quietly ship.
@@ -1180,13 +1180,13 @@ would want to argue for out loud rather than quietly ship.
 Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **334 passed**, pricing branch coverage
 100%.
 
-### FR-048, take two: the retrieval was printing a payment obligation nobody agreed to
+### TASK-048, take two: the retrieval was printing a payment obligation nobody agreed to
 
-I shipped FR-048, quoted a Dell PowerEdge server against the live site, and read the terms it
+I shipped TASK-048, quoted a Dell PowerEdge server against the live site, and read the terms it
 produced. The payment term was **"software licences and implementation services: 100% payment before
 activation."**
 
-That is precisely the sin FR-048 exists to fix, committed by FR-048. Two bugs, one symptom:
+That is precisely the sin TASK-048 exists to fix, committed by TASK-048. Two bugs, one symptom:
 
 **The topic filter was applied after a truncation.** `TOP_K` was 4, the search covers the whole
 tenant, and the topic filter ran on the results. With 11 snippets across 5 topics, a topic could
@@ -1241,7 +1241,7 @@ artifacts bucket holds customer quote PDFs.
 
 The fix is a custom domain, it takes about fifteen minutes, and it needs Stephen's DNS. Written up
 step by step in `docs/deploy/custom-domain.md`, including the two things to change in the repo once
-it works - the live URL in the README, and the FR-091 302, whose comment already says "restore the
+it works - the live URL in the README, and the TASK-091 302, whose comment already says "restore the
 302 the day a custom domain is bound."
 
 **The lesson is not about Function Compute.** Every check in this project asserts against `curl`, and
@@ -1251,7 +1251,7 @@ the way a user uses it is a test that can pass forever while the product is unus
 
 ### CI caught the golden PDF, and the fix removed a skip that had been hiding it
 
-Bundling Be Vietnam Pro (FR-124) changed **29.1% of the pixels** in the rendered quote. That is the
+Bundling Be Vietnam Pro (TASK-124) changed **29.1% of the pixels** in the rendered quote. That is the
 test doing exactly its job: the golden was recorded against WeasyPrint's *fallback* face, and the
 brand face is a different typeface. Intentional, and regenerated.
 
@@ -1283,7 +1283,7 @@ Gates: ruff clean, mypy clean (84 files), import-linter 4/4, **345 passed**, pri
 
 **Two things needed doing after #23 merged.** The first was the P0 from the last round - the live URL
 is a download, not a page. The second I went looking for: the eval snapshot was recorded on 11 July,
-*before* FR-048, FR-056 and FR-073 shipped. FR-073 alone adds a whole model call per quote. A
+*before* TASK-048, TASK-056 and TASK-073 shipped. TASK-073 alone adds a whole model call per quote. A
 headline claim that predates the code it describes is not a measurement, it is a memory.
 
 So I re-ran it. **The number moved, and not in our favour.**
@@ -1375,7 +1375,7 @@ validation window is a race nobody should have to run. Renewal is now a `put_obj
 Staging CA first, and it caught a bug (a cosmetic API that does not exist in this `acme` version)
 before it could burn a production rate limit.
 
-**And FR-091 does not get its 302 back.** The comment in `quote_pdf` said "restore the 302 the day a
+**And TASK-091 does not get its 302 back.** The comment in `quote_pdf` said "restore the 302 the day a
 custom domain is bound." That day arrived and the comment was **wrong**, which is worth saying rather
 than quietly deleting. Two things made the redirect unusable, and the domain only fixes one:
 
@@ -1386,7 +1386,7 @@ than quietly deleting. Two things made the redirect unusable, and the domain onl
      it is why the PDF button had never worked once, anywhere.
 
 The note treated the platform objection as the whole reason when the *client* objection is the one
-that decides. The redirect is now merely possible; it was never the better shape. FR-091's actual
+that decides. The redirect is now merely possible; it was never the better shape. TASK-091's actual
 guarantee - private object, short-lived signed URL - is preserved either way, and preserved more
 usably by handing the URL back.
 
@@ -1402,7 +1402,7 @@ the **deployment** rather than the code, and its first assertion is that `/` and
 `Content-Disposition` at all.
 
 Writing it surfaced a second bug of exactly the same family, this time in my own tooling. The old
-script posted a **fixed** RFQ string. Intake is idempotent on the source text (FR-024) - so from its
+script posted a **fixed** RFQ string. Intake is idempotent on the source text (TASK-024) - so from its
 second run onward it was never exercising the pipeline. It was handed back the quote the *previous*
 run had left behind, and asserted against that. It passed, every time, and it was testing nothing:
 `cancel` was even "failing" because the quote it re-fetched had already been cancelled an hour
@@ -1483,7 +1483,7 @@ bug, once by the pipeline that shipped it.
 
 ### The backlog is done
 
-Every FR in QM-SPEC-001 is in `docs/traceability.csv` - 85 of 85, none missing, none invented.
+Every task in QM-SPEC-001 is in `docs/traceability.csv` - 85 of 85, none missing, none invented.
 
     P0   65 / 66
     P1   23 / 24
@@ -1491,13 +1491,13 @@ Every FR in QM-SPEC-001 is in `docs/traceability.csv` - 85 of 85, none missing, 
 
 Four items are open, and not one of them is unfinished work:
 
-  * **FR-133** (P0, partial) - `structured_model=` is wired at the text parser, the matcher and the
+  * **TASK-133** (P0, partial) - `structured_model=` is wired at the text parser, the matcher and the
     baseline. The vision path hand-parses JSON because `qwen-vl-ocr` is an OCR model, not a
     tool-calling one. It has no structured-output mode. That is the model's boundary, not ours, and
     the critic recomputes every number that comes out of it anyway.
-  * **FR-134** (P1, partial by design) - the cancel decision. The 409 stays.
-  * **FR-036** (P2) - one document is one quote.
-  * **FR-074** (P2) - no auto-fix loop, and this is the non-goal worth arguing for rather than
+  * **TASK-134** (P1, partial by design) - the cancel decision. The 409 stays.
+  * **TASK-036** (P2) - one document is one quote.
+  * **TASK-074** (P2) - no auto-fix loop, and this is the non-goal worth arguing for rather than
     apologising for. An autopilot that quietly repairs its own defects is the exact thing this
     product exists to argue against. The baseline gets the money wrong on 60% of quotes and never
     notices; a self-repair loop is that same confidence wearing a seatbelt. When the critic and the

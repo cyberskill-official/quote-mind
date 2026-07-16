@@ -9,7 +9,7 @@ dashboard and /eval download instead of rendering, for everyone - including a ju
 check we have ever run passed anyway, because none of them is a browser.
 
 A custom domain removes the header. It also lifts the cross-domain-302 ban that forced the PDF route
-to hand back a signed URL instead of redirecting to it (FR-091).
+to hand back a signed URL instead of redirecting to it (TASK-091).
 
 This script does the half that does not need DNS: it creates the FC-side route. The CNAME is the
 domain owner's to add, and the script prints exactly what to add and then verifies it.

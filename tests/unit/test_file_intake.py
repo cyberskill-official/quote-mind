@@ -1,4 +1,4 @@
-"""FR-021/022/024/031/032/033: a file that arrives as a file is parsed as a file.
+"""TASK-021/022/024/031/032/033: a file that arrives as a file is parsed as a file.
 
 The regression suite for a bug that lived in production while the eval reported 97% on the very
 files it broke. Both intake channels - the API upload and the OSS drop - decoded *every* payload
@@ -161,7 +161,7 @@ def test_an_upload_ends_at_the_approval_gate_and_never_parked_at_received() -> N
         app.dependency_overrides.clear()
 
 
-# --- FR-024, which the old code got wrong for files ---
+# --- TASK-024, which the old code got wrong for files ---
 def test_the_same_file_under_a_different_name_is_still_one_quote() -> None:
     spy = Spy()
     client = _client(spy)
@@ -242,7 +242,7 @@ def test_the_same_bytes_dropped_twice_is_one_quote() -> None:
     first = asyncio.run(ingest_key(service, artifacts, "rfq/a.xlsx"))  # type: ignore[arg-type]
     second = asyncio.run(ingest_key(service, artifacts, "rfq/b.xlsx"))  # type: ignore[arg-type]
 
-    assert second.quote_id == first.quote_id  # FR-024
+    assert second.quote_id == first.quote_id  # TASK-024
     assert len(spy.calls) == 1, "the duplicate must not re-run the pipeline (or re-bill for it)"
 
 

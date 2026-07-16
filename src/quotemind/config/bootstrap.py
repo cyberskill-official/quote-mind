@@ -1,4 +1,4 @@
-"""FR-012: model availability check at cold start, with documented fallbacks.
+"""TASK-012: model availability check at cold start, with documented fallbacks.
 
 Every model id in section 4.6 is frozen, which is a strength right up until Model Studio retires one
 of them - at which point a frozen constant becomes a hard outage. So on cold start each primary is
@@ -59,7 +59,7 @@ _PIXEL = (
 # talking. Only a model that is genuinely gone should trigger a fallback. Without this distinction
 # the check is fragile in the worst possible direction - any future tightening of an input rule by
 # Model Studio would silently reroute production traffic onto a different model, which is precisely
-# the outcome FR-012 exists to prevent. So the probe fails closed on absence and open on argument.
+# the outcome TASK-012 exists to prevent. So the probe fails closed on absence and open on argument.
 _ABSENT_MARKERS = (
     "model_not_found",
     "modelnotfound",
@@ -129,7 +129,7 @@ def _is_absent(exc: BaseException) -> bool:
 
 
 def check_models(settings: Settings, *, client: Any | None = None) -> list[ModelStatus]:
-    """Probe every frozen model constant; fall back where documented (FR-012)."""
+    """Probe every frozen model constant; fall back where documented (TASK-012)."""
     probe_client = client or OpenAI(
         api_key=settings.dashscope_api_key, base_url=settings.dashscope_base_url
     )
@@ -180,7 +180,7 @@ def check_models(settings: Settings, *, client: Any | None = None) -> list[Model
 
 
 def health_models(statuses: list[ModelStatus]) -> dict[str, Any]:
-    """The /health view (FR-009 + FR-012 AC): what we call, and any substitution, visibly."""
+    """The /health view (TASK-009 + TASK-012 AC): what we call, and any substitution, visibly."""
     return {
         "models": {status.role: status.effective for status in statuses},
         "substitutions": {

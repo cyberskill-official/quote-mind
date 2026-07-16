@@ -101,7 +101,7 @@ And then the thing that actually matters: **open it in a browser.** It should re
 
 1. **`README.md`** and **`docs/submission-description.md`** — swap the live URL. The `fcapp.run` URL
    still works as an *API*; it is only unusable as a *page*.
-2. **`api/app.py::quote_pdf`** — restore the FR-091 302. The comment there already says: *"restore
+2. **`api/app.py::quote_pdf`** — restore the TASK-091 302. The comment there already says: *"restore
    the 302 the day a custom domain is bound."* That day is this one.
 
 ---

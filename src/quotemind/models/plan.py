@@ -1,4 +1,4 @@
-"""FR-131: the plan the orchestrator executed - or the reason it decided it did not need one."""
+"""TASK-131: the plan the orchestrator executed - or the reason it decided it did not need one."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ class PlanRecord(BaseModel):
     """
 
     skipped: bool = False
-    reason: str = ""  # why the fast path was taken (FR-131: "plan skipped, logged")
+    reason: str = ""  # why the fast path was taken (TASK-131: "plan skipped, logged")
     name: str = ""
     description: str = ""
     expected_outcome: str = ""

@@ -1,4 +1,4 @@
-"""AGT-07 Reviewer: the critic's narrative (FR-073).
+"""AGT-07 Reviewer: the critic's narrative (TASK-073).
 
 The deterministic critic in `quote/critic.py` recomputes every number and raises the flags. It is
 the guardrail, and it is code. This module writes the *sentence a human reads at the gate* - what
@@ -12,7 +12,7 @@ nonsense, the quote is unaffected: the narrative is simply absent, and the gate 
 flags and the diffs. An explanation that can change a verdict is not an explanation - it is a
 second, unaccountable critic.
 
-FR-073 caps it at 80 words per language. The cap is enforced in code after generation, not merely
+TASK-073 caps it at 80 words per language. The cap is enforced in code after generation, not merely
 requested in the prompt, because "concise" is not something a prompt can promise.
 """
 
@@ -26,7 +26,7 @@ from ..config.settings import Settings
 from ..models import BilingualText, CriticReport, Quote
 from .model import UsageSink, build_agent
 
-WORD_CAP = 80  # FR-073
+WORD_CAP = 80  # TASK-073
 
 REVIEWER_SYS = """Bạn là người soát báo giá. Một hệ thống tính toán đã kiểm tra xong và ĐÃ CÓ KẾT
 LUẬN. Việc của bạn là VIẾT LẠI kết luận đó thành hai đoạn ngắn cho người duyệt đọc - một tiếng Việt,
@@ -42,14 +42,14 @@ Quy tắc:
 
 
 class ReviewNarrative(BaseModel):
-    """FR-073 + FR-133: the review note, as structured output rather than parsed prose."""
+    """TASK-073 + TASK-133: the review note, as structured output rather than parsed prose."""
 
     vi: str = Field(description="Nhận xét bằng tiếng Việt, tối đa 80 từ.")
     en: str = Field(description="The same review in English, at most 80 words.")
 
 
 def _cap(text: str, words: int = WORD_CAP) -> str:
-    """Enforce FR-073's word cap in code. A prompt can ask for brevity; it cannot guarantee it."""
+    """Enforce TASK-073's word cap in code. A prompt can ask for brevity; it cannot guarantee it."""
     parts = text.split()
     if len(parts) <= words:
         return text.strip()
@@ -84,7 +84,7 @@ async def review_note(
     *,
     usage: UsageSink | None = None,
 ) -> BilingualText:
-    """FR-073: explain the verdict that has already been reached. Never reach a different one."""
+    """TASK-073: explain the verdict that has already been reached. Never reach a different one."""
     agent = build_agent(
         name="reviewer",
         sys_prompt=REVIEWER_SYS,

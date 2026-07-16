@@ -1,4 +1,4 @@
-"""Structured JSON logging to stdout (FR-008).
+"""Structured JSON logging to stdout (TASK-008).
 
 Emits one JSON object per line with timestamp, level, quote_id, agent, and event.
 UTF-8 with ensure_ascii disabled so Vietnamese diacritics stay byte-exact.

@@ -1,4 +1,4 @@
-"""FR-005 / SUB-02: proof of Alibaba Cloud usage, in one runnable file.
+"""TASK-005 / SUB-02: proof of Alibaba Cloud usage, in one runnable file.
 
     python -m quotemind.cloud.alibaba_proof
 
@@ -139,7 +139,7 @@ def check_oss(settings: Settings) -> list[Check]:
     target = f"oss://{settings.oss_bucket_artifacts}/{PROOF_KEY}"
     checks.append(Check("OSS", f"put {target} ({len(payload)} B)", True))
 
-    # A V4-signed URL is how the dashboard and the quote email reach a private object (FR-091).
+    # A V4-signed URL is how the dashboard and the quote email reach a private object (TASK-091).
     url = bucket.sign_url("GET", PROOF_KEY, 120, slash_safe=True)
     context = ssl.create_default_context(cafile=certifi.where())
     with urllib.request.urlopen(url, timeout=30, context=context) as response:  # noqa: S310
@@ -216,7 +216,7 @@ def check_tablestore(settings: Settings) -> list[Check]:
 
 def main() -> int:
     settings = require_settings()
-    print("QuoteMind - proof of Alibaba Cloud usage (FR-005 / SUB-02)")
+    print("QuoteMind - proof of Alibaba Cloud usage (TASK-005 / SUB-02)")
     print(f"  region        {settings.region}")
     print(f"  DashScope     {settings.dashscope_base_url}")
     print(f"  OSS           {settings.oss_endpoint}")

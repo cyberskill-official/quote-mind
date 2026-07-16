@@ -1,4 +1,4 @@
-"""FR-131: the plan is real, or it honestly says it was skipped.
+"""TASK-131: the plan is real, or it honestly says it was skipped.
 
 The failure mode a planner invites is theatre: a plan that is generated, never consulted, and always
 reports itself complete. These tests exist to make that impossible - the plan's subtasks must be
@@ -30,7 +30,7 @@ def _extraction(lines: int = 2, *, unreadable: int = 0, confidence: float = 0.9)
     return RFQExtraction(buyer=Buyer(company="Thành Công"), lines=items, language=Language.VI)
 
 
-# --- FR-131: what deserves a plan ---
+# --- TASK-131: what deserves a plan ---
 def test_a_short_clean_paste_takes_the_fast_path_and_says_why() -> None:
     reason = triviality(_extraction(2), DocType.EMAIL_TEXT)
     assert reason is not None

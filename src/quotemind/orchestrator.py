@@ -1,4 +1,4 @@
-"""Pipeline orchestration (FR-130).
+"""Pipeline orchestration (TASK-130).
 
 Wires the whole RFQ-to-quote path: parse -> validate -> resolve customer -> retrieve + fuse + select
 -> assemble -> critic -> render. The model appears at exactly two points (extraction and catalog
@@ -61,9 +61,9 @@ from .quote.render import render_html
 from .tools import build_match_result, fuse_candidates, resolve_customer
 from .tools.customer import CustomerResolution
 
-TOP_K = 8  # FR-042: vector_search top_k=8
+TOP_K = 8  # TASK-042: vector_search top_k=8
 
-# FR-048 landed, so the *pipeline* no longer uses these: the terms on a real quote are retrieved
+# TASK-048 landed, so the *pipeline* no longer uses these: the terms on a real quote are retrieved
 # from the `sop` tenant by what is being quoted (memory/sop.py). These remain as the offline default
 # for the eval harness and the unit tests, which run without a memory store - and as the sentences
 # memory/sop.py falls back to when the tenant is empty.
@@ -101,13 +101,13 @@ class PipelineResult(BaseModel):
     html: str | None = None
     clarification_reasons: list[str] = Field(default_factory=list)
     trace: TraceDocument | None = None
-    plan: PlanRecord | None = None  # FR-131
-    episodic: list[EpisodicRecall] = Field(default_factory=list)  # FR-045
-    episodic_truncated: bool = False  # FR-049: the budget dropped something
+    plan: PlanRecord | None = None  # TASK-131
+    episodic: list[EpisodicRecall] = Field(default_factory=list)  # TASK-045
+    episodic_truncated: bool = False  # TASK-049: the budget dropped something
 
 
 def _recall_query(extraction: RFQExtraction) -> str:
-    """What this RFQ is *about*, as one string, for the episodic vector search (FR-045)."""
+    """What this RFQ is *about*, as one string, for the episodic vector search (TASK-045)."""
     parts = [extraction.buyer.company or ""]
     parts.extend(line.description_normalized for line in extraction.lines)
     return " ".join(part for part in parts if part).strip()
@@ -121,7 +121,7 @@ def _customer_block(resolution: CustomerResolution, extraction: RFQExtraction) -
             "mst": profile.mst,
             "address": profile.address,
             "contact": profile.contact,
-            # Carried so dispatch (FR-092) knows where to send without re-reading the tenant.
+            # Carried so dispatch (TASK-092) knows where to send without re-reading the tenant.
             "email": profile.emails[0] if profile.emails else None,
         }
     buyer = extraction.buyer
@@ -202,7 +202,7 @@ async def quote_from_text(
     with_usd: bool = False,
     tracer: Tracer | None = None,
 ) -> PipelineResult:
-    """FR-130: run one RFQ text end to end and return the quote (or why it needs clarification)."""
+    """TASK-130: run one RFQ text end to end and return the quote (or why it needs clarification)."""
     trace = tracer or Tracer(quote_id="")  # tracing is always on; persistence is the caller's call
 
     with trace.step("DocumentParser", "parse", model=MODEL_PARSER_TEXT) as step:
@@ -237,7 +237,7 @@ async def quote_from_excel(
     with_usd: bool = False,
     tracer: Tracer | None = None,
 ) -> PipelineResult:
-    """FR-035 + FR-130: a spreadsheet RFQ. The extraction is deterministic - no model, no cost."""
+    """TASK-035 + TASK-130: a spreadsheet RFQ. The extraction is deterministic - no model, no cost."""
     trace = tracer or Tracer(quote_id="")
     with trace.step("DocumentParser", "parse", tool="parse_excel") as step:
         extraction = parse_excel(data)
@@ -271,7 +271,7 @@ async def quote_from_pdf(
     with_usd: bool = False,
     tracer: Tracer | None = None,
 ) -> PipelineResult:
-    """FR-031/032 + FR-130: a PDF, digital or scanned.
+    """TASK-031/032 + TASK-130: a PDF, digital or scanned.
 
     Digital: the text layer is lifted out and the normal text path runs - no model, no cost.
     Scanned: the pages are rasterised and read by the vision model. Same RFQExtraction either way,
@@ -333,7 +333,7 @@ async def quote_from_image(
     with_usd: bool = False,
     tracer: Tracer | None = None,
 ) -> PipelineResult:
-    """FR-033: a photographed or screenshotted RFQ. One page, read by the same vision path."""
+    """TASK-033: a photographed or screenshotted RFQ. One page, read by the same vision path."""
     trace = tracer or Tracer(quote_id="")
 
     with trace.step(
@@ -396,7 +396,7 @@ async def quote_from_revision(
     doc_type: DocType = DocType.EMAIL_TEXT,
     tracer: Tracer | None = None,
 ) -> PipelineResult:
-    """FR-064: re-draft honouring a human instruction, starting from what we already read.
+    """TASK-064: re-draft honouring a human instruction, starting from what we already read.
 
     The revision amends the *extraction*. It does not re-read the source document, for two reasons.
 
@@ -462,12 +462,12 @@ async def quote_from_extraction(
     today = on_date or date_type.today()
     trace = tracer or Tracer(quote_id="")
     reasons = validation_reasons(extraction)
-    if reasons:  # FR-034: never proceed to matching
+    if reasons:  # TASK-034: never proceed to matching
         return PipelineResult(
             extraction=extraction, clarification_reasons=reasons, trace=trace.document()
         )
 
-    # FR-131: plan the non-trivial ones, and say why when we do not.
+    # TASK-131: plan the non-trivial ones, and say why when we do not.
     plan = plan or QuotePlan()
     plan_record = await plan.open(extraction, doc_type)
     with trace.step("Orchestrator", "plan") as step:
@@ -477,7 +477,7 @@ async def quote_from_extraction(
             else f"planned {len(plan_record.subtasks) or len(extraction.lines)} subtask(s)"
         )
 
-    # FR-043: candidates from the customers tenant, then the deterministic pick.
+    # TASK-043: candidates from the customers tenant, then the deterministic pick.
     #
     # Every signal we have is searched, and the results are unioned. This used to be an `or` chain -
     # hint, else company name, else the email's domain - which meant the email was consulted *only*
@@ -508,7 +508,7 @@ async def quote_from_extraction(
         "UNKNOWN_CUSTOMER" if resolution.unknown_customer else f"tier {resolution.tier.value}",
     )
 
-    # FR-045: what happened last time we quoted this customer. It informs the reviewer; it never
+    # TASK-045: what happened last time we quoted this customer. It informs the reviewer; it never
     # touches the price - see memory/recall.py for why that line is drawn where it is.
     episodic: list[EpisodicRecall] = []
     truncated = False
@@ -546,9 +546,9 @@ async def quote_from_extraction(
                 product=products[match.sku],
                 qty=line.quantity if line.quantity is not None else Decimal(1),
                 tier=resolution.tier,
-                description=None,  # bilingual drafting (FR-061) refines this later
+                description=None,  # bilingual drafting (TASK-061) refines this later
                 unit=None,
-                note=match.reason,  # FR-063: substitution/confirmation transparency
+                note=match.reason,  # TASK-063: substitution/confirmation transparency
                 source=_STATUS_TO_SOURCE.get(match.status, LineSource.NO_MATCH),
             )
         )
@@ -568,7 +568,7 @@ async def quote_from_extraction(
             episodic_truncated=truncated,
         )
 
-    # FR-048: the terms this quote carries are *retrieved*, not hardcoded. They used to be a module
+    # TASK-048: the terms this quote carries are *retrieved*, not hardcoded. They used to be a module
     # constant, which meant a made-to-order server was quoted with "delivery within 7 working days"
     # - a promise the business cannot keep, printed on a document a customer is invoiced from.
     #
@@ -604,10 +604,10 @@ async def quote_from_extraction(
         quote,
         margin_floor_pct=float(settings.margin_floor_pct),
         customer_known=not resolution.unknown_customer,
-        lead_time_lines=lead_time_lines(assembly),  # FR-056
+        lead_time_lines=lead_time_lines(assembly),  # TASK-056
     )
 
-    # FR-073: the verdict above is final before this line runs. The model is handed the finished
+    # TASK-073: the verdict above is final before this line runs. The model is handed the finished
     # report and asked to *explain* it, in the two languages the quote is written in. It cannot set
     # `passed`, cannot add or drop a flag, and if it fails the quote is unaffected - the gate still
     # shows the flags and the diffs, which are the parts that carry authority.

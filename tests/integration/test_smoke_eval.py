@@ -1,4 +1,4 @@
-"""FR-123: the CI smoke eval.
+"""TASK-123: the CI smoke eval.
 
 Replays 5 recorded cases (eval/dataset/cassettes/) through the real pipeline with the models stubbed
 out, and asserts that extraction and pricing have not regressed. No API key, no cost, no network.

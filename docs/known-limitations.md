@@ -4,7 +4,7 @@ Everything below is a thing we know is imperfect and chose to leave. A limitatio
 down is a decision; one you have not is a bug you have not met yet. Each entry says what the
 behaviour is, why it is that way, and what it would cost to change.
 
-## FR-134 — an in-flight quote cannot be cancelled
+## TASK-134 — an in-flight quote cannot be cancelled
 
 `POST /api/quotes/{id}/cancel` works at the approval gate. On a quote that is still **running** it
 returns `409 illegal_transition`, with a message that says exactly why.
@@ -26,7 +26,7 @@ the platform genuinely cannot answer differently.
 
 **What a reviewer actually loses:** a few seconds. Wait for the gate, then cancel.
 
-## FR-133 — structured output is not used on the vision path
+## TASK-133 — structured output is not used on the vision path
 
 `structured_model=` is wired at the text parser, the matcher and the eval baseline: the model is
 handed a schema and the SDK guarantees the shape. The vision path parses `qwen-vl-ocr`'s JSON by
@@ -37,14 +37,14 @@ registry (§12) names that model.
 The hand-parse is defensive, and the critic recomputes every number that comes out of it regardless,
 so a malformed OCR response produces a flagged quote, not a wrong one.
 
-## FR-036 — one document is one quote
+## TASK-036 — one document is one quote
 
 The spec allows splitting a single document containing several unrelated RFQs into several quotes.
 We do not. P2, and out of scope for the demo: an RFQ that is really two RFQs is a document-triage
 problem, and solving it badly (splitting when you should not have) produces two wrong quotes instead
 of one right question.
 
-## FR-074 — there is no auto-fix loop, deliberately
+## TASK-074 — there is no auto-fix loop, deliberately
 
 The spec allows the critic to hand a failing quote back to the drafter to repair itself. We route
 every defect to a human instead.
@@ -56,13 +56,13 @@ self-repair loop is that same confidence, wearing a seatbelt. When the critic an
 disagree about a price, the interesting information is *that they disagree*, and it belongs in front
 of the person whose name goes on the invoice.
 
-## FR-091 — the PDF route hands back a signed URL, it does not redirect
+## TASK-091 — the PDF route hands back a signed URL, it does not redirect
 
 The spec allows a 302 to the object. We return the URL in JSON instead, and the docstring on
 `quote_pdf` explains why at length. The short version: the route is bearer-guarded, and a 302 is only
 useful to a client that can *follow a link* — a plain `<a href>` carries no `Authorization` header.
 The custom domain lifted Function Compute's cross-domain redirect ban, so the redirect is now
-*possible*; it was never the better shape. FR-091's actual guarantee — the object stays private,
+*possible*; it was never the better shape. TASK-091's actual guarantee — the object stays private,
 reachable only through a short-lived signed URL — is preserved either way, and preserved more usably
 by handing the URL back.
 

@@ -1,4 +1,4 @@
-"""FR-012: the cold-start model check, its fallbacks, and what /health admits to."""
+"""TASK-012: the cold-start model check, its fallbacks, and what /health admits to."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ def test_each_distinct_model_is_probed_only_once() -> None:
 
 
 def test_a_retired_primary_activates_its_documented_fallback() -> None:
-    # FR-012 AC: qwen-vl-ocr unavailable -> the parser runs on qwen3-vl-plus, and /health says so.
+    # TASK-012 AC: qwen-vl-ocr unavailable -> the parser runs on qwen3-vl-plus, and /health says so.
     client = _Client(down={"qwen-vl-ocr"})
     statuses = check_models(_Settings(), client=client)  # type: ignore[arg-type]
 
@@ -152,7 +152,7 @@ def test_initialize_never_raises_even_if_the_probe_blows_up(monkeypatch: Any) ->
 
 def test_health_runs_the_probe_itself_when_the_initializer_never_did(monkeypatch: Any) -> None:
     # The bug this guards: Function Compute silently deployed the function with no initializer, so
-    # the probe never ran and /health reported every model unverified. FR-012 must not depend on a
+    # the probe never ran and /health reported every model unverified. TASK-012 must not depend on a
     # platform hook firing - the probe runs the first time anything needs its answer.
     calls: list[int] = []
 
@@ -228,7 +228,7 @@ def test_a_model_that_rejects_the_probe_is_alive_not_missing() -> None:
 
 
 def test_a_model_that_is_genuinely_gone_does_fall_back() -> None:
-    # The case FR-012 is actually for: Model Studio retires the id.
+    # The case TASK-012 is actually for: Model Studio retires the id.
     client = _Rejecting("404 model_not_found: qwen-vl-ocr does not exist")
     statuses = check_models(_Settings(), client=client)  # type: ignore[arg-type]
 

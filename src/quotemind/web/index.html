@@ -329,7 +329,7 @@ kbd { font-family: var(--cs-font-family-mono); font-size: 11px; border: 1px soli
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-// FR-106: both placeholders are substituted by the API when it serves this page (api/app.py).
+// TASK-106: both placeholders are substituted by the API when it serves this page (api/app.py).
 const API_BASE = "__API_BASE__".startsWith("__") ? "http://127.0.0.1:9000" : "__API_BASE__";
 const API_TOKEN = "__API_TOKEN__".startsWith("__") ? "" : "__API_TOKEN__";
 
@@ -438,7 +438,7 @@ async function loadQueue() {
       <div class="num">${esc(q.quote_number)}</div>
       <div class="meta">
         <span class="chip ${STATUS_CHIP[q.status] || ""}">${esc(q.status)}</span>
-        ${/* FR-085. The failure mode an approval gate *creates*: the system did its job, stopped,
+        ${/* TASK-085. The failure mode an approval gate *creates*: the system did its job, stopped,
               and asked - and nobody heard it. A quote waiting hours is not idle, it is unanswered. */
           q.stale ? `<span class="chip warn" title="Đang chờ người duyệt quá lâu / waiting on a human for hours">⏳ quá hạn / waiting</span>` : ""}
         <span>${esc(q.customer_id || "khách mới / new customer")}</span>
@@ -519,7 +519,7 @@ async function loadDetail() {
     };
   }
 
-  // FR-080: needs_clarification is terminal, so the way forward is a corrected RFQ, not a patched
+  // TASK-080: needs_clarification is terminal, so the way forward is a corrected RFQ, not a patched
   // quote. Pre-fill it from what we read, so the reviewer edits one line instead of retyping an
   // email they have already read twice.
   const resubmit = $("bResubmit");
@@ -658,7 +658,7 @@ function stalled(review) {
       </table>
     </div>
 
-    <!-- FR-080 makes needs_clarification terminal, and that is right: the *request* was ambiguous,
+    <!-- TASK-080 makes needs_clarification terminal, and that is right: the *request* was ambiguous,
          so the fix is a corrected request, not a patched quote. But terminal must not mean "the
          reviewer has nowhere to go" - without this they were left looking at a perfectly good
          explanation and a dead end. This hands them the line as text, to correct and re-ask. It
@@ -699,7 +699,7 @@ function reviewGate(review, canAct) {
         <button class="cs-button cs-button--danger" id="bReject">Từ chối / Reject</button>
         <button class="cs-button cs-button--secondary" id="bRevise">Yêu cầu sửa / Revise</button>
         <span style="flex:1"></span>
-        <!-- FR-134. Not the same act as a rejection, and the audit trail keeps them apart forever:
+        <!-- TASK-134. Not the same act as a rejection, and the audit trail keeps them apart forever:
              "the operator dropped this" and "the reviewer judged the price wrong" are different
              facts, and only one of them is evidence about the pricing. -->
         <button class="cs-button cs-button--ghost" id="bCancel"
@@ -712,7 +712,7 @@ function reviewGate(review, canAct) {
 // The two halves of this panel are deliberately labelled differently, and the labels are the point.
 //
 //   `note`      - the deterministic verdict. Code wrote it. It is what the system *decided*.
-//   `narrative` - FR-073. A model wrote it, AFTER the verdict existed, from the verdict. It is what
+//   `narrative` - TASK-073. A model wrote it, AFTER the verdict existed, from the verdict. It is what
 //                 the system *says about* the decision, and it carries no authority whatsoever.
 //
 // Collapsing them into one block of prose would hide exactly the distinction the whole architecture
@@ -747,7 +747,7 @@ function criticNote(critic) {
   </details>`;
 }
 
-// FR-131. A subtask still at `todo` on a finished plan is not a rendering bug: it is the record of
+// TASK-131. A subtask still at `todo` on a finished plan is not a rendering bug: it is the record of
 // work the pipeline handed to a human. The UI must not tidy that away.
 function planSection(plan) {
   if (plan.skipped) {
@@ -777,7 +777,7 @@ function planSection(plan) {
   </details>`;
 }
 
-// FR-045. This is provenance, not a confidence score.
+// TASK-045. This is provenance, not a confidence score.
 //
 // The design system says confidence is calibrated before it is numeric. A similarity figure is the
 // retrieval engine's opinion of itself, not a calibrated claim about *this* quote - so the headline
@@ -858,7 +858,7 @@ function openDialog(kind, prefill) {
     approve: "Ghi chú (tuỳ chọn) / comment (optional)",
     reject: "Lý do / reason",
     revise: "Hướng dẫn sửa / instruction",
-    // FR-134. Deliberately asks *why*, because "cancelled" without a reason is a hole in the record
+    // TASK-134. Deliberately asks *why*, because "cancelled" without a reason is a hole in the record
     // - and this is the one action whose whole purpose is to be distinguishable from a rejection.
     cancel: "Vì sao huỷ? (khách rút yêu cầu, trùng lặp, gửi nhầm...) / why? (customer withdrew, duplicate, sent in error...)",
     // The RFQ as we read it. Fix the ambiguous line and send it again - this creates a new quote,
@@ -875,7 +875,7 @@ function openDialog(kind, prefill) {
   $("dlgTo").hidden = kind !== "approve";
   $("dlgTo").querySelector("input").value = recipient || "";
 
-  // FR-083: a waiver is not a checkbox to click past. It names what is being waived, and it lands
+  // TASK-083: a waiver is not a checkbox to click past. It names what is being waived, and it lands
   // verbatim on the hash-chained audit trail against the approver.
   $("dlgGate").innerHTML = (kind === "approve" && blocking.length)
     ? `<div class="cs-review-gate" style="margin:0 0 12px">
@@ -929,7 +929,7 @@ async function submitAction(kind) {
     await loadQueue();
     await loadDetail();
   } catch (exc) {
-    if (exc.status === 409) {  // FR-083: the server refused the approval without a waiver
+    if (exc.status === 409) {  // TASK-083: the server refused the approval without a waiver
       toast("Bị chặn / blocked: " + (exc.details?.flags || []).join(", "));
     } else {
       toast(exc.message);
@@ -963,7 +963,7 @@ document.addEventListener("keydown", (event) => {
 
 renderFilters();
 
-// FR-100: open straight onto a quote if the URL names one, rather than making the reviewer hunt for
+// TASK-100: open straight onto a quote if the URL names one, rather than making the reviewer hunt for
 // it in a queue that may have moved on. `selected` is set before the first fetch so the queue paints
 // with the right row already highlighted.
 const linked = new URLSearchParams(location.search).get("quote");
@@ -973,7 +973,7 @@ if (linked) {
 }
 
 loadQueue();
-setInterval(() => { loadQueue(); if (selected) loadDetail(); }, 5000);  // FR-100
+setInterval(() => { loadQueue(); if (selected) loadDetail(); }, 5000);  // TASK-100
 </script>
 </body>
 </html>

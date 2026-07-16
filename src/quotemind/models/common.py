@@ -23,7 +23,7 @@ class BilingualText(BaseModel):
 class Language(str, Enum):
     VI = "vi"
     EN = "en"
-    # FR-022 classifies a *document* as vi/en/mixed. Per-line language (FR-035) only ever uses
+    # TASK-022 classifies a *document* as vi/en/mixed. Per-line language (TASK-035) only ever uses
     # vi/en; MIXED exists for IntakeResult.language, which the DM enum originally omitted.
     MIXED = "mixed"
 
@@ -39,7 +39,7 @@ class DocType(str, Enum):
     PDF_DIGITAL = "pdf_digital"
     PDF_SCAN = "pdf_scan"
     EXCEL = "excel"
-    IMAGE = "image"  # FR-022 enumerates image; the DM enum originally omitted it
+    IMAGE = "image"  # TASK-022 enumerates image; the DM enum originally omitted it
 
 
 class Urgency(str, Enum):

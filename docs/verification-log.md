@@ -68,7 +68,7 @@ Model plane (DashScope international / Singapore) - PASS:
 - E.2 model availability (openai-compatible base .../compatible-mode/v1): qwen3-max OK, qwen-plus OK,
   qwen3-vl-plus OK, qwen-max OK, text-embedding-v4 OK (dim=1024 confirmed). qwen-vl-ocr is reachable
   (it returned a 400 about message role because a text ping is the wrong shape for a vision-OCR model,
-  not an availability error), so no FR-012 fallback is needed.
+  not an availability error), so no TASK-012 fallback is needed.
 - E.3 AgentScope 1.0.9 structured output: ReActAgent(qwen-plus) + DashScopeChatFormatter with
   structured_model returned metadata={'ok': True}. PASS.
 - Finding: AgentScope's DashScopeChatModel uses the native dashscope API base, which for Singapore is
@@ -82,7 +82,7 @@ Cloud storage plane - BLOCKED on account setup (not code):
 - Tablestore list_table -> OTSAuthFailed "The instance is not found". The AccessKey authenticated; the
   TABLESTORE_INSTANCE / TABLESTORE_ENDPOINT does not resolve to an existing instance (name/region or
   endpoint mismatch, or the instance is not fully created).
-Provision (FR-004) will complete once OSS is activated and the Tablestore instance name/endpoint match.
+Provision (TASK-004) will complete once OSS is activated and the Tablestore instance name/endpoint match.
 
 ## 2026-07-11 - PR-4 Tablestore live verification (memory adapter)
 
@@ -98,4 +98,4 @@ Live against the real ap-southeast-1 instance:
   live-verified: DM models write to and read back from real Tablestore correctly.
 
 Still pending: OSS remains 403 UserDisable (account activation). provision.py creates the OSS buckets
-before Tablestore, so the full FR-004 run completes once OSS is activated.
+before Tablestore, so the full TASK-004 run completes once OSS is activated.

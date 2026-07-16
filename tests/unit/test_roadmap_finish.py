@@ -1,14 +1,14 @@
-"""The FRs that finished the roadmap: FR-048, FR-056, FR-073, FR-085, FR-104, FR-124, FR-134.
+"""The tasks that finished the roadmap: TASK-048, TASK-056, TASK-073, TASK-085, TASK-104, TASK-124, TASK-134.
 
 Each of these has one property that actually matters, and it is the one asserted here:
 
-  * FR-048 - the terms are retrieved, and a memory outage still yields a quote with terms on it.
-  * FR-056 - an out-of-stock line says so, on the line, and raises a flag that does not block.
-  * FR-073 - the narrative explains the verdict. It cannot *be* the verdict.
-  * FR-085 - a quote nobody has looked at is visible as such.
-  * FR-104 - the page renders the committed numbers, and says how old they are.
-  * FR-124 - the branded face is actually in the wheel.
-  * FR-134 - cancel is distinguishable from reject, forever, on the audit trail.
+  * TASK-048 - the terms are retrieved, and a memory outage still yields a quote with terms on it.
+  * TASK-056 - an out-of-stock line says so, on the line, and raises a flag that does not block.
+  * TASK-073 - the narrative explains the verdict. It cannot *be* the verdict.
+  * TASK-085 - a quote nobody has looked at is visible as such.
+  * TASK-104 - the page renders the committed numbers, and says how old they are.
+  * TASK-124 - the branded face is actually in the wheel.
+  * TASK-134 - cancel is distinguishable from reject, forever, on the audit trail.
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ def _quote(*, stock: StockStatus = StockStatus.IN_STOCK) -> tuple[Any, list[Asse
     return quote, lines
 
 
-# --- FR-056: an out-of-stock line says so, and the flag does not block ---
+# --- TASK-056: an out-of-stock line says so, and the flag does not block ---
 def test_an_out_of_stock_line_carries_its_lead_time_in_both_languages() -> None:
     quote, lines = _quote(stock=StockStatus.OUT_OF_STOCK)
 
@@ -129,7 +129,7 @@ def test_the_lead_time_is_appended_to_a_substitution_note_not_instead_of_it() ->
     assert "tương đương" in note.vi and "42 ngày" in note.vi  # both, not either
 
 
-# --- FR-073: the narrative explains the verdict; it cannot be the verdict ---
+# --- TASK-073: the narrative explains the verdict; it cannot be the verdict ---
 def test_the_critic_reaches_its_verdict_without_the_model() -> None:
     """run_critic must not depend on the narrative. The guardrail is code, and code alone."""
     quote, _ = _quote()
@@ -167,12 +167,12 @@ def test_a_failing_narrative_leaves_the_quote_untouched() -> None:
 
 
 def test_the_narrative_model_is_structured_output_not_parsed_prose() -> None:
-    """FR-133: every LLM boundary that yields data uses structured_model=."""
+    """TASK-133: every LLM boundary that yields data uses structured_model=."""
     narrative = ReviewNarrative(vi="Đã đối chiếu số học.", en="Arithmetic reconciled.")
     assert narrative.vi and narrative.en
 
 
-# --- FR-048: the terms are retrieved, and a memory outage still yields terms ---
+# --- TASK-048: the terms are retrieved, and a memory outage still yields terms ---
 class _SopFacade:
     def __init__(self, snippets: list[SOPSnippet] | None = None, *, explode: bool = False) -> None:
         self._snippets = snippets or []
@@ -224,9 +224,9 @@ def test_the_terms_come_from_the_sop_tenant(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def test_every_seeded_sop_survives_the_bilingual_number_check() -> None:
-    """FR-072 applies to the text a human wrote, exactly as it applies to the text a model wrote.
+    """TASK-072 applies to the text a human wrote, exactly as it applies to the text a model wrote.
 
-    This is not hypothetical. The first server quote after FR-048 shipped came back BLOCKED, live,
+    This is not hypothetical. The first server quote after TASK-048 shipped came back BLOCKED, live,
     with `BILINGUAL_NUMBER_MISMATCH` - because one seeded snippet said "thanh toán 100%" in
     Vietnamese and "paid in full" in English. That is a good translation and a bad *quote*: the
     number vanished. The critic could not tell that a human had written it, and it was right not to
@@ -243,7 +243,7 @@ def test_every_seeded_sop_survives_the_bilingual_number_check() -> None:
     for sop in SOPS:
         assert digits.findall(sop.text.vi) == digits.findall(sop.text.en), (
             f"the {sop.topic.value} snippet has different numbers in its two languages, so any "
-            f"quote that retrieves it is blocked by FR-072."
+            f"quote that retrieves it is blocked by TASK-072."
             f"\n  vi: {sop.text.vi}\n  en: {sop.text.en}"
         )
 
@@ -344,7 +344,7 @@ def test_the_retrieval_is_per_topic_so_one_topic_cannot_crowd_out_another(
     assert terms.warranty == FALLBACK[SopTopic.WARRANTY]  # and did not become the warranty
 
 
-# --- FR-085: a quote nobody has looked at is visible as such ---
+# --- TASK-085: a quote nobody has looked at is visible as such ---
 def test_a_quote_waiting_too_long_at_the_gate_is_marked_stale() -> None:
     store = FakeStore()
     service = _service(store)
@@ -369,7 +369,7 @@ def test_only_a_quote_at_the_gate_can_be_stale() -> None:
     assert service.is_stale(approved) is False
 
 
-# --- FR-134: a cancel and a rejection are different things, forever ---
+# --- TASK-134: a cancel and a rejection are different things, forever ---
 def test_a_cancel_ends_the_quote_and_says_it_was_a_cancel() -> None:
     store = FakeStore()
     service = _service(store)
@@ -398,7 +398,7 @@ def test_a_cancel_is_not_remembered_as_evidence_the_price_was_wrong() -> None:
     assert remembered == []  # a rejection writes a memory; a cancel does not
 
 
-# --- FR-104: the page renders the committed numbers ---
+# --- TASK-104: the page renders the committed numbers ---
 def test_the_eval_page_renders_the_committed_snapshot() -> None:
     from quotemind.eval_.report import load, render_report_html  # noqa: PLC0415
 
@@ -421,7 +421,7 @@ def test_the_eval_page_says_how_old_its_numbers_are() -> None:
     assert _age(None) == "unknown"
 
 
-# --- FR-124: the branded face is actually in the wheel ---
+# --- TASK-124: the branded face is actually in the wheel ---
 def test_the_pdf_renders_with_be_vietnam_pro_bundled() -> None:
     from quotemind.quote.render import FONT_DIR  # noqa: PLC0415
 

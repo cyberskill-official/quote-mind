@@ -1,4 +1,4 @@
-"""FR-041 embedding pipeline: frozen model + dimension, batches capped at 10, order preserved."""
+"""TASK-041 embedding pipeline: frozen model + dimension, batches capped at 10, order preserved."""
 
 from __future__ import annotations
 

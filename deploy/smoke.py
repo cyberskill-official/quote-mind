@@ -13,7 +13,7 @@ distinction has cost us twice:
     starts sending it again, or the custom domain lapses, this fails loudly instead of silently
     turning the primary artifact back into a download.
 
-  * The suite that found that was posting a FIXED RFQ string. Intake is idempotent (FR-024): the
+  * The suite that found that was posting a FIXED RFQ string. Intake is idempotent (TASK-024): the
     same text returns the same quote. So from the second run onward it was not exercising the
     pipeline at all - it was re-reading the quote the previous run had left behind, and asserting
     against that. It passed. It was testing nothing. Hence `nonce`: every run posts an RFQ the
@@ -119,7 +119,7 @@ def main() -> None:
     check("/api without a token is 401", _status(f"{base}/api/quotes", None)[0], 401)
     check("/api with the token is 200", _status(f"{base}/api/quotes", token)[0], 200)
 
-    # FR-024: intake is idempotent on the source text. A fixed string here would hand us back the
+    # TASK-024: intake is idempotent on the source text. A fixed string here would hand us back the
     # PREVIOUS run's quote and assert against it - green, and testing nothing.
     nonce = int(time.time())
     print(f"\n=== the whole pipeline, on an RFQ it has never seen (ref {nonce}) ===")
@@ -132,12 +132,12 @@ def main() -> None:
 
     quote = _request(f"{base}/api/quotes/{quote_id}", token)
     critic = quote["critic"]
-    check("FR-070 the recompute finds zero diffs", len(critic["recompute_diffs"]), 0)
-    check("FR-073 the critic wrote a narrative", bool(critic.get("narrative")), True)
-    check("FR-056 the lead time is flagged", "LEAD_TIME" in quote["flags"], True)
-    check("FR-131 a plan was recorded", bool(quote.get("plan")), True)
+    check("TASK-070 the recompute finds zero diffs", len(critic["recompute_diffs"]), 0)
+    check("TASK-073 the critic wrote a narrative", bool(critic.get("narrative")), True)
+    check("TASK-056 the lead time is flagged", "LEAD_TIME" in quote["flags"], True)
+    check("TASK-131 a plan was recorded", bool(quote.get("plan")), True)
 
-    print("\n=== FR-134: a cancellation is not a rejection ===")
+    print("\n=== TASK-134: a cancellation is not a rejection ===")
     cancelled = _request(
         f"{base}/api/quotes/{quote_id}/cancel", token, {"comment": "khach rut yeu cau"}
     )
@@ -148,9 +148,9 @@ def main() -> None:
     check("the audit says human.cancel", "human.cancel" in names, True)
     check("the audit does NOT say human.rejected", "human.rejected" in names, False)
 
-    # FR-094. We walk the chain ourselves rather than asking the API whether it is happy with
+    # TASK-094. We walk the chain ourselves rather than asking the API whether it is happy with
     # itself - a tamper-evident log that only the server can check is not tamper-evident.
-    print("\n=== FR-094: the chain verifies, and we are the ones verifying it ===")
+    print("\n=== TASK-094: the chain verifies, and we are the ones verifying it ===")
     intact = all(events[i]["prev_hash"] == events[i - 1]["hash"] for i in range(1, len(events)))
     check(f"the hash chain is intact across {len(events)} events", intact, True)
 

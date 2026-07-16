@@ -1,4 +1,4 @@
-"""FR-008: logs are single-line JSON with the required keys and preserved diacritics."""
+"""TASK-008: logs are single-line JSON with the required keys and preserved diacritics."""
 
 from __future__ import annotations
 

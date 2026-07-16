@@ -1,4 +1,4 @@
-"""FR-022 classification, FR-024 idempotency hash, FR-025 upload guards."""
+"""TASK-022 classification, TASK-024 idempotency hash, TASK-025 upload guards."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ def test_doc_type_from_filename() -> None:
     assert validate_upload("rfq.xlsx", 1000) == DocType.EXCEL
     assert validate_upload("scan.pdf", 1000) == DocType.PDF_DIGITAL
     assert validate_upload("photo.JPG", 1000) == DocType.IMAGE
-    # A text drop (FR-021 puts .txt/.eml into the inbox) is an email_text document.
+    # A text drop (TASK-021 puts .txt/.eml into the inbox) is an email_text document.
     assert validate_upload("rfq-fpt.txt", 1000) == DocType.EMAIL_TEXT
     assert validate_upload("forwarded.eml", 1000) == DocType.EMAIL_TEXT
 

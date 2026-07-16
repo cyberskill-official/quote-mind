@@ -45,4 +45,4 @@ jobs:
       # Money path: 100% branch coverage on the pricing engine (NFR-010, QM-REPO-001 section 8).
       - run: pytest -q --cov=quotemind.pricing --cov-branch --cov-fail-under=100
 
-  # TODO(later PRs): smoke-eval (FR-123), golden-pdf (FR-124), diagrams (SUB-03).
+  # TODO(later PRs): smoke-eval (TASK-123), golden-pdf (TASK-124), diagrams (SUB-03).

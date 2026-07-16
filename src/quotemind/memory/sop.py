@@ -1,4 +1,4 @@
-"""FR-048: procedural memory - the terms a quote carries, retrieved rather than hardcoded.
+"""TASK-048: procedural memory - the terms a quote carries, retrieved rather than hardcoded.
 
 Three kinds of memory meet in one quote, and it is worth naming which is which:
 
@@ -65,7 +65,7 @@ def _query(extraction: RFQExtraction, topic: SopTopic) -> str:
 
 
 def _applicable(snippet: SOPSnippet, categories: set[Category]) -> bool:
-    """FR-048: may this term be printed on a quote containing these goods?
+    """TASK-048: may this term be printed on a quote containing these goods?
 
     Retrieval proposes; this disposes. Vector similarity is a fine way to *rank* the terms that are
     allowed, and a terrible way to decide which are allowed at all - "software licences: 100% before
@@ -87,7 +87,7 @@ def retrieve_terms(
     extraction: RFQExtraction,
     categories: set[Category] | None = None,
 ) -> tuple[QuoteTerms, list[str]]:
-    """FR-048: the payment, delivery and warranty terms this quote should carry.
+    """TASK-048: the payment, delivery and warranty terms this quote should carry.
 
     `categories` are the catalog categories of the *matched* lines - so this runs after matching,
     not before. Passing nothing means "no goods resolved", and then only the universal terms apply,

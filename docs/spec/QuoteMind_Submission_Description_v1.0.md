@@ -33,7 +33,7 @@ Built by CyberSkill (Ho Chi Minh City). Hiện Thực Hoá Ý Chí — Turn Your
 | Placeholder | Source |
 |---|---|
 | `{X}` pipeline success % | final EV-04 report, pipeline row |
-| `{Y}` baseline success % | final EV-04 report, baseline row (FR-122) |
+| `{Y}` baseline success % | final EV-04 report, baseline row (TASK-122) |
 | Repo URL field | public GitHub URL after final push |
 | Video URL field | YouTube link per QM-DEMO-001 §5 upload metadata |
 | Track field | Track 4 — Autopilot Agent |

@@ -1,4 +1,4 @@
-"""FR-120: generate the 30-case labelled eval dataset (Appendix A.5).
+"""TASK-120: generate the 30-case labelled eval dataset (Appendix A.5).
 
     python -m quotemind.seed.generate
 
@@ -7,7 +7,7 @@ a label can never silently drift away from the input it describes. Every label r
 actually exists in quotemind.seed.data - the generator asserts it, because a dataset that points at
 phantom SKUs would score the matcher against a target it could never hit.
 
-Composition per FR-120:
+Composition per TASK-120:
     10 vi text · 5 en text · 5 xlsx (3 vi / 2 en) · 5 vi scan · 3 en digital PDF · 2 adversarial
 
 The scanned cases are *actually scanned*: rendered, rasterised at 200 DPI, skewed a degree or so,
@@ -405,7 +405,7 @@ def _cong_van(sender: str, email: str, rows: list[tuple[str, int, str]]) -> str:
     )
 
 
-# FR-031/032: these are real scans - rendered, rasterised, rotated and noised - not text PDFs with a
+# TASK-031/032: these are real scans - rendered, rasterised, rotated and noised - not text PDFs with a
 # "scanned" label. A fixture that still had a text layer would pass the vision path without ever
 # exercising OCR, and the eval would be measuring nothing.
 _PDF_SCAN: list[Case] = [

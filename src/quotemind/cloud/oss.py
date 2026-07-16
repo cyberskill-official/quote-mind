@@ -1,4 +1,4 @@
-"""OSS object storage: quote artifacts, the stub outbox, and the RFQ inbox (FR-091, FR-093, FR-021).
+"""OSS object storage: quote artifacts, the stub outbox, and the RFQ inbox (TASK-091, TASK-093, TASK-021).
 
 Buckets and key layouts are frozen (section 12.6):
     oss://quotemind-artifacts/quotes/{quote_number}.pdf   the rendered quote, private
@@ -21,7 +21,7 @@ ARTIFACT_PREFIX = "quotes/"
 OUTBOX_PREFIX = "outbox/"
 TRACE_PREFIX = "traces/"
 INBOX_PREFIX = "rfq/"
-PRESIGNED_TTL_SECONDS = 600  # FR-091
+PRESIGNED_TTL_SECONDS = 600  # TASK-091
 
 
 def artifact_key(quote_number: str) -> str:
@@ -35,7 +35,7 @@ def outbox_key(quote_number: str) -> str:
 
 
 def trace_key(quote_id: str) -> str:
-    """oss://quotemind-artifacts/traces/{quote_id}.json (FR-111)"""
+    """oss://quotemind-artifacts/traces/{quote_id}.json (TASK-111)"""
     return f"{TRACE_PREFIX}{quote_id}.json"
 
 
@@ -81,7 +81,7 @@ class ArtifactStore:
     def delete_acme_challenge(self, token: str) -> None:
         self.artifacts.delete_object(f"acme/{token}")
 
-    # --- artifacts (FR-091, FR-093) ---
+    # --- artifacts (TASK-091, TASK-093) ---
     def put_pdf(self, quote_number: str, data: bytes) -> str:
         key = artifact_key(quote_number)
         self.artifacts.put_object(key, data, headers={"Content-Type": "application/pdf"})
@@ -93,7 +93,7 @@ class ArtifactStore:
         return key
 
     def put_trace(self, quote_id: str, document_json: str) -> str:
-        """FR-111: persist the reasoning trace next to the quote artifacts."""
+        """TASK-111: persist the reasoning trace next to the quote artifacts."""
         key = trace_key(quote_id)
         self.artifacts.put_object(
             key, document_json.encode("utf-8"), headers={"Content-Type": "application/json"}
@@ -101,14 +101,14 @@ class ArtifactStore:
         return key
 
     def presigned_get(self, key: str, expires: int = PRESIGNED_TTL_SECONDS) -> str:
-        """FR-091: a fresh V4-signed GET URL. slash_safe keeps the key's slashes unescaped."""
+        """TASK-091: a fresh V4-signed GET URL. slash_safe keeps the key's slashes unescaped."""
         url: str = self.artifacts.sign_url("GET", key, expires, slash_safe=True)
         return url
 
     def exists(self, key: str) -> bool:
         return bool(self.artifacts.object_exists(key))
 
-    # --- inbox (FR-021) ---
+    # --- inbox (TASK-021) ---
     def list_inbox(self, prefix: str = INBOX_PREFIX, limit: int = 100) -> list[str]:
         """Keys dropped under rfq/. Directory placeholders are skipped."""
         listing = oss2.ObjectIterator(self.inbox, prefix=prefix, max_keys=limit)

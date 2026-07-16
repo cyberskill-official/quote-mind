@@ -1,4 +1,4 @@
-"""FR-106: the operator dashboard, shipped inside the package.
+"""TASK-106: the operator dashboard, shipped inside the package.
 
 It lives here rather than in a top-level `web/` directory for one reason: it has to reach the
 runtime. Function Compute bundles the code directory, the wheel bundles `src/`, and a sibling

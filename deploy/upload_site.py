@@ -1,4 +1,4 @@
-"""FR-106: publish the dashboard to OSS static website hosting.
+"""TASK-106: publish the dashboard to OSS static website hosting.
 
 Kept, but not the live path. This account has Block Public Access enabled on the artifacts bucket,
 so OSS refuses `Put public object acl` and the upload fails - correctly, since that bucket holds
@@ -11,7 +11,7 @@ Original purpose follows.
 The dashboard is one file with two placeholders (__API_BASE__, __API_TOKEN__). They are substituted
 here, at upload time, so the checked-in source stays free of any deployment secret. The page is the
 only public object in the artifacts bucket - quotes, traces, and outbox messages stay private and
-are reached through short-lived presigned URLs (FR-091).
+are reached through short-lived presigned URLs (TASK-091).
 
     python deploy/upload_site.py --api-base https://<fc-url>
 

@@ -1,4 +1,4 @@
-"""Vietnamese amount-in-words (bằng chữ) converter (FR-055). Deterministic and pure.
+"""Vietnamese amount-in-words (bằng chữ) converter (TASK-055). Deterministic and pure.
 
 Conventions follow the one worked example in the spec (1234000 -> "Một triệu hai trăm ba
 mươi bốn nghìn đồng"): 4 is read "bốn", 1 after a tens digit is "mốt", 5 after a tens digit

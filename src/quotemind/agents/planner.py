@@ -1,4 +1,4 @@
-"""FR-131: the orchestrator's plan, kept in AgentScope's PlanNotebook.
+"""TASK-131: the orchestrator's plan, kept in AgentScope's PlanNotebook.
 
 A plan here is not decoration. It is built from the document that actually arrived, its subtasks are
 closed as the pipeline actually completes them, and the snapshot that reaches the trace is the real
@@ -6,7 +6,7 @@ end state - including any subtask still sitting at `todo`, which means the pipel
 plan did not anticipate. A plan that always reports itself complete would be worse than no plan: it
 would be a confident lie in the one artifact a reviewer opens to find out what happened.
 
-Trivial quotes skip the plan and say so (FR-131: "trivial quotes may take the fast path, plan
+Trivial quotes skip the plan and say so (TASK-131: "trivial quotes may take the fast path, plan
 skipped, logged"). Planning a two-line paste would burn tokens to restate a fixed sequence.
 """
 
@@ -16,7 +16,7 @@ from agentscope.plan import PlanNotebook, SubTask
 
 from ..models import DocType, PlanRecord, PlanSubtask, RFQExtraction
 
-# FR-131's own thresholds: multi-document, more than ten lines, or flags at intake.
+# TASK-131's own thresholds: multi-document, more than ten lines, or flags at intake.
 MANY_LINES = 10
 LOW_CONFIDENCE = 0.7
 
@@ -27,7 +27,7 @@ def triviality(extraction: RFQExtraction, doc_type: DocType) -> str | None:
     Returns the *reason*, not a bare bool, because "skipped" with no reason is the kind of log line
     that tells you nothing at 2am.
 
-    On the word "flags" in FR-131: the flags this can see are the ones that exist at *intake*. A
+    On the word "flags" in TASK-131: the flags this can see are the ones that exist at *intake*. A
     NO_MATCH line or a margin breach cannot gate the plan, because they are produced by the matcher
     and the critic - which is the work the plan exists to organise. Planning cannot wait for the
     result of the thing it is planning. So the signals used here are the ones already on the table:

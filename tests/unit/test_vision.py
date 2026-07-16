@@ -1,4 +1,4 @@
-"""FR-031/032: rasterization, and the vision parser's contract with an unreliable model."""
+"""TASK-031/032: rasterization, and the vision parser's contract with an unreliable model."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def test_the_scan_fixtures_have_no_text_layer() -> None:
     assert not is_scanned(DIGITAL.read_bytes())
 
 
-# --- FR-031: rasterization ---
+# --- TASK-031: rasterization ---
 def test_rasterize_produces_one_png_per_page_within_the_size_cap() -> None:
     import io  # noqa: PLC0415
 
@@ -66,7 +66,7 @@ def test_data_url_is_what_the_openai_content_array_wants() -> None:
     assert url.startswith("data:image/png;base64,")
 
 
-# --- FR-032: the parser's contract with the model ---
+# --- TASK-032: the parser's contract with the model ---
 def test_a_json_fence_is_stripped() -> None:
     assert strip_fence('```json\n{"a": 1}\n```') == '{"a": 1}'
     assert strip_fence('{"a": 1}') == '{"a": 1}'
@@ -92,7 +92,7 @@ def test_an_unreadable_quantity_becomes_null_never_a_guess() -> None:
         page=1,
     )
     assert buyer.company == "Thành Công"  # diacritics intact
-    assert lines[0].quantity is None  # the FR-034 gate will stop this before it can be priced
+    assert lines[0].quantity is None  # the TASK-034 gate will stop this before it can be priced
 
 
 def test_diacritics_survive_the_parse() -> None:
@@ -224,4 +224,4 @@ def test_the_scan_is_sent_as_an_image_and_the_tokens_are_reported() -> None:
     assert extraction.buyer.company == "Công ty TNHH Thành Công"
     assert len(extraction.lines) == 1
     assert extraction.lines[0].quantity == Decimal(20)
-    assert (sink.tokens_in, sink.tokens_out) == (1500, 120)  # real provider counts, for FR-112
+    assert (sink.tokens_in, sink.tokens_out) == (1500, 120)  # real provider counts, for TASK-112

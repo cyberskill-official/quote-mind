@@ -1,6 +1,6 @@
 # AGT-08 — DispatchAgent — Agent Behavior Specification
 
-**Document ID:** QM-AGT-08 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-08), FR-090..094, FR-044
+**Document ID:** QM-AGT-08 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-08), TASK-090..094, TASK-044
 **Implements in:** `src/quotemind/agents/dispatch.py` + `tools/dispatch_tools.py` · **Prompt file:** `src/quotemind/prompts/dispatch_email.md`
 
 ---
@@ -18,7 +18,7 @@ approved
   │ 3. presign(key, 600s)           # V4, slash_safe=True
   │ 4. compose_email(quote)         # LLM courtesy text (≤120 words) into fixed template
   │ 5. send_email(...)              # DirectMail SMTP 465, or stub → outbox/{quote_number}.eml
-  │ 6. write_episodic(quote)        # FR-044: summary, items, outcome, importance init
+  │ 6. write_episodic(quote)        # TASK-044: summary, items, outcome, importance init
   │ 7. audit_close(message_id)      # AuditEvent chain
   ▼
 sent   (any step failure → failed_dispatch with step name; steps 1–3 retryable, 5 idempotent-guarded)
@@ -26,14 +26,14 @@ sent   (any step failure → failed_dispatch with step name; steps 1–3 retryab
 
 State transitions `approved → dispatching → sent | failed_dispatch` via guarded `set_quote_state`.
 
-## 3. PDF rendering contract (FR-090, Appendix C)
+## 3. PDF rendering contract (TASK-090, Appendix C)
 
 - Template `quote/render/template_quote.html.j2` + `quote.css` implement Appendix C exactly: A4, 18 mm margins, Umber header band, bilingual table columns, per-rate VAT lines, bằng chữ, terms grid, bank block, signature row, footer with vat_policy_note + FX note + `Trang/Page X/Y`.
 - Fonts: bundled `BeVietnamPro-{Regular,SemiBold,Bold}.ttf` via `@font-face { src: url(...) }` (never `local()`); `FontConfiguration()` passed to `write_pdf`.
 - Internal-only fields (margin) are excluded by the template context builder, not by template logic — the renderer receives a customer-safe projection.
-- Render environment: FC layer with Pango/Cairo; fallback `deploy/Dockerfile.pdf` container (repo blueprint). Golden pixel-diff test guards drift (FR-124).
+- Render environment: FC layer with Pango/Cairo; fallback `deploy/Dockerfile.pdf` container (repo blueprint). Golden pixel-diff test guards drift (TASK-124).
 
-## 4. Email contract (FR-092/093)
+## 4. Email contract (TASK-092/093)
 
 Fixed bilingual skeleton (code) with one LLM slot:
 
@@ -61,9 +61,9 @@ No prices, no product details, no superlatives, no promises beyond the quote.
 
 Code lint on the slot: reject if it contains any digit-currency pattern or SKU (same regex as AGT-06 guardrail); one retry then fall back to a fixed template paragraph (never block dispatch on the LLM).
 
-## 5. Episodic memory write (FR-044, this agent's responsibility)
+## 5. Episodic memory write (TASK-044, this agent's responsibility)
 
-After send: build `EpisodicQuoteMemory` — bilingual summary via `MODEL_DRAFTER` (≤120 words, prompt inline, same lint), items_brief from priced lines, outcome (approved/edited: edited when revision>0 or waivers present; the rejected path writes its memory from the reject handler, not here), human_edits = concatenated revision instructions, importance initial per FR-046 (approved 0.7 / edited 0.8 [+0.1 if total > 100M VND, cap 1.0]), embedding of summary. Tenant `episodic:{customer_id}`; skipped with flag `EPISODIC_SKIPPED_UNKNOWN_CUSTOMER` when customer_id is null.
+After send: build `EpisodicQuoteMemory` — bilingual summary via `MODEL_DRAFTER` (≤120 words, prompt inline, same lint), items_brief from priced lines, outcome (approved/edited: edited when revision>0 or waivers present; the rejected path writes its memory from the reject handler, not here), human_edits = concatenated revision instructions, importance initial per TASK-046 (approved 0.7 / edited 0.8 [+0.1 if total > 100M VND, cap 1.0]), embedding of summary. Tenant `episodic:{customer_id}`; skipped with flag `EPISODIC_SKIPPED_UNKNOWN_CUSTOMER` when customer_id is null.
 
 ## 6. Guardrails
 
@@ -91,7 +91,7 @@ Spans: `invoke_agent DispatchAgent`, `execute_tool render_pdf` (duration, `qm.pd
 | Metric | Target | Method |
 |---|---|---|
 | Dispatch success on EV-04 approvals | 100% (stub) | EV-04 |
-| Golden PDF pixel-diff | ≤ 2% | FR-124 |
+| Golden PDF pixel-diff | ≤ 2% | TASK-124 |
 | Diacritics in rendered PDF copy-paste | byte-exact | EV-04 sampled |
 | Single-send under concurrent approve race | exactly one send | EV-07 |
 | Email lint violations shipped | 0 (fallback engages) | trace |

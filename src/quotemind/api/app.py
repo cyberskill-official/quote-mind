@@ -1,7 +1,7 @@
 """QuoteMind HTTP API (API-01..13).
 
 The routes are a thin shell: every state change goes through QuoteService, which owns the state
-machine and the audit chain. Processing is asynchronous (FR-020) - POST /api/rfq returns 202
+machine and the audit chain. Processing is asynchronous (TASK-020) - POST /api/rfq returns 202
 immediately and the pipeline runs in the background, ending durably at the approval gate.
 """
 
@@ -41,7 +41,7 @@ _ACME_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]{16,128}")
 
 app = FastAPI(title="QuoteMind API", version=__version__)
 
-# FR-106: the dashboard is a static page on OSS, so it calls this API cross-origin. Every route is
+# TASK-106: the dashboard is a static page on OSS, so it calls this API cross-origin. Every route is
 # bearer-guarded, so the origin is not the security boundary - the token is.
 app.add_middleware(
     CORSMiddleware,
@@ -109,7 +109,7 @@ async def _http_exception_handler(_request: Any, exc: StarletteHTTPException) ->
     )
 
 
-# FR-012. Filled by the probe, which runs once per process - the first time anything needs to know
+# TASK-012. Filled by the probe, which runs once per process - the first time anything needs to know
 # what the models are.
 #
 # It deliberately does NOT depend on Function Compute's initializer. It used to, and the initializer
@@ -119,7 +119,7 @@ async def _http_exception_handler(_request: Any, exc: StarletteHTTPException) ->
 # field is for, and it was telling the truth.
 #
 # Correcting the YAML is necessary but not sufficient. A probe that only runs from a platform hook
-# is one config typo away from silently not running again, and FR-012's whole purpose is to know,
+# is one config typo away from silently not running again, and TASK-012's whole purpose is to know,
 # before quoting, whether a frozen model id has been retired. So the probe runs on first need, and
 # the initializer merely gets it out of the way before the first request arrives: a warm-up, not a
 # correctness dependency.
@@ -129,7 +129,7 @@ _PROBE_LOCK = threading.Lock()
 
 
 def model_status() -> list[ModelStatus]:
-    """The FR-012 probe result, running the probe once per process if it has not run yet.
+    """The TASK-012 probe result, running the probe once per process if it has not run yet.
 
     Never raises. A boot check that can take the API down is a liability, not a safeguard - and a
     failed probe is not retried per-request, because a DashScope outage must not turn every /health
@@ -161,13 +161,13 @@ def model_status() -> list[ModelStatus]:
 
 
 def initialize(_context: Any = None) -> None:
-    """FC initializer (FR-003). Warms the FR-012 probe before the first request arrives."""
+    """FC initializer (TASK-003). Warms the TASK-012 probe before the first request arrives."""
     model_status()
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def dashboard() -> HTMLResponse:
-    """FR-106: the operator dashboard, served by the API that backs it.
+    """TASK-106: the operator dashboard, served by the API that backs it.
 
     The original plan was OSS static website hosting. That plan is still in `deploy/upload_site.py`,
     and it does not work on this account: the artifacts bucket has Block Public Access enabled, so
@@ -183,7 +183,7 @@ def dashboard() -> HTMLResponse:
     The demo token is embedded in the page. That is deliberate, and it is exactly the exposure the
     OSS plan already had: a public page must carry a credential to be usable at all. It is what
     section 3.2 means by demo-grade, and it is bounded - every write path still stops at the human
-    approval gate (FR-070), the token is one rotatable value, and a production tenant would put this
+    approval gate (TASK-070), the token is one rotatable value, and a production tenant would put this
     behind the identity provider section 3.2 also calls for.
     """
     page = dashboard_html()
@@ -219,7 +219,7 @@ def acme_challenge(token: str) -> PlainTextResponse:
 
 @app.get("/eval", response_class=HTMLResponse, include_in_schema=False)
 def eval_report() -> HTMLResponse:
-    """FR-104: the measured claim, on the deployed site, without a credential.
+    """TASK-104: the measured claim, on the deployed site, without a credential.
 
     Public on purpose, for the same reason /health is: the headline of this whole project is a
     comparison - 93% against 40% - and a benchmark a judge has to take our word for is not a
@@ -231,7 +231,7 @@ def eval_report() -> HTMLResponse:
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-    """API-11 / FR-009 + FR-012: liveness, version, git SHA, and the models actually in use."""
+    """API-11 / TASK-009 + TASK-012: liveness, version, git SHA, and the models actually in use."""
     body: dict[str, Any] = {
         "status": "ok",
         "version": __version__,
@@ -286,9 +286,9 @@ def _payload_and_text(
 async def submit_rfq(
     service: ServiceDep, background: BackgroundTasks, request: Request
 ) -> dict[str, Any]:
-    """API-01 / FR-020: JSON text or a multipart file in, 202 out, pipeline runs in background.
+    """API-01 / TASK-020: JSON text or a multipart file in, 202 out, pipeline runs in background.
 
-    FastAPI cannot mix a JSON body model with File/Form parameters on one route, and FR-020 requires
+    FastAPI cannot mix a JSON body model with File/Form parameters on one route, and TASK-020 requires
     both on this path, so the content type is dispatched by hand.
     """
     content_type = request.headers.get("content-type", "")
@@ -301,14 +301,14 @@ async def submit_rfq(
         if not isinstance(upload, UploadFile):
             raise _error(422, "empty_payload", "multipart request without a file part")
         raw = await upload.read()
-        try:  # FR-025
+        try:  # TASK-025
             doc_type = doc_type_for(upload.filename)
             if len(raw) > MAX_UPLOAD_BYTES:
                 raise UnsupportedPayloadError(f"file exceeds the {MAX_UPLOAD_BYTES} byte limit")
         except UnsupportedPayloadError as exc:
             raise _error(422, "unsupported_payload", exc.reason) from exc
 
-        # FR-021/022/031/032/033: the parser is chosen by document type, and the bytes are handed to
+        # TASK-021/022/031/032/033: the parser is chosen by document type, and the bytes are handed to
         # it intact. This line used to read `raw.decode("utf-8", errors="replace")` for *every*
         # upload, which turned a spreadsheet into mojibake and then quoted the mojibake.
         payload, text = _payload_and_text(raw, doc_type, upload.filename)
@@ -346,7 +346,7 @@ async def submit_rfq(
         "quote_id": record.quote_id,
         "quote_number": record.quote_number,
         "status": record.status.value,
-        "duplicate": not created,  # FR-024: a re-post returns the original
+        "duplicate": not created,  # TASK-024: a re-post returns the original
     }
 
 
@@ -366,7 +366,7 @@ def list_quotes(
                 "flags": record.flags,
                 "totals": record.totals_json,
                 "updated_at": record.updated_at.isoformat(),
-                "stale": service.is_stale(record),  # FR-085
+                "stale": service.is_stale(record),  # TASK-085
             }
             for record in records
         ],
@@ -376,7 +376,7 @@ def list_quotes(
 
 @app.get("/api/quotes/{quote_id}", dependencies=[Depends(require_bearer)])
 def get_quote(service: ServiceDep, quote_id: str) -> dict[str, Any]:
-    """API-03 / FR-082: the full review payload."""
+    """API-03 / TASK-082: the full review payload."""
     try:
         return service.review(quote_id)
     except QuoteNotFoundError as exc:
@@ -385,14 +385,14 @@ def get_quote(service: ServiceDep, quote_id: str) -> dict[str, Any]:
 
 @app.get("/api/quotes/{quote_id}/audit", dependencies=[Depends(require_bearer)])
 def get_audit(service: ServiceDep, quote_id: str) -> dict[str, Any]:
-    """API-04 / FR-094: the hash-chained audit trail."""
+    """API-04 / TASK-094: the hash-chained audit trail."""
     events = service.store.list_audit(quote_id)
     return {"events": [event.model_dump(mode="json") for event in events]}
 
 
 @app.get("/api/quotes/{quote_id}/trace", dependencies=[Depends(require_bearer)])
 def get_trace(service: ServiceDep, quote_id: str) -> dict[str, Any]:
-    """API-05 / FR-111: the persisted reasoning trace (steps, tokens, cost, durations)."""
+    """API-05 / TASK-111: the persisted reasoning trace (steps, tokens, cost, durations)."""
     try:
         return service.trace(quote_id)
     except QuoteNotFoundError as exc:
@@ -406,7 +406,7 @@ def approve(
     quote_id: str,
     body: ApproveBody | None = None,
 ) -> dict[str, Any]:
-    """API-06 / FR-083. Blocking flags need an explicit, audited waiver, else 409."""
+    """API-06 / TASK-083. Blocking flags need an explicit, audited waiver, else 409."""
     payload = body or ApproveBody()
     try:
         record = service.approve(
@@ -424,7 +424,7 @@ def approve(
         # which told the caller the system was broken when in fact the caller was.
         raise _error(409, "illegal_transition", str(exc)) from exc
 
-    # FR-083: approval triggers dispatch. Always - even with no recipient, because `dispatch` is
+    # TASK-083: approval triggers dispatch. Always - even with no recipient, because `dispatch` is
     # what writes `dispatch.skipped` to the audit trail, and a quote that is approved but not sent
     # must say why. Guarding this call here would leave the reviewer looking at an approved quote
     # with no explanation for its silence, and would put the decision in two places.
@@ -439,9 +439,9 @@ def approve(
 
 @app.get("/api/quotes/{quote_id}/pdf", dependencies=[Depends(require_bearer)])
 def quote_pdf(service: ServiceDep, quote_id: str) -> dict[str, Any]:
-    """API-09 / FR-091: a fresh, short-lived presigned GET on the private object.
+    """API-09 / TASK-091: a fresh, short-lived presigned GET on the private object.
 
-    FR-091 says *302 to* that URL. This returns it instead, and the reason is not a preference.
+    TASK-091 says *302 to* that URL. This returns it instead, and the reason is not a preference.
 
     Two independent things made the redirect unusable, and only one of them was about the platform:
 
@@ -460,7 +460,7 @@ def quote_pdf(service: ServiceDep, quote_id: str) -> dict[str, Any]:
     objection as the whole reason, when the *client* objection is the one that decides. The redirect
     is now merely possible; it was never the better shape.
 
-    What FR-091 exists to guarantee - the PDF stays a private object, reached by a short-lived
+    What TASK-091 exists to guarantee - the PDF stays a private object, reached by a short-lived
     signed URL rather than a public one - is fully preserved, and preserved more usably: the
     client fetches this with its token and opens the URL it gets back.
     """
@@ -482,7 +482,7 @@ def reject(service: ServiceDep, quote_id: str, body: RejectBody | None = None) -
 
 @app.post("/api/quotes/{quote_id}/revise", status_code=202, dependencies=[Depends(require_bearer)])
 async def revise(service: ServiceDep, quote_id: str, body: ReviseBody) -> dict[str, Any]:
-    """API-08 / FR-084: re-run the pipeline honouring the instruction."""
+    """API-08 / TASK-084: re-run the pipeline honouring the instruction."""
     try:
         record = await service.revise(quote_id, instruction=body.instruction)
     except QuoteNotFoundError as exc:
@@ -492,9 +492,9 @@ async def revise(service: ServiceDep, quote_id: str, body: ReviseBody) -> dict[s
 
 @app.post("/api/quotes/{quote_id}/cancel", dependencies=[Depends(require_bearer)])
 def cancel(service: ServiceDep, quote_id: str, body: RejectBody | None = None) -> dict[str, Any]:
-    """FR-134: cancel a quote, with the HITL gate's own semantics.
+    """TASK-134: cancel a quote, with the HITL gate's own semantics.
 
-    FR-134 asks for an interrupt hook that can cancel an *in-flight* run. This implements the half
+    TASK-134 asks for an interrupt hook that can cancel an *in-flight* run. This implements the half
     of it that can be implemented honestly, and refuses the other half rather than faking it.
 
     A quote waiting at the gate is cancelled by ending it - which is what `rejected` already means,
@@ -507,11 +507,11 @@ def cancel(service: ServiceDep, quote_id: str, body: RejectBody | None = None) -
       * The pipeline runs inside a FastAPI BackgroundTask, in the same Function Compute invocation
         that accepted the RFQ. There is no second process holding a handle to it. Cancelling would
         mean adding a flag in Tablestore and polling it between stages - which is a real design, and
-        a bigger one than this FR is worth.
+        a bigger one than this task is worth.
       * The status enum is frozen (section 12.5) and has no `cancelled`. Landing an interrupted run
         in `failed_parse` would put a lie on a hash-chained audit trail: nothing failed. Landing it
         in `needs_manual` is not reachable from `parsing` or `matching` under LEGAL_TRANSITIONS, and
-        widening that table to make one FR fit is exactly the change section 12 says to stop and ask
+        widening that table to make one task fit is exactly the change section 12 says to stop and ask
         about.
 
     So: cancellable at the gate, 409 while running, and the reason is on the record rather than in

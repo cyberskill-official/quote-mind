@@ -1,4 +1,4 @@
-"""FR-021 OSS drop channel: objects under oss://quotemind-inbox/rfq/ become quotes.
+"""TASK-021 OSS drop channel: objects under oss://quotemind-inbox/rfq/ become quotes.
 
 Two entry points, one code path:
 
@@ -10,7 +10,7 @@ arrived by file is indistinguishable downstream from one posted to the API.
 
 And it really is the same path now. It was not. This module used to check the filename against a
 short list of text suffixes and, for anything else, register the quote and *park it* behind a
-comment saying PDF and Excel parsing would "land with FR-031/032". Those FRs landed. The comment
+comment saying PDF and Excel parsing would "land with TASK-031/032". Those tasks landed. The comment
 did not - so the one intake channel that exists specifically for files was the only one that could
 not read a file, and a dropped spreadsheet became a numbered quote stuck at `received`, forever.
 The parser routing now lives in QuoteService, and both channels call it.
@@ -53,7 +53,7 @@ async def ingest_key(service: QuoteService, artifacts: ArtifactStore, key: str) 
 
     # Text is decoded; a spreadsheet, PDF or image is handed to the parser as the bytes it is. The
     # record's `text` is only what a reviewer sees in the queue, so for a file it is a label - but
-    # the idempotency digest is taken over the real bytes (FR-024), not over that label. Hashing the
+    # the idempotency digest is taken over the real bytes (TASK-024), not over that label. Hashing the
     # label would collide two different spreadsheets that happened to share a filename.
     if doc_type is DocType.EMAIL_TEXT:
         payload: str | bytes = raw.decode("utf-8", errors="replace")
@@ -69,7 +69,7 @@ async def ingest_key(service: QuoteService, artifacts: ArtifactStore, key: str) 
         filename=filename,
         source_uri=source_uri,
     )
-    if not created:  # FR-024: the same bytes dropped twice is still one quote
+    if not created:  # TASK-024: the same bytes dropped twice is still one quote
         return record
     return await service.process(record, payload, doc_type=doc_type)
 

@@ -1,4 +1,4 @@
-"""FR-043: an exact email match must not be shadowed by a name that fails to match.
+"""TASK-043: an exact email match must not be shadowed by a name that fails to match.
 
 Found in the live audit. Two RFQs from the same address, `mua.hang@thanhcong.vn`:
 

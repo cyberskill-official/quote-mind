@@ -1,4 +1,4 @@
-# Fonts (FR-124)
+# Fonts (TASK-124)
 
 Be Vietnam Pro, bundled. The quote template (`quote.html.j2`) declares it via `@font-face`:
 

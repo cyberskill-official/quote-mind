@@ -1,4 +1,4 @@
-"""FR-046: episodic importance, recency decay, effective score, and ranking."""
+"""TASK-046: episodic importance, recency decay, effective score, and ranking."""
 
 from __future__ import annotations
 
@@ -41,6 +41,6 @@ def test_should_prune() -> None:
 
 
 def test_fresh_ranks_above_old_of_equal_similarity() -> None:
-    # FR-046 AC: fresh memory ranks first over a 200-day-old one of equal similarity.
+    # TASK-046 AC: fresh memory ranks first over a 200-day-old one of equal similarity.
     ranked = rank_by_effective_score([("old", 0.9, 0.7, 200.0), ("fresh", 0.9, 0.7, 1.0)])
     assert [item for item, _score in ranked] == ["fresh", "old"]

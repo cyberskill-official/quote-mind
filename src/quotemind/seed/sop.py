@@ -1,4 +1,4 @@
-"""FR-048 seed: the reseller's standard operating procedures, as retrievable memory.
+"""TASK-048 seed: the reseller's standard operating procedures, as retrievable memory.
 
 These are the sentences that used to be hardcoded in `orchestrator.DEFAULT_TERMS` - payment terms,
 delivery norms, warranty language, validity bounds, how a substitution is worded. Hardcoding them
@@ -7,12 +7,12 @@ obvious way: a server with a 30-day lead time cannot promise delivery in 7 worki
 software licence has no warranty to speak of.
 
 So they live in the `sop` KnowledgeStore tenant instead, and the drafter retrieves the two most
-relevant per topic (FR-048). This is *procedural* memory - what the business always does - as
+relevant per topic (TASK-048). This is *procedural* memory - what the business always does - as
 distinct from the *episodic* memory in memory/recall.py, which is what happened last time with this
 particular customer. Both inform the draft; neither is allowed near the arithmetic.
 
-Vietnamese is the governing language (FR-061), so the vi text is what a reader is held to and the
-en text is its translation. Both are written in the trang trọng business register FR-065 asks for.
+Vietnamese is the governing language (TASK-061), so the vi text is what a reader is held to and the
+en text is its translation. Both are written in the trang trọng business register TASK-065 asks for.
 """
 
 from __future__ import annotations
@@ -49,9 +49,9 @@ SOPS: list[SOPSnippet] = [
         text=BilingualText(
             vi="Bản quyền phần mềm và dịch vụ triển khai: thanh toán 100% trước khi kích hoạt.",
             # "paid in full" is a perfectly good translation of "thanh toán 100%" and it is *wrong*
-            # here: it drops the digit. FR-072 compares the numbers in the vi and en halves of every
+            # here: it drops the digit. TASK-072 compares the numbers in the vi and en halves of every
             # bilingual field and blocks the quote when they disagree - and it caught this, live, on
-            # the first server quote after FR-048 shipped. The guardrail does not care that a human
+            # the first server quote after TASK-048 shipped. The guardrail does not care that a human
             # wrote the text. See test_every_seeded_sop_survives_the_bilingual_number_check.
             en="Software licences and implementation services: 100% payment before activation.",
         ),

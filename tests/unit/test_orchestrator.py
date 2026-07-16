@@ -1,4 +1,4 @@
-"""FR-130: the whole pipeline, with the model and the cloud both mocked - no network at all."""
+"""TASK-130: the whole pipeline, with the model and the cloud both mocked - no network at all."""
 
 from __future__ import annotations
 
@@ -168,7 +168,7 @@ def test_missing_quantity_stops_at_the_extraction_gate(monkeypatch: pytest.Monke
     )
     assert result.clarification_reasons == ["MISSING_QUANTITY"]
     assert result.quote is None
-    assert result.matches == []  # FR-034: never proceeds to matching
+    assert result.matches == []  # TASK-034: never proceeds to matching
 
 
 def test_no_match_lines_are_not_priced(monkeypatch: pytest.MonkeyPatch) -> None:

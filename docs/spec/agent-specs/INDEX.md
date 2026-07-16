@@ -14,4 +14,4 @@
 | AGT-07_CriticValidator.md | CriticValidator | code + qwen3-max | Recomputes everything; LLM cannot override code verdicts |
 | AGT-08_DispatchAgent.md | DispatchAgent | code + qwen3-max slot | Renders, stores, sends, remembers; exactly once |
 
-Shared conventions across all sheets: prompts live in src/quotemind/prompts/ with versioned headers; guardrails are code-enforced (middleware, set-membership, checksums), never prompt-only; every agent emits invoke_agent spans and a <=120-token trace summary; failure codes map to FR-113 taxonomy.
+Shared conventions across all sheets: prompts live in src/quotemind/prompts/ with versioned headers; guardrails are code-enforced (middleware, set-membership, checksums), never prompt-only; every agent emits invoke_agent spans and a <=120-token trace summary; failure codes map to TASK-113 taxonomy.

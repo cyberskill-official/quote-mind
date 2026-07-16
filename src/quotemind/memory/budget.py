@@ -1,4 +1,4 @@
-"""Context budget guard (FR-049): cap injected memory tokens, dropping lowest-score items."""
+"""Context budget guard (TASK-049): cap injected memory tokens, dropping lowest-score items."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def budget_trim(
 
     Each item is (value, token_count, effective_score). Items are taken in descending score;
     once one does not fit, it and the remaining lower-score items are dropped. Returns
-    (kept_values, truncated), where truncated is True when anything was dropped (FR-049
+    (kept_values, truncated), where truncated is True when anything was dropped (TASK-049
     memory_truncated).
     """
     ordered = sorted(items, key=lambda triple: triple[2], reverse=True)

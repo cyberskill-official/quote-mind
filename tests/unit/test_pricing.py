@@ -1,4 +1,4 @@
-"""FR-050..054: deterministic pricing functions."""
+"""TASK-050..054: deterministic pricing functions."""
 
 from __future__ import annotations
 

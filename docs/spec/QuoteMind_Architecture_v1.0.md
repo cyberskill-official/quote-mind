@@ -57,7 +57,7 @@ Order and responsibilities (see `pipeline-sequence.png`):
 
 1. **Orchestrator (AGT-01, qwen3-max + PlanNotebook).** Owns the run and the state machine. Fast path for trivial quotes; planned path (PlanNotebook subtasks) when multi-document, >10 lines, or flags exist. Never touches money; never skips the critic.
 2. **IntakeClassifier (AGT-02, qwen-plus).** language / doc_type / urgency / customer resolution via `lookup_customer` tool. Emits `IntakeResult`.
-3. **DocumentParser (AGT-03).** Route by doc_type: text → qwen-plus structured extraction; pdf/image → rasterize (pypdfium2, 200 DPI, ≤10 pages, ≤2560 px) then qwen-vl-ocr per page, JSON-fenced output, page-merge with dedupe; xlsx → openpyxl deterministic with LLM only for ambiguous headers. Emits `RFQExtraction` with per-line confidence and source spans. Gate FR-034 stops empty/invalid extractions.
+3. **DocumentParser (AGT-03).** Route by doc_type: text → qwen-plus structured extraction; pdf/image → rasterize (pypdfium2, 200 DPI, ≤10 pages, ≤2560 px) then qwen-vl-ocr per page, JSON-fenced output, page-merge with dedupe; xlsx → openpyxl deterministic with LLM only for ambiguous headers. Emits `RFQExtraction` with per-line confidence and source spans. Gate TASK-034 stops empty/invalid extractions.
 4. **CatalogMatcher (AGT-04).** Hybrid retrieval per line: `vector_search(top_k=8, tenant "catalog")` + `full_text_search`, reciprocal-rank fusion, then qwen3-max selects from candidates only. Confidence < 0.75 or spec conflict ⇒ `needs_confirmation` with ≤3 alternatives and a bilingual reason. Out-of-catalog ⇒ `no_match`, preserved for HITL.
 5. **PricingEngine (AGT-05, deterministic).** Pure `Decimal` functions: tier price → discount → line totals → per-rate VAT (8% IT default, 10% telecom exclusion) → totals → margin vs floor. Zero LLM involvement; 100% branch-covered.
 6. **QuoteDrafter (AGT-06, qwen3-max).** Fills only `BilingualText` fields around code-injected, read-only numbers; grounds terms in SOP memory; cites up to 3 episodic memories retrieved with `similarity × 0.5^(age/90d) × importance` scoring under a 1200-token budget. Numeric checksum on output; one retry then fail.
@@ -71,15 +71,15 @@ Cross-cutting: every step appends a MemoryStore `Message`, an `AuditEvent` (sha2
 
 **Stores and ownership**
 
-| Store | Contents | Owner FRs |
+| Store | Contents | Owner tasks |
 |---|---|---|
-| MemoryStore (`qm_*` SDK tables) | `Session(user_id, session_id=quote_id)`; per-step `Message` | FR-047, FR-081 |
-| KnowledgeStore (table + search index, vector dim 1024, FTS on `text`) | tenants `catalog` (60 SKUs), `customers` (8), `episodic:{customer_id}` (grows), `sop` (10) | FR-040..046, 048 |
-| `qm_quotes` (OTS wide-column, pk quote_id, index on status) | QuoteRecord incl. totals_json, flags, revision, idempotency hash | FR-024, 080 |
-| `qm_audit` (pk quote_id+seq) | Hash-chained AuditEvent log | FR-094 |
-| `qm_counters` | Atomic per-year quote numbering `QM-YYYY-NNNN` | FR-062 |
-| OSS `quotemind-inbox` | `rfq/...` inbound files (trigger source) | FR-021 |
-| OSS `quotemind-artifacts` | `quotes/*.pdf`, `pages/{quote_id}/*.png`, `traces/{quote_id}.json`, `outbox/*.eml` | FR-090..093, 111 |
+| MemoryStore (`qm_*` SDK tables) | `Session(user_id, session_id=quote_id)`; per-step `Message` | TASK-047, TASK-081 |
+| KnowledgeStore (table + search index, vector dim 1024, FTS on `text`) | tenants `catalog` (60 SKUs), `customers` (8), `episodic:{customer_id}` (grows), `sop` (10) | TASK-040..046, 048 |
+| `qm_quotes` (OTS wide-column, pk quote_id, index on status) | QuoteRecord incl. totals_json, flags, revision, idempotency hash | TASK-024, 080 |
+| `qm_audit` (pk quote_id+seq) | Hash-chained AuditEvent log | TASK-094 |
+| `qm_counters` | Atomic per-year quote numbering `QM-YYYY-NNNN` | TASK-062 |
+| OSS `quotemind-inbox` | `rfq/...` inbound files (trigger source) | TASK-021 |
+| OSS `quotemind-artifacts` | `quotes/*.pdf`, `pages/{quote_id}/*.png`, `traces/{quote_id}.json`, `outbox/*.eml` | TASK-090..093, 111 |
 
 **Memory lifecycle (Track-1 depth).** Write on decision (approve/edit/reject) with initial importance from outcome and deal size; retrieve top-3 by effective score; garbage-collect below effective ceiling 0.05; compact >50 memories per customer into an LLM-written profile document. All retrievals are cited in the trace and surfaced in the UI.
 
@@ -90,7 +90,7 @@ Cross-cutting: every step appends a MemoryStore `Message`, an `AuditEvent` (sha2
 ```
 Region ap-southeast-1 (Singapore)
 ├── Function Compute 3.0
-│   ├── quotemind-api      (HTTP trigger, 1024 MB, 300 s, initializer: model check FR-012)
+│   ├── quotemind-api      (HTTP trigger, 1024 MB, 300 s, initializer: model check TASK-012)
 │   └── quotemind-ingest   (OSS trigger, same image/code)
 ├── OSS
 │   ├── quotemind-inbox        (private; event → ingest)
@@ -116,13 +116,13 @@ Deploy: `s deploy` from `deploy/s.yaml` (edition 3.0.0, component fc3) + `python
 | Failure | Behavior |
 |---|---|
 | Model transient error | Retry ×2 exponential backoff (1 s, 4 s); then error code (MODEL_UNAVAILABLE etc.), quote → `failed_*` with reason |
-| Primary model missing at cold start | FR-012 substitutes frozen fallback (`qwen3-max`→`qwen-max`, `qwen-vl-ocr`→`qwen3-vl-plus`), logs WARN, `/health` reports it |
+| Primary model missing at cold start | TASK-012 substitutes frozen fallback (`qwen3-max`→`qwen-max`, `qwen-vl-ocr`→`qwen3-vl-plus`), logs WARN, `/health` reports it |
 | One page fails vision | Partial extraction + flag; run continues (NFR-004) |
-| Empty/invalid extraction | `needs_clarification`, never guess quantities (FR-034) |
+| Empty/invalid extraction | `needs_clarification`, never guess quantities (TASK-034) |
 | Draft numeric checksum mismatch | One redraft, then DRAFT_FAIL (guardrail AGT-06) |
-| Critic recompute mismatch | `critic_failed`, blocking (FR-070) |
-| DirectMail unavailable | `MAIL_TRANSPORT=stub` writes `.eml` to OSS, audited `sent_stub` (FR-093) |
-| FC instance death mid-run | State machine + session messages allow re-entry; `pending_approval` is durable by construction (FR-081) |
+| Critic recompute mismatch | `critic_failed`, blocking (TASK-070) |
+| DirectMail unavailable | `MAIL_TRANSPORT=stub` writes `.eml` to OSS, audited `sent_stub` (TASK-093) |
+| FC instance death mid-run | State machine + session messages allow re-entry; `pending_approval` is durable by construction (TASK-081) |
 | Revise loop | Hard cap 3, then `needs_manual` |
 
 ## 10. Rubric mapping of architectural choices

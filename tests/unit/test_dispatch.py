@@ -1,4 +1,4 @@
-"""FR-092 bilingual email + FR-093 stub transport to the OSS outbox."""
+"""TASK-092 bilingual email + TASK-093 stub transport to the OSS outbox."""
 
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def test_oversized_pdf_is_linked_not_attached() -> None:
         link="https://signed.example/x.pdf",
         pdf=b"x" * (MAX_ATTACHMENT_BYTES + 1),
     )
-    assert attached is False  # FR-092: attach only when <= 3 MB
+    assert attached is False  # TASK-092: attach only when <= 3 MB
 
 
 def test_stub_transport_writes_the_eml_to_the_outbox() -> None:
@@ -102,7 +102,7 @@ def test_stub_transport_writes_the_eml_to_the_outbox() -> None:
         contact="Chị Lan",
         pdf=b"%PDF-1.7",
     )
-    assert result.transport == "stub"  # FR-093
+    assert result.transport == "stub"  # TASK-093
     assert result.outbox_key == "outbox/QM-2026-0042.eml"
     assert result.message_id.startswith("<")
 

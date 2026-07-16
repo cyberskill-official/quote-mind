@@ -1,18 +1,18 @@
-"""FR-124: the golden PDF snapshot.
+"""TASK-124: the golden PDF snapshot.
 
 One fixed quote is rendered and compared against a checked-in PNG. This is the only test that can
 catch a change nobody wrote a test for: a CSS tweak that shifts the totals block, a font fallback
 that mangles Vietnamese diacritics, a layout change that pushes the bank details off the page. Those
 are all invisible to an assertion about numbers and immediately obvious in a picture.
 
-The tolerance is 2% of pixels (per FR-124), which absorbs antialiasing differences between machines
+The tolerance is 2% of pixels (per TASK-124), which absorbs antialiasing differences between machines
 without absorbing a real layout change. Regenerate deliberately, never reflexively:
 
     python tests/golden/test_golden_pdf.py --update
 
 If a diff appears you did not intend, that is the test doing its job.
 
-This golden used to be pinned to Linux, and that pin is gone - which is the whole point of FR-124.
+This golden used to be pinned to Linux, and that pin is gone - which is the whole point of TASK-124.
 
 The old docstring said it plainly: "the golden is only portable across machines that resolve the
 same fonts... Bundling the Be Vietnam Pro TTFs is what makes it truly portable, and that is still
@@ -40,7 +40,7 @@ from quotemind.quote import AssemblyLine, assemble_quote, format_quote_number
 from quotemind.seed.data import BY_SKU
 
 GOLDEN = Path(__file__).parent / "quote_golden.png"
-TOLERANCE = 0.02  # FR-124
+TOLERANCE = 0.02  # TASK-124
 _ON = date(2026, 7, 11)
 
 _TERMS = QuoteTerms(
@@ -149,7 +149,7 @@ def test_the_rendered_quote_still_looks_like_the_golden() -> None:
 
 
 def test_the_pdf_carries_its_own_fonts() -> None:
-    """The reason the golden is portable at all - and the reason FR-124 was worth doing.
+    """The reason the golden is portable at all - and the reason TASK-124 was worth doing.
 
     If WeasyPrint ever stops finding the bundled TTFs it falls back to a system face, silently: the
     PDF still renders, the diacritics still come out right, and the only symptom is a warning on

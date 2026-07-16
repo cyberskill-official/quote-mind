@@ -1,4 +1,4 @@
-"""Embedding pipeline (FR-041).
+"""Embedding pipeline (TASK-041).
 
 Every KnowledgeStore document and every query vector is produced here, with the frozen model
 (text-embedding-v4) at the frozen dimension (1024) and batches capped at 10 texts per call.
@@ -13,7 +13,7 @@ from openai import OpenAI
 from ..config.models import EMBED_DIMENSIONS, MODEL_EMBED
 from ..config.settings import Settings
 
-MAX_BATCH = 10  # FR-041: embedding calls batched <= 10 texts
+MAX_BATCH = 10  # TASK-041: embedding calls batched <= 10 texts
 
 
 def build_embedding_client(settings: Settings) -> OpenAI:
@@ -30,7 +30,7 @@ def embed_texts(
 ) -> list[list[float]]:
     """Embed texts in input order, batching at MAX_BATCH, always at EMBED_DIMENSIONS.
 
-    When a usage sink is given, the provider's own token count is reported to it (FR-112).
+    When a usage sink is given, the provider's own token count is reported to it (TASK-112).
     """
     if not texts:
         return []

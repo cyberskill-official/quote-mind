@@ -1,4 +1,4 @@
-"""DM-01 QuoteRecord and the approval state machine (FR-080; frozen, parent 12.9)."""
+"""DM-01 QuoteRecord and the approval state machine (TASK-080; frozen, parent 12.9)."""
 
 from __future__ import annotations
 

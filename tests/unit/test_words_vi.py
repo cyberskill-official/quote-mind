@@ -1,4 +1,4 @@
-"""FR-055: Vietnamese amount-in-words converter."""
+"""TASK-055: Vietnamese amount-in-words converter."""
 
 from __future__ import annotations
 

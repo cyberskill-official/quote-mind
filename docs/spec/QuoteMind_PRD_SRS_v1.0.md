@@ -15,7 +15,7 @@
 | Owner | Stephen Cheng (Trịnh Thái Anh), CEO, CyberSkill Software Solutions Consultancy and Development JSC |
 | Author | CyberSkill product engineering (AI-assisted) |
 | Audience | AI coding agents (Claude Cowork) and human reviewers |
-| Consumption model | This document is the single source of truth. It is designed to be decomposed into feature requests (FRs). Each FR-XXX below is atomic and independently implementable once its listed dependencies are met. |
+| Consumption model | This document is the single source of truth. It is designed to be decomposed into tasks (tasks). Each TASK-XXX below is atomic and independently implementable once its listed dependencies are met. |
 | Language of record | English (product UI and generated quotes are bilingual Vietnamese/English) |
 | License of resulting code | Apache-2.0 (hackathon requires a visible open-source license) |
 
@@ -27,8 +27,8 @@
 
 ### How to read this document (instructions for Claude Cowork)
 
-1. Requirements are numbered `FR-NNN` (functional), `NFR-NNN` (non-functional), `AGT-NN` (agent behavior specs), `DM-NN` (data model), `API-NN` (API contracts), `EV-NN` (evaluation), `SUB-NN` (hackathon submission compliance).
-2. Every FR has: priority (`P0` = must ship for demo, `P1` = should ship, `P2` = stretch), a normative statement ("The system shall..."), acceptance criteria in Given/When/Then form, and dependencies.
+1. Requirements are numbered `TASK-NNN` (functional), `NFR-NNN` (non-functional), `AGT-NN` (agent behavior specs), `DM-NN` (data model), `API-NN` (API contracts), `EV-NN` (evaluation), `SUB-NN` (hackathon submission compliance).
+2. Every task has: priority (`P0` = must ship for demo, `P1` = should ship, `P2` = stretch), a normative statement ("The system shall..."), acceptance criteria in Given/When/Then form, and dependencies.
 3. Implement in epic order EP-01 → EP-13 unless the dependency graph says otherwise. The critical path is EP-01 → EP-03 → EP-04 → EP-05 → EP-06 → EP-09 (one vertical slice), then EP-07, EP-08, EP-10 through EP-13.
 4. The section "DO-NOT-CHANGE registry" lists identifiers, schemas, and contracts that must never be renamed or restructured without a spec version bump. Treat them as frozen.
 5. Code examples in this spec are normative for signatures and naming, illustrative for bodies.
@@ -94,7 +94,7 @@ A Vietnamese IT reseller receives RFQs all day: a Vietnamese-language email aski
 | OSS | Alibaba Cloud Object Storage Service |
 | DashScope | Alibaba Cloud Model Studio inference API (international: Singapore) |
 | CDS | CyberSkill Design System (visual tokens for the dashboard and PDF) |
-| Cowork | Claude Cowork, the AI agent that will decompose this spec into FRs and implement |
+| Cowork | Claude Cowork, the AI agent that will decompose this spec into tasks and implement |
 
 ### 1.5 References
 
@@ -306,7 +306,7 @@ External actors: Buyer (sends RFQ, receives quote), Sales Manager (approves via 
 | `MODEL_CRITIC` | `qwen3-max` | CriticValidator narrative checks | temp 0.0 |
 | `MODEL_EMBED` | `text-embedding-v4` | Embedding pipeline | `dimensions=1024` |
 
-Model IDs live in `src/quotemind/config/models.py` as constants; a bootstrap script verifies each ID against the live Singapore catalog and fails fast with a clear message if unavailable (FR-012).
+Model IDs live in `src/quotemind/config/models.py` as constants; a bootstrap script verifies each ID against the live Singapore catalog and fails fast with a clear message if unavailable (TASK-012).
 
 ### 4.7 Environment configuration (frozen names)
 
@@ -332,334 +332,334 @@ All secrets/config via environment variables; `.env.example` in repo; never comm
 | `OTEL_SEMCONV_STABILITY_OPT_IN` | `gen_ai_latest_experimental` | |
 | `QM_ENV` | `local` / `fc` | switches sandbox/paths |
 
-Region is `ap-southeast-1` (Singapore) for every service. If DirectMail sender verification cannot complete in time, `MAIL_TRANSPORT=stub` writes the email to the audit log and OSS instead (FR-093 fallback), keeping the demo deterministic.
+Region is `ap-southeast-1` (Singapore) for every service. If DirectMail sender verification cannot complete in time, `MAIL_TRANSPORT=stub` writes the email to the audit log and OSS instead (TASK-093 fallback), keeping the demo deterministic.
 
 
 ---
 
 ## 5. Functional requirements
 
-Requirements are grouped into epics EP-01…EP-13. Priorities: P0 must ship for the demo; P1 should ship; P2 stretch. Every FR is atomic for Cowork decomposition.
+Requirements are grouped into epics EP-01…EP-13. Priorities: P0 must ship for the demo; P1 should ship; P2 stretch. Every task is atomic for Cowork decomposition.
 
 ### EP-01 — Repository, infrastructure and scaffolding
 
-**FR-001 (P0) Repository scaffold.** The system shall provide a public Git repository with the frozen layout defined in Appendix D, an Apache-2.0 `LICENSE` at root, a `README.md` with quickstart, and `pyproject.toml` pinning the versions in §4.4.
+**TASK-001 (P0) Repository scaffold.** The system shall provide a public Git repository with the frozen layout defined in Appendix D, an Apache-2.0 `LICENSE` at root, a `README.md` with quickstart, and `pyproject.toml` pinning the versions in §4.4.
 - AC: Given a fresh clone, When `make setup && make test` runs on Python 3.12, Then dependencies install and the unit suite passes with zero network calls to paid APIs.
 - Dep: none.
 
-**FR-002 (P0) Configuration module.** The system shall load all configuration exclusively from environment variables via `src/quotemind/config/settings.py` (pydantic-settings), with `.env.example` documenting every variable in §4.7 and hard failure on missing P0 variables at startup.
+**TASK-002 (P0) Configuration module.** The system shall load all configuration exclusively from environment variables via `src/quotemind/config/settings.py` (pydantic-settings), with `.env.example` documenting every variable in §4.7 and hard failure on missing P0 variables at startup.
 - AC: Given `DASHSCOPE_API_KEY` unset, When the API function cold-starts, Then it exits with a single-line actionable error naming the variable.
-- Dep: FR-001.
+- Dep: TASK-001.
 
-**FR-003 (P0) Serverless Devs deployment descriptor.** The system shall include `deploy/s.yaml` (edition 3.0.0, component `fc3`) defining: function `quotemind-api` (HTTP trigger, `python3.12`, memory 1024 MB, timeout 300 s, `initializer` handler) and function `quotemind-ingest` (OSS object-created trigger on `quotemind-inbox`, prefix `rfq/`), both in `ap-southeast-1`, with environment variables injected from deployment config.
+**TASK-003 (P0) Serverless Devs deployment descriptor.** The system shall include `deploy/s.yaml` (edition 3.0.0, component `fc3`) defining: function `quotemind-api` (HTTP trigger, `python3.12`, memory 1024 MB, timeout 300 s, `initializer` handler) and function `quotemind-ingest` (OSS object-created trigger on `quotemind-inbox`, prefix `rfq/`), both in `ap-southeast-1`, with environment variables injected from deployment config.
 - AC: Given valid credentials, When `s deploy` runs, Then both functions deploy and `GET {api}/health` returns `{"status":"ok","version":...}`.
-- Dep: FR-001, FR-002.
+- Dep: TASK-001, TASK-002.
 
-**FR-004 (P0) Provisioning script.** The system shall provide `deploy/provision.py` that idempotently creates: OSS buckets `quotemind-inbox` and `quotemind-artifacts` (private ACL), the Tablestore instance's required tables/indexes via MemoryStore/KnowledgeStore initialization (vector dim 1024), and prints a provisioning report.
+**TASK-004 (P0) Provisioning script.** The system shall provide `deploy/provision.py` that idempotently creates: OSS buckets `quotemind-inbox` and `quotemind-artifacts` (private ACL), the Tablestore instance's required tables/indexes via MemoryStore/KnowledgeStore initialization (vector dim 1024), and prints a provisioning report.
 - AC: Given a clean account, When the script runs twice, Then the second run reports "already exists" for every resource and exits 0.
-- Dep: FR-002.
+- Dep: TASK-002.
 
-**FR-005 (P0) Deployment-proof module.** The system shall include `src/quotemind/cloud/alibaba_proof.py`: a single, well-commented module that exercises DashScope (chat + embedding), OSS (put/get/presign), and Tablestore (put/get) in one runnable `python -m quotemind.cloud.alibaba_proof` flow, existing to satisfy the hackathon's "link to a code file demonstrating use of Alibaba Cloud services and APIs".
+**TASK-005 (P0) Deployment-proof module.** The system shall include `src/quotemind/cloud/alibaba_proof.py`: a single, well-commented module that exercises DashScope (chat + embedding), OSS (put/get/presign), and Tablestore (put/get) in one runnable `python -m quotemind.cloud.alibaba_proof` flow, existing to satisfy the hackathon's "link to a code file demonstrating use of Alibaba Cloud services and APIs".
 - AC: Given deployed credentials, When the module runs, Then it prints PASS lines for DashScope, OSS, Tablestore and exits 0.
-- Dep: FR-002, FR-004.
+- Dep: TASK-002, TASK-004.
 
-**FR-006 (P0) Local dev mode.** The system shall run the full pipeline locally (`make dev`) with `QM_ENV=local`, using the same code paths (real DashScope + real Tablestore/OSS) so demo rehearsal equals production behavior.
+**TASK-006 (P0) Local dev mode.** The system shall run the full pipeline locally (`make dev`) with `QM_ENV=local`, using the same code paths (real DashScope + real Tablestore/OSS) so demo rehearsal equals production behavior.
 - AC: Given local env vars, When `make dev` starts and a sample RFQ posts to `localhost:9000/api/rfq`, Then a draft quote reaches `pending_approval`.
-- Dep: FR-003 equivalents local.
+- Dep: TASK-003 equivalents local.
 
-**FR-007 (P1) CI pipeline.** GitHub Actions shall run ruff, mypy (non-strict), unit tests, and the eval smoke subset (5 RFQs, mocked models) on every PR; failing gates block merge.
-- Dep: FR-001, EP-12.
+**TASK-007 (P1) CI pipeline.** GitHub Actions shall run ruff, mypy (non-strict), unit tests, and the eval smoke subset (5 RFQs, mocked models) on every PR; failing gates block merge.
+- Dep: TASK-001, EP-12.
 
-**FR-008 (P0) Structured logging.** All functions shall log JSON lines (timestamp, level, quote_id, agent, event) to stdout for FC log collection.
-- Dep: FR-001.
+**TASK-008 (P0) Structured logging.** All functions shall log JSON lines (timestamp, level, quote_id, agent, event) to stdout for FC log collection.
+- Dep: TASK-001.
 
-**FR-009 (P0) Health and version endpoints.** `GET /health` returns status, git SHA, model constants; unauthenticated.
-- Dep: FR-003.
+**TASK-009 (P0) Health and version endpoints.** `GET /health` returns status, git SHA, model constants; unauthenticated.
+- Dep: TASK-003.
 
-**FR-010 (P0) Auth middleware.** All `/api/*` routes except `/health` shall require `Authorization: Bearer $DEMO_API_TOKEN`; 401 otherwise.
+**TASK-010 (P0) Auth middleware.** All `/api/*` routes except `/health` shall require `Authorization: Bearer $DEMO_API_TOKEN`; 401 otherwise.
 - AC: Given no token, When `GET /api/quotes`, Then 401 with JSON error body.
-- Dep: FR-003.
+- Dep: TASK-003.
 
-**FR-011 (P1) Seed command.** `python -m quotemind.seed` shall load Appendix A seed data (catalog 60 SKUs, 8 customers, 6 historical quotes, SOP snippets) into KnowledgeStore/MemoryStore and OSS sample files.
-- Dep: FR-004, EP-04.
+**TASK-011 (P1) Seed command.** `python -m quotemind.seed` shall load Appendix A seed data (catalog 60 SKUs, 8 customers, 6 historical quotes, SOP snippets) into KnowledgeStore/MemoryStore and OSS sample files.
+- Dep: TASK-004, EP-04.
 
-**FR-012 (P0) Model availability bootstrap check.** On cold start (initializer), the system shall verify each constant in §4.6 against the live model list (1-token dry call or models endpoint) and log WARN + activate documented fallback (`qwen3-max`→`qwen-max`; `qwen-vl-ocr`→`qwen3-vl-plus`) if a primary is unavailable.
+**TASK-012 (P0) Model availability bootstrap check.** On cold start (initializer), the system shall verify each constant in §4.6 against the live model list (1-token dry call or models endpoint) and log WARN + activate documented fallback (`qwen3-max`→`qwen-max`; `qwen-vl-ocr`→`qwen3-vl-plus`) if a primary is unavailable.
 - AC: Given `qwen-vl-ocr` unavailable, When cold start completes, Then parser uses fallback and `/health` reports the substitution.
-- Dep: FR-002.
+- Dep: TASK-002.
 
 ### EP-02 — Intake and channels
 
-**FR-020 (P0) Direct upload endpoint.** `POST /api/rfq` shall accept multipart (file: pdf/xlsx/png/jpg, ≤15 MB) or JSON `{"text": "...", "customer_hint": "...", "channel":"paste"}` and return `202 {"quote_id": "...", "status":"received"}` immediately, processing asynchronously.
+**TASK-020 (P0) Direct upload endpoint.** `POST /api/rfq` shall accept multipart (file: pdf/xlsx/png/jpg, ≤15 MB) or JSON `{"text": "...", "customer_hint": "...", "channel":"paste"}` and return `202 {"quote_id": "...", "status":"received"}` immediately, processing asynchronously.
 - AC: Given a 3-line Vietnamese text RFQ, When posted, Then within 90 s `GET /api/quotes/{id}` shows status `pending_approval`.
-- Dep: FR-010, EP-03..06.
+- Dep: TASK-010, EP-03..06.
 
-**FR-021 (P0) OSS drop channel.** Objects created under `oss://quotemind-inbox/rfq/` shall trigger `quotemind-ingest`, which registers a new quote (source_uri set) and invokes the same pipeline.
+**TASK-021 (P0) OSS drop channel.** Objects created under `oss://quotemind-inbox/rfq/` shall trigger `quotemind-ingest`, which registers a new quote (source_uri set) and invokes the same pipeline.
 - AC: Given `rfq/sample_scan.pdf` uploaded, When the trigger fires, Then a quote record exists with `channel="oss_drop"` and parsing starts.
-- Dep: FR-003, FR-004.
+- Dep: TASK-003, TASK-004.
 
-**FR-022 (P0) Intake classification.** The IntakeClassifier agent (AGT-02) shall determine: `language` (vi/en/mixed), `doc_type` (email_text|pdf_digital|pdf_scan|image|xlsx), `customer_match` (known customer id via email/domain/name lookup, else null), `urgency` (normal|urgent keyword heuristic), emitting `IntakeResult` (DM-02) with confidences.
+**TASK-022 (P0) Intake classification.** The IntakeClassifier agent (AGT-02) shall determine: `language` (vi/en/mixed), `doc_type` (email_text|pdf_digital|pdf_scan|image|xlsx), `customer_match` (known customer id via email/domain/name lookup, else null), `urgency` (normal|urgent keyword heuristic), emitting `IntakeResult` (DM-02) with confidences.
 - AC: Given the Appendix A sample set, When classified, Then language accuracy = 100% and doc_type accuracy ≥ 95%.
-- Dep: FR-020/021, AGT-02.
+- Dep: TASK-020/021, AGT-02.
 
-**FR-023 (P1) Email text channel with headers.** When JSON includes `email_meta` (from, subject, date), the system shall use `from` domain for customer matching and store meta in the quote record.
-- Dep: FR-020.
+**TASK-023 (P1) Email text channel with headers.** When JSON includes `email_meta` (from, subject, date), the system shall use `from` domain for customer matching and store meta in the quote record.
+- Dep: TASK-020.
 
-**FR-024 (P0) Idempotency.** Re-posting an identical payload (sha256 of content) within 24 h shall return the existing quote_id with `status` rather than creating a duplicate.
-- Dep: FR-020, DM-01.
+**TASK-024 (P0) Idempotency.** Re-posting an identical payload (sha256 of content) within 24 h shall return the existing quote_id with `status` rather than creating a duplicate.
+- Dep: TASK-020, DM-01.
 
-**FR-025 (P1) Oversize/unsupported handling.** Files >15 MB or unsupported types shall yield `422` (upload) or a quote in status `failed_intake` with a human-readable reason (OSS path).
-- Dep: FR-020/021.
+**TASK-025 (P1) Oversize/unsupported handling.** Files >15 MB or unsupported types shall yield `422` (upload) or a quote in status `failed_intake` with a human-readable reason (OSS path).
+- Dep: TASK-020/021.
 
 ### EP-03 — Document parsing and extraction
 
-**FR-030 (P0) Text RFQ extraction.** For `email_text`, DocumentParser (AGT-03) shall extract `RFQExtraction` (DM-03) using `MODEL_PARSER_TEXT` with AgentScope `structured_model=` (Pydantic), including per-line `confidence` ∈ [0,1] and `source_span` (character offsets).
+**TASK-030 (P0) Text RFQ extraction.** For `email_text`, DocumentParser (AGT-03) shall extract `RFQExtraction` (DM-03) using `MODEL_PARSER_TEXT` with AgentScope `structured_model=` (Pydantic), including per-line `confidence` ∈ [0,1] and `source_span` (character offsets).
 - AC: Given eval text RFQs, When parsed, Then line-item F1 ≥ 0.95 and every emitted line has confidence and span.
-- Dep: FR-022, AGT-03, DM-03.
+- Dep: TASK-022, AGT-03, DM-03.
 
-**FR-031 (P0) PDF rasterization.** Digital and scanned PDFs shall be rasterized page-by-page (pypdfium2, 200 DPI, max 10 pages, downscale to ≤2560 px long edge) to PNGs stored under `oss://quotemind-artifacts/{quote_id}/pages/`.
+**TASK-031 (P0) PDF rasterization.** Digital and scanned PDFs shall be rasterized page-by-page (pypdfium2, 200 DPI, max 10 pages, downscale to ≤2560 px long edge) to PNGs stored under `oss://quotemind-artifacts/{quote_id}/pages/`.
 - AC: Given a 3-page scan, When rasterized, Then 3 PNGs exist and each ≤ 2560 px long edge.
-- Dep: FR-021.
+- Dep: TASK-021.
 
-**FR-032 (P0) Vision extraction.** For scans/images, the parser shall call `MODEL_PARSER_VISION` per page (OpenAI-compatible content array: image_url items + instruction), instructing JSON-only output conforming to `RFQExtraction`; fenced ```json blocks shall be stripped; per-page results merged with de-duplication by (description, quantity).
+**TASK-032 (P0) Vision extraction.** For scans/images, the parser shall call `MODEL_PARSER_VISION` per page (OpenAI-compatible content array: image_url items + instruction), instructing JSON-only output conforming to `RFQExtraction`; fenced ```json blocks shall be stripped; per-page results merged with de-duplication by (description, quantity).
 - AC: Given the 5 labeled scans, When extracted, Then F1 ≥ 0.85 and Vietnamese diacritics in descriptions are preserved byte-exact against labels.
-- Dep: FR-031, AGT-03.
+- Dep: TASK-031, AGT-03.
 
-**FR-033 (P0) Excel extraction.** `.xlsx` shall be parsed deterministically with openpyxl: header-row detection (fuzzy match on {stt, tên hàng, mô tả, description, qty, số lượng, đvt, unit}), then LLM normalization of ambiguous headers only. No LLM reads numeric cells.
+**TASK-033 (P0) Excel extraction.** `.xlsx` shall be parsed deterministically with openpyxl: header-row detection (fuzzy match on {stt, tên hàng, mô tả, description, qty, số lượng, đvt, unit}), then LLM normalization of ambiguous headers only. No LLM reads numeric cells.
 - AC: Given the 5 labeled xlsx files, When parsed, Then quantity fields match labels 100%.
-- Dep: FR-020, AGT-03.
+- Dep: TASK-020, AGT-03.
 
-**FR-034 (P0) Extraction validation gate.** An `RFQExtraction` with zero line items, or any line missing description or quantity, shall set quote status `needs_clarification` with reason codes; it shall not proceed to matching.
+**TASK-034 (P0) Extraction validation gate.** An `RFQExtraction` with zero line items, or any line missing description or quantity, shall set quote status `needs_clarification` with reason codes; it shall not proceed to matching.
 - AC: Given an empty-body RFQ, When parsed, Then status = `needs_clarification`, reason `NO_LINE_ITEMS`.
-- Dep: FR-030/032/033.
+- Dep: TASK-030/032/033.
 
-**FR-035 (P1) Mixed-language handling.** Lines in a different language than the document majority shall still extract; `RFQExtraction.language_per_line` records vi/en per line for the drafter.
-- Dep: FR-030.
+**TASK-035 (P1) Mixed-language handling.** Lines in a different language than the document majority shall still extract; `RFQExtraction.language_per_line` records vi/en per line for the drafter.
+- Dep: TASK-030.
 
-**FR-036 (P2) Multi-RFQ splitting.** If one document contains clearly separate requests (two công văn in one PDF), the parser shall split into multiple quotes linked by `batch_id`.
-- Dep: FR-032.
+**TASK-036 (P2) Multi-RFQ splitting.** If one document contains clearly separate requests (two công văn in one PDF), the parser shall split into multiple quotes linked by `batch_id`.
+- Dep: TASK-032.
 
 ### EP-04 — Catalog, customers and memory (Track-1 fold-in)
 
-**FR-040 (P0) Knowledge schema.** The system shall persist catalog products, customer profiles, historical quotes (episodic), and SOP snippets in KnowledgeStore documents with `tenant_id` routing: `catalog`, `customers`, `episodic:{customer_id}`, `sop`; metadata fields per DM-05..08.
-- Dep: FR-004.
+**TASK-040 (P0) Knowledge schema.** The system shall persist catalog products, customer profiles, historical quotes (episodic), and SOP snippets in KnowledgeStore documents with `tenant_id` routing: `catalog`, `customers`, `episodic:{customer_id}`, `sop`; metadata fields per DM-05..08.
+- Dep: TASK-004.
 
-**FR-041 (P0) Embedding pipeline.** All KnowledgeStore documents shall be embedded with `MODEL_EMBED` at `dimensions=1024`; embedding calls batched ≤10 texts; the vector dimension is frozen project-wide.
+**TASK-041 (P0) Embedding pipeline.** All KnowledgeStore documents shall be embedded with `MODEL_EMBED` at `dimensions=1024`; embedding calls batched ≤10 texts; the vector dimension is frozen project-wide.
 - AC: Given the 60-SKU catalog, When seeded, Then every document has a 1024-dim embedding.
-- Dep: FR-040.
+- Dep: TASK-040.
 
-**FR-042 (P0) Hybrid catalog matching.** CatalogMatcher (AGT-04) shall, per extracted line: (1) `vector_search(query_vector, top_k=8, tenant_id="catalog")`; (2) `full_text_search` on normalized description; (3) fuse candidates (reciprocal-rank fusion), then LLM-select best SKU with justification; emit `MatchResult` (DM-09) with `match_confidence` and `needs_confirmation` when confidence < 0.75 or specs conflict.
+**TASK-042 (P0) Hybrid catalog matching.** CatalogMatcher (AGT-04) shall, per extracted line: (1) `vector_search(query_vector, top_k=8, tenant_id="catalog")`; (2) `full_text_search` on normalized description; (3) fuse candidates (reciprocal-rank fusion), then LLM-select best SKU with justification; emit `MatchResult` (DM-09) with `match_confidence` and `needs_confirmation` when confidence < 0.75 or specs conflict.
 - AC: Given labeled lines, When matched, Then top-1 accuracy ≥ 0.90; every `needs_confirmation` carries an alternative candidate list (≤3).
-- Dep: FR-041, AGT-04.
+- Dep: TASK-041, AGT-04.
 
-**FR-043 (P0) Customer resolution and tiers.** The system shall resolve customer by (email domain → name fuzzy → hint) against `customers` tenant; unresolved defaults to tier `end_customer` with flag `unknown_customer=true`.
-- Dep: FR-040.
+**TASK-043 (P0) Customer resolution and tiers.** The system shall resolve customer by (email domain → name fuzzy → hint) against `customers` tenant; unresolved defaults to tier `end_customer` with flag `unknown_customer=true`.
+- Dep: TASK-040.
 
-**FR-044 (P0) Episodic memory write.** On quote approval or rejection, the system shall write an episodic document: summary (LLM, ≤120 words, bilingual keys), items, prices, decision, human edits, embedding; metadata: `customer_id`, `created_at`, `importance` (initial per FR-046), `outcome`.
-- Dep: FR-040, EP-08.
+**TASK-044 (P0) Episodic memory write.** On quote approval or rejection, the system shall write an episodic document: summary (LLM, ≤120 words, bilingual keys), items, prices, decision, human edits, embedding; metadata: `customer_id`, `created_at`, `importance` (initial per TASK-046), `outcome`.
+- Dep: TASK-040, EP-08.
 
-**FR-045 (P0) Episodic retrieval.** Before drafting, the system shall retrieve top-3 episodic memories for the resolved customer (vector search on current RFQ summary, tenant `episodic:{customer_id}`), inject them into the drafter context under a fixed budget (≤1200 tokens), and record which memories were used in the trace.
+**TASK-045 (P0) Episodic retrieval.** Before drafting, the system shall retrieve top-3 episodic memories for the resolved customer (vector search on current RFQ summary, tenant `episodic:{customer_id}`), inject them into the drafter context under a fixed budget (≤1200 tokens), and record which memories were used in the trace.
 - AC: Given UJ-04 (returning customer), When drafting, Then the draft references the prior substitution and the trace lists the retrieved memory ids.
-- Dep: FR-044, AGT-06.
+- Dep: TASK-044, AGT-06.
 
-**FR-046 (P0) Importance scoring and decay (forgetting).** Each episodic memory shall carry `importance ∈ [0,1]`: initial = f(outcome: approved 0.7 / edited 0.8 / rejected 0.9; value: +0.1 if total > 100M VND, cap 1.0). Effective retrieval score = `similarity × recency_decay × importance`, `recency_decay = 0.5^(age_days/half_life)` with `half_life=90` days. A maintenance task (`python -m quotemind.memory.gc`) shall hard-delete memories with effective ceiling < 0.05 and compact per-customer memories beyond 50 into an LLM-written profile summary document.
+**TASK-046 (P0) Importance scoring and decay (forgetting).** Each episodic memory shall carry `importance ∈ [0,1]`: initial = f(outcome: approved 0.7 / edited 0.8 / rejected 0.9; value: +0.1 if total > 100M VND, cap 1.0). Effective retrieval score = `similarity × recency_decay × importance`, `recency_decay = 0.5^(age_days/half_life)` with `half_life=90` days. A maintenance task (`python -m quotemind.memory.gc`) shall hard-delete memories with effective ceiling < 0.05 and compact per-customer memories beyond 50 into an LLM-written profile summary document.
 - AC: Given a 200-day-old low-importance memory and a fresh one of equal similarity, When retrieved, Then the fresh one ranks first; Given gc runs on seeded aged data, Then pruned count > 0 and a compaction summary document exists.
-- Dep: FR-044/045.
+- Dep: TASK-044/045.
 
-**FR-047 (P0) Session/working memory.** Each quote shall have a MemoryStore `Session(user_id=customer_id or "anonymous", session_id=quote_id)`; every agent step appends a `Message` (role, content, agent name in metadata) enabling resume and audit.
-- Dep: FR-004.
+**TASK-047 (P0) Session/working memory.** Each quote shall have a MemoryStore `Session(user_id=customer_id or "anonymous", session_id=quote_id)`; every agent step appends a `Message` (role, content, agent name in metadata) enabling resume and audit.
+- Dep: TASK-004.
 
-**FR-048 (P1) SOP (procedural) memory.** Drafter and critic shall retrieve top-2 SOP snippets (tenant `sop`) relevant to the quote (payment terms templates, delivery norms, warranty language) instead of hardcoding prose.
-- Dep: FR-040.
+**TASK-048 (P1) SOP (procedural) memory.** Drafter and critic shall retrieve top-2 SOP snippets (tenant `sop`) relevant to the quote (payment terms templates, delivery norms, warranty language) instead of hardcoding prose.
+- Dep: TASK-040.
 
-**FR-049 (P1) Context budget guard.** Total injected memory (episodic + SOP + catalog snippets) shall never exceed 2500 tokens; overflow drops lowest-effective-score items and logs `memory_truncated=true`.
-- Dep: FR-045/048.
+**TASK-049 (P1) Context budget guard.** Total injected memory (episodic + SOP + catalog snippets) shall never exceed 2500 tokens; overflow drops lowest-effective-score items and logs `memory_truncated=true`.
+- Dep: TASK-045/048.
 
 ### EP-05 — Pricing engine (deterministic)
 
-**FR-050 (P0) Pure pricing functions.** `src/quotemind/pricing/engine.py` shall expose pure functions: `unit_price(product, tier) -> Decimal`, `line_total(qty, unit_price, discount_pct) -> Decimal`, `vat_amount(line_total, vat_rate) -> Decimal`, `quote_totals(lines) -> Totals`; all money as `Decimal` quantized to 0 VND (whole đồng); no floats, no LLM.
+**TASK-050 (P0) Pure pricing functions.** `src/quotemind/pricing/engine.py` shall expose pure functions: `unit_price(product, tier) -> Decimal`, `line_total(qty, unit_price, discount_pct) -> Decimal`, `vat_amount(line_total, vat_rate) -> Decimal`, `quote_totals(lines) -> Totals`; all money as `Decimal` quantized to 0 VND (whole đồng); no floats, no LLM.
 - AC: Property-based tests (hypothesis) hold: totals equal sum of parts; VND totals are integers; 100% branch coverage on engine.
 - Dep: none (pure).
 
-**FR-051 (P0) Tier pricing rules.** unit_price shall be: `end_customer` = list_price; `dealer` = dealer_price; `project` = dealer_price × (1 − project_discount_pct/100) with per-customer `project_discount_pct` (default 3). Missing dealer_price falls back to list_price with flag.
-- Dep: FR-050, DM-05/06.
+**TASK-051 (P0) Tier pricing rules.** unit_price shall be: `end_customer` = list_price; `dealer` = dealer_price; `project` = dealer_price × (1 − project_discount_pct/100) with per-customer `project_discount_pct` (default 3). Missing dealer_price falls back to list_price with flag.
+- Dep: TASK-050, DM-05/06.
 
-**FR-052 (P0) VAT rules (Vietnam 2026).** Default VAT per line = product.vat_rate; catalog seeds IT hardware/software at **8%** (Nghị định 174/2025/NĐ-CP reduction valid through 2026-12-31); allowed values {0,5,8,10}; any line whose category ∈ {telecom_service} shall force 10% and add flag `VAT_EXCLUDED_CATEGORY`. The engine shall expose `vat_policy_note(date)` returning the legal-basis string for the quote footer.
+**TASK-052 (P0) VAT rules (Vietnam 2026).** Default VAT per line = product.vat_rate; catalog seeds IT hardware/software at **8%** (Nghị định 174/2025/NĐ-CP reduction valid through 2026-12-31); allowed values {0,5,8,10}; any line whose category ∈ {telecom_service} shall force 10% and add flag `VAT_EXCLUDED_CATEGORY`. The engine shall expose `vat_policy_note(date)` returning the legal-basis string for the quote footer.
 - AC: Given a telecom accessory service line, When priced, Then VAT = 10% and the flag is present; Given date 2027-01-01 in config, Then default becomes 10% with note updated (config `VAT_DEFAULT_OVERRIDE` respected).
-- Dep: FR-050.
+- Dep: TASK-050.
 
-**FR-053 (P0) Margin computation.** Each line and the quote shall carry `margin_pct = (sell − cost)/sell × 100` using `cost_price`; quotes with any line margin < `MARGIN_FLOOR_PCT` or blended margin < floor shall be flagged `MARGIN_BELOW_FLOOR` (blocking flag for critic).
-- Dep: FR-050.
+**TASK-053 (P0) Margin computation.** Each line and the quote shall carry `margin_pct = (sell − cost)/sell × 100` using `cost_price`; quotes with any line margin < `MARGIN_FLOOR_PCT` or blended margin < floor shall be flagged `MARGIN_BELOW_FLOOR` (blocking flag for critic).
+- Dep: TASK-050.
 
-**FR-054 (P0) Currency handling.** Ledger currency VND. When RFQ language = en or customer.preferred_currency = USD, the quote shall include USD reference column: `usd = vnd / FX_USD_VND`, rounded to 2 dp, marked "reference only, invoice in VND"; FX rate and its config timestamp printed in footer.
-- Dep: FR-050.
+**TASK-054 (P0) Currency handling.** Ledger currency VND. When RFQ language = en or customer.preferred_currency = USD, the quote shall include USD reference column: `usd = vnd / FX_USD_VND`, rounded to 2 dp, marked "reference only, invoice in VND"; FX rate and its config timestamp printed in footer.
+- Dep: TASK-050.
 
-**FR-055 (P0) Number formatting.** VND rendered as `1.234.567 đ` (dot thousands, đ suffix); USD as `$1,234.56`; amount-in-words (bằng chữ) generated in Vietnamese for the grand total via deterministic converter with unit tests (e.g. 1.234.000 → "Một triệu hai trăm ba mươi bốn nghìn đồng").
+**TASK-055 (P0) Number formatting.** VND rendered as `1.234.567 đ` (dot thousands, đ suffix); USD as `$1,234.56`; amount-in-words (bằng chữ) generated in Vietnamese for the grand total via deterministic converter with unit tests (e.g. 1.234.000 → "Một triệu hai trăm ba mươi bốn nghìn đồng").
 - AC: 30 tabulated conversion cases pass, including edge cases (mốt/tư/lăm, linh/lẻ, tỷ boundaries).
-- Dep: FR-050.
+- Dep: TASK-050.
 
-**FR-056 (P1) Availability and lead time.** Lines matched to `stock_status=out_of_stock` shall carry lead_time_note from catalog and flag `LEAD_TIME`; drafter must surface it in notes.
-- Dep: FR-042.
+**TASK-056 (P1) Availability and lead time.** Lines matched to `stock_status=out_of_stock` shall carry lead_time_note from catalog and flag `LEAD_TIME`; drafter must surface it in notes.
+- Dep: TASK-042.
 
 ### EP-06 — Quote drafting (bilingual)
 
-**FR-060 (P0) Quote assembly.** QuoteDrafter (AGT-06) shall assemble `Quote` (DM-10) from MatchResults + PricingEngine outputs: header (seller block from config: CyberSkill demo reseller identity incl. MST, address, bank block), customer block, line table, totals, validity (`QUOTE_VALIDITY_DAYS`), payment/delivery/warranty terms (from SOP memory), notes. The LLM writes only natural-language fields (notes, term phrasing, substitution explanations); every number is copied verbatim from PricingEngine output and verified by checksum (FR-070).
+**TASK-060 (P0) Quote assembly.** QuoteDrafter (AGT-06) shall assemble `Quote` (DM-10) from MatchResults + PricingEngine outputs: header (seller block from config: CyberSkill demo reseller identity incl. MST, address, bank block), customer block, line table, totals, validity (`QUOTE_VALIDITY_DAYS`), payment/delivery/warranty terms (from SOP memory), notes. The LLM writes only natural-language fields (notes, term phrasing, substitution explanations); every number is copied verbatim from PricingEngine output and verified by checksum (TASK-070).
 - AC: Given any eval RFQ, When drafted, Then every numeric field in Quote equals the engine output exactly (automated diff).
 - Dep: EP-04, EP-05, AGT-06.
 
-**FR-061 (P0) Bilingual content.** Every human-readable field shall exist in both `vi` and `en` (`BilingualText` type, DM-04). Vietnamese is the governing text; the drafter generates the missing language faithfully rather than literally.
+**TASK-061 (P0) Bilingual content.** Every human-readable field shall exist in both `vi` and `en` (`BilingualText` type, DM-04). Vietnamese is the governing text; the drafter generates the missing language faithfully rather than literally.
 - AC: Language QA rubric (EV-06) scores ≥ 4/5 on both languages for 10 sampled quotes.
-- Dep: FR-060.
+- Dep: TASK-060.
 
-**FR-062 (P0) Quote numbering.** Quote numbers shall be `QM-YYYY-NNNN` (zero-padded, per-year sequence via Tablestore atomic counter row); frozen format.
+**TASK-062 (P0) Quote numbering.** Quote numbers shall be `QM-YYYY-NNNN` (zero-padded, per-year sequence via Tablestore atomic counter row); frozen format.
 - Dep: DM-01.
 
-**FR-063 (P0) Substitution transparency.** For any `needs_confirmation` or substituted line, the drafter shall include a bilingual note naming the requested item, the offered item, and the reason; the HITL UI must show these prominently (FR-082).
-- Dep: FR-042.
+**TASK-063 (P0) Substitution transparency.** For any `needs_confirmation` or substituted line, the drafter shall include a bilingual note naming the requested item, the offered item, and the reason; the HITL UI must show these prominently (TASK-082).
+- Dep: TASK-042.
 
-**FR-064 (P1) Revision instructions.** On `revise` (FR-084), the drafter shall re-draft honoring the human instruction, re-run pricing if quantities/discounts changed, and increment `revision` (max 3, then status `needs_manual`).
-- Dep: FR-060, EP-08.
+**TASK-064 (P1) Revision instructions.** On `revise` (TASK-084), the drafter shall re-draft honoring the human instruction, re-run pricing if quantities/discounts changed, and increment `revision` (max 3, then status `needs_manual`).
+- Dep: TASK-060, EP-08.
 
-**FR-065 (P1) Tone and style constraints.** Vietnamese output: trang trọng business register, correct diacritics; English: plain professional; no marketing superlatives; templates hold fixed skeletons so the LLM fills slots rather than freestyles.
-- Dep: FR-060.
+**TASK-065 (P1) Tone and style constraints.** Vietnamese output: trang trọng business register, correct diacritics; English: plain professional; no marketing superlatives; templates hold fixed skeletons so the LLM fills slots rather than freestyles.
+- Dep: TASK-060.
 
 ### EP-07 — Critic and validation
 
-**FR-070 (P0) Independent recomputation.** CriticValidator (AGT-07) shall recompute every line total, VAT amount, subtotal, and grand total from raw inputs using the same pure engine functions, and reject the draft (`status=critic_failed`, blocking) on any mismatch > 0 VND.
+**TASK-070 (P0) Independent recomputation.** CriticValidator (AGT-07) shall recompute every line total, VAT amount, subtotal, and grand total from raw inputs using the same pure engine functions, and reject the draft (`status=critic_failed`, blocking) on any mismatch > 0 VND.
 - AC: Given a tampered draft with one wrong total, When the critic runs, Then status = `critic_failed` with the offending line id.
-- Dep: FR-050, FR-060.
+- Dep: TASK-050, TASK-060.
 
-**FR-071 (P0) Policy checks.** The critic shall evaluate and attach flags: `MARGIN_BELOW_FLOOR` (blocking), `VAT_EXCLUDED_CATEGORY` mismatch (blocking), `UNKNOWN_CUSTOMER` (non-blocking), `NEEDS_CONFIRMATION` lines present (non-blocking), missing mandatory quote fields (blocking), validity/payment terms outside SOP bounds (non-blocking).
+**TASK-071 (P0) Policy checks.** The critic shall evaluate and attach flags: `MARGIN_BELOW_FLOOR` (blocking), `VAT_EXCLUDED_CATEGORY` mismatch (blocking), `UNKNOWN_CUSTOMER` (non-blocking), `NEEDS_CONFIRMATION` lines present (non-blocking), missing mandatory quote fields (blocking), validity/payment terms outside SOP bounds (non-blocking).
 - AC: Given UJ-03 input, When validated, Then flags contain `MARGIN_BELOW_FLOOR` and `NEEDS_CONFIRMATION`, and status = `pending_approval` with `blocking=false` only after the margin issue is resolved or explicitly waived at HITL.
-- Dep: FR-053, FR-060.
+- Dep: TASK-053, TASK-060.
 
-**FR-072 (P0) Bilingual consistency check.** The critic shall verify vi/en field pairs agree on all numbers, SKUs, and dates (regex/numeric diff, not LLM), and that Vietnamese text contains no mojibake (encoding validation).
-- Dep: FR-061.
+**TASK-072 (P0) Bilingual consistency check.** The critic shall verify vi/en field pairs agree on all numbers, SKUs, and dates (regex/numeric diff, not LLM), and that Vietnamese text contains no mojibake (encoding validation).
+- Dep: TASK-061.
 
-**FR-073 (P1) Critic narrative.** The critic shall produce a concise bilingual review note (≤80 words per language) summarizing what it checked and why it passed/failed, stored in the trace and shown at HITL.
-- Dep: FR-070/071.
+**TASK-073 (P1) Critic narrative.** The critic shall produce a concise bilingual review note (≤80 words per language) summarizing what it checked and why it passed/failed, stored in the trace and shown at HITL.
+- Dep: TASK-070/071.
 
-**FR-074 (P2) Auto-fix loop.** For non-blocking formatting defects only (missing note, term phrasing), the critic may send one revision request to the drafter before HITL; never for money or policy.
-- Dep: FR-064.
+**TASK-074 (P2) Auto-fix loop.** For non-blocking formatting defects only (missing note, term phrasing), the critic may send one revision request to the drafter before HITL; never for money or policy.
+- Dep: TASK-064.
 
 ### EP-08 — Human-in-the-loop approval
 
-**FR-080 (P0) Approval state machine.** Quote status shall follow: `received → parsing → matching → pricing → drafting → validating → pending_approval → {approved → dispatching → sent | rejected | revising → drafting}` plus terminal `failed_*` and `needs_clarification`, `needs_manual`. Transitions persisted in Tablestore (DM-01) with actor, timestamp, and reason; illegal transitions rejected.
+**TASK-080 (P0) Approval state machine.** Quote status shall follow: `received → parsing → matching → pricing → drafting → validating → pending_approval → {approved → dispatching → sent | rejected | revising → drafting}` plus terminal `failed_*` and `needs_clarification`, `needs_manual`. Transitions persisted in Tablestore (DM-01) with actor, timestamp, and reason; illegal transitions rejected.
 - AC: State-machine unit tests cover every legal and illegal transition.
 - Dep: DM-01.
 
-**FR-081 (P0) Durable pause and resume.** `pending_approval` shall survive process death: the pipeline run ends at the gate; a later approval API call starts a new FC invocation that loads Session + Quote from Tablestore and resumes dispatch. No in-memory waiting.
+**TASK-081 (P0) Durable pause and resume.** `pending_approval` shall survive process death: the pipeline run ends at the gate; a later approval API call starts a new FC invocation that loads Session + Quote from Tablestore and resumes dispatch. No in-memory waiting.
 - AC: Given a quote pending, When the function instance is killed and approval posted 10 minutes later, Then dispatch completes and the audit trail shows both invocations.
-- Dep: FR-047, FR-080.
+- Dep: TASK-047, TASK-080.
 
-**FR-082 (P0) Review payload.** `GET /api/quotes/{id}` shall return the full quote, per-line confidences and flags, substitution notes, critic note, margin summary, memory citations, and the reasoning trace reference: everything PER-01 needs on one screen.
+**TASK-082 (P0) Review payload.** `GET /api/quotes/{id}` shall return the full quote, per-line confidences and flags, substitution notes, critic note, margin summary, memory citations, and the reasoning trace reference: everything PER-01 needs on one screen.
 - Dep: EP-06/07, EP-11.
 
-**FR-083 (P0) Approve/reject.** `POST /api/quotes/{id}/approve` and `/reject` (body: optional comment) shall transition state, record actor="human", and on approve trigger dispatch. Blocking flags require `{"waive_flags":["MARGIN_BELOW_FLOOR"], "reason":"..."}` to approve; waivers are audited.
+**TASK-083 (P0) Approve/reject.** `POST /api/quotes/{id}/approve` and `/reject` (body: optional comment) shall transition state, record actor="human", and on approve trigger dispatch. Blocking flags require `{"waive_flags":["MARGIN_BELOW_FLOOR"], "reason":"..."}` to approve; waivers are audited.
 - AC: Given a blocking flag and no waiver, When approve posts, Then 409 with the flag list.
-- Dep: FR-080/081.
+- Dep: TASK-080/081.
 
-**FR-084 (P0) Revise with instructions.** `POST /api/quotes/{id}/revise` (body: `{"instruction": "..."} `, vi or en) shall enqueue re-drafting per FR-064 and return to `pending_approval` on success.
+**TASK-084 (P0) Revise with instructions.** `POST /api/quotes/{id}/revise` (body: `{"instruction": "..."} `, vi or en) shall enqueue re-drafting per TASK-064 and return to `pending_approval` on success.
 - AC: UJ-03 flow passes end-to-end.
-- Dep: FR-064.
+- Dep: TASK-064.
 
-**FR-085 (P1) Approval timeout reminder.** Quotes pending > 4 h shall emit a log event and dashboard badge (no email nagging in v1).
-- Dep: FR-080.
+**TASK-085 (P1) Approval timeout reminder.** Quotes pending > 4 h shall emit a log event and dashboard badge (no email nagging in v1).
+- Dep: TASK-080.
 
 ### EP-09 — Document generation and dispatch
 
-**FR-090 (P0) Bilingual PDF rendering.** The system shall render the approved quote to PDF via Jinja2 → WeasyPrint using the layout in Appendix C: A4, CyberSkill-styled header (Umber #45210E band, Ochre #F4BA17 accents), seller/customer blocks, bilingual line table (STT | Mô tả/Description | ĐVT/Unit | SL/Qty | Đơn giá/Unit price | Thành tiền/Amount), totals with VAT lines per rate, bằng chữ line, terms, bank block, signature area, footer with vat_policy_note + FX note + page numbers. Font: Be Vietnam Pro embedded via @font-face url() (bundled TTFs); Vietnamese diacritics must render correctly.
+**TASK-090 (P0) Bilingual PDF rendering.** The system shall render the approved quote to PDF via Jinja2 → WeasyPrint using the layout in Appendix C: A4, CyberSkill-styled header (Umber #45210E band, Ochre #F4BA17 accents), seller/customer blocks, bilingual line table (STT | Mô tả/Description | ĐVT/Unit | SL/Qty | Đơn giá/Unit price | Thành tiền/Amount), totals with VAT lines per rate, bằng chữ line, terms, bank block, signature area, footer with vat_policy_note + FX note + page numbers. Font: Be Vietnam Pro embedded via @font-face url() (bundled TTFs); Vietnamese diacritics must render correctly.
 - AC: Given the golden quote fixture, When rendered, Then the PDF matches the approved visual snapshot (pixel-diff tolerance ≤ 2%) and copy-pasted text preserves diacritics.
-- Dep: FR-060, Appendix C.
+- Dep: TASK-060, Appendix C.
 
-**FR-091 (P0) Artifact storage and presigned URL.** The PDF shall be stored at `oss://quotemind-artifacts/quotes/{quote_number}.pdf` (private) and exposed via V4 presigned GET URL (`sign_url('GET', key, 600, slash_safe=True)`); `GET /api/quotes/{id}/pdf` returns 302 to a fresh URL.
-- Dep: FR-090.
+**TASK-091 (P0) Artifact storage and presigned URL.** The PDF shall be stored at `oss://quotemind-artifacts/quotes/{quote_number}.pdf` (private) and exposed via V4 presigned GET URL (`sign_url('GET', key, 600, slash_safe=True)`); `GET /api/quotes/{id}/pdf` returns 302 to a fresh URL.
+- Dep: TASK-090.
 
-**FR-092 (P0) Email dispatch.** On approval, DispatchAgent shall send a bilingual email (subject `Báo giá / Quotation {quote_number} — {seller}`, body template with greeting in customer language first, link note, validity) via DirectMail SMTP (SSL 465) with the presigned link (and PDF attached if ≤ 3 MB).
+**TASK-092 (P0) Email dispatch.** On approval, DispatchAgent shall send a bilingual email (subject `Báo giá / Quotation {quote_number} — {seller}`, body template with greeting in customer language first, link note, validity) via DirectMail SMTP (SSL 465) with the presigned link (and PDF attached if ≤ 3 MB).
 - AC: Given `MAIL_TRANSPORT=smtp` with verified sender, When approved, Then the message is accepted by SMTP and message-id is audited.
-- Dep: FR-091.
+- Dep: TASK-091.
 
-**FR-093 (P0) Stub transport fallback.** With `MAIL_TRANSPORT=stub`, the email (headers+body) shall be written to `oss://quotemind-artifacts/outbox/{quote_number}.eml` and audited as `sent_stub`, keeping demos deterministic without DirectMail approval.
-- Dep: FR-092.
+**TASK-093 (P0) Stub transport fallback.** With `MAIL_TRANSPORT=stub`, the email (headers+body) shall be written to `oss://quotemind-artifacts/outbox/{quote_number}.eml` and audited as `sent_stub`, keeping demos deterministic without DirectMail approval.
+- Dep: TASK-092.
 
-**FR-094 (P0) Audit trail.** Every state transition, agent step summary, tool call, human action, waiver, and dispatch event shall append an immutable `AuditEvent` row (DM-12); `GET /api/quotes/{id}/audit` returns the ordered log.
-- Dep: FR-080.
+**TASK-094 (P0) Audit trail.** Every state transition, agent step summary, tool call, human action, waiver, and dispatch event shall append an immutable `AuditEvent` row (DM-12); `GET /api/quotes/{id}/audit` returns the ordered log.
+- Dep: TASK-080.
 
 ### EP-10 — Review dashboard (frontend)
 
-**FR-100 (P0) Queue view.** The dashboard shall list quotes (status, customer, total, flags, age) with filters by status; polling every 5 s (no websockets needed).
-- Dep: API-01..; FR-082.
+**TASK-100 (P0) Queue view.** The dashboard shall list quotes (status, customer, total, flags, age) with filters by status; polling every 5 s (no websockets needed).
+- Dep: API-01..; TASK-082.
 
-**FR-101 (P0) Quote detail view.** Shall display: bilingual line table with per-line confidence chips and flag badges, totals panel with margin (visible only in internal view), substitution notes, critic note, memory citations ("Referenced: quote QM-2026-0007"), and PDF preview link.
-- Dep: FR-082.
+**TASK-101 (P0) Quote detail view.** Shall display: bilingual line table with per-line confidence chips and flag badges, totals panel with margin (visible only in internal view), substitution notes, critic note, memory citations ("Referenced: quote QM-2026-0007"), and PDF preview link.
+- Dep: TASK-082.
 
-**FR-102 (P0) Action bar.** Approve (with waiver modal when blocking flags), Reject (comment), Revise (instruction textarea, vi/en) wired to API-06..08.
-- Dep: FR-083/084.
+**TASK-102 (P0) Action bar.** Approve (with waiver modal when blocking flags), Reject (comment), Revise (instruction textarea, vi/en) wired to API-06..08.
+- Dep: TASK-083/084.
 
-**FR-103 (P0) Reasoning trace panel.** A collapsible timeline rendering the trace JSON (EP-11): agent nodes, tool calls with duration and token counts, memory retrievals, model ids: the demo's money shot.
-- Dep: FR-110..112.
+**TASK-103 (P0) Reasoning trace panel.** A collapsible timeline rendering the trace JSON (EP-11): agent nodes, tool calls with duration and token counts, memory retrievals, model ids: the demo's money shot.
+- Dep: TASK-110..112.
 
-**FR-104 (P1) Eval report page.** Renders the latest eval run: metric table (pipeline vs baseline), per-case pass/fail grid.
+**TASK-104 (P1) Eval report page.** Renders the latest eval run: metric table (pipeline vs baseline), per-case pass/fail grid.
 - Dep: EP-12.
 
-**FR-105 (P1) CDS styling.** Umber/Ochre palette, Be Vietnam Pro, sentence-case headings, APCA Lc ≥ 75 body contrast; light theme only.
-- Dep: FR-100.
+**TASK-105 (P1) CDS styling.** Umber/Ochre palette, Be Vietnam Pro, sentence-case headings, APCA Lc ≥ 75 body contrast; light theme only.
+- Dep: TASK-100.
 
-**FR-106 (P0) Static hosting.** Built SPA deployed to OSS static website hosting; `deploy/` includes the upload step; API base URL injected at build.
-- Dep: FR-003.
+**TASK-106 (P0) Static hosting.** Built SPA deployed to OSS static website hosting; `deploy/` includes the upload step; API base URL injected at build.
+- Dep: TASK-003.
 
 ### EP-11 — Observability and reasoning trace
 
-**FR-110 (P0) OTel GenAI spans.** All model, tool, and agent invocations shall emit OpenTelemetry spans per GenAI semantic conventions: span name `{operation} {model}` (e.g. `chat qwen3-max`, `execute_tool vector_search`, `invoke_agent CatalogMatcher`), attributes `gen_ai.provider.name="dashscope"`, `gen_ai.operation.name`, `gen_ai.request.model`, `gen_ai.agent.name`, `gen_ai.tool.name`, `gen_ai.usage.input_tokens/output_tokens`; exporter console (local) and OTLP endpoint if configured.
+**TASK-110 (P0) OTel GenAI spans.** All model, tool, and agent invocations shall emit OpenTelemetry spans per GenAI semantic conventions: span name `{operation} {model}` (e.g. `chat qwen3-max`, `execute_tool vector_search`, `invoke_agent CatalogMatcher`), attributes `gen_ai.provider.name="dashscope"`, `gen_ai.operation.name`, `gen_ai.request.model`, `gen_ai.agent.name`, `gen_ai.tool.name`, `gen_ai.usage.input_tokens/output_tokens`; exporter console (local) and OTLP endpoint if configured.
 - Dep: all agents.
 
-**FR-111 (P0) Persisted trace document.** Each quote shall persist `trace.json` to OSS: ordered steps {agent, action, tool, model, tokens_in/out, cost_usd, duration_ms, summary, memory_ids}; prompt/response bodies excluded by default (PII), included only when `TRACE_CONTENT=1`.
-- Dep: FR-110.
+**TASK-111 (P0) Persisted trace document.** Each quote shall persist `trace.json` to OSS: ordered steps {agent, action, tool, model, tokens_in/out, cost_usd, duration_ms, summary, memory_ids}; prompt/response bodies excluded by default (PII), included only when `TRACE_CONTENT=1`.
+- Dep: TASK-110.
 
-**FR-112 (P0) Cost accounting.** Token usage per model shall be multiplied by a checked-in price table (`config/model_prices.yaml`, list prices with as-of date) to produce per-quote `cost_usd` shown in trace and eval.
-- Dep: FR-110.
+**TASK-112 (P0) Cost accounting.** Token usage per model shall be multiplied by a checked-in price table (`config/model_prices.yaml`, list prices with as-of date) to produce per-quote `cost_usd` shown in trace and eval.
+- Dep: TASK-110.
 
-**FR-113 (P1) Error taxonomy.** Failures shall map to codes {PARSE_FAIL, MATCH_FAIL, PRICE_FAIL, DRAFT_FAIL, CRITIC_FAIL, DISPATCH_FAIL, TIMEOUT, MODEL_UNAVAILABLE} with retry policy: model/tool calls retried ×2 exponential backoff (1 s, 4 s) on transient errors; deterministic steps never retried.
-- Dep: FR-008.
+**TASK-113 (P1) Error taxonomy.** Failures shall map to codes {PARSE_FAIL, MATCH_FAIL, PRICE_FAIL, DRAFT_FAIL, CRITIC_FAIL, DISPATCH_FAIL, TIMEOUT, MODEL_UNAVAILABLE} with retry policy: model/tool calls retried ×2 exponential backoff (1 s, 4 s) on transient errors; deterministic steps never retried.
+- Dep: TASK-008.
 
 ### EP-12 — Evaluation harness (Track-3 measurable gain)
 
-**FR-120 (P0) Labeled dataset.** `eval/dataset/` shall contain 30 RFQ cases with ground-truth labels (DM-13): 10 vi text, 5 en text, 5 vi scanned PDF, 3 en digital PDF, 5 xlsx (3 vi / 2 en), 2 adversarial (ambiguous specs, out-of-catalog). Fixtures are synthetic but realistic (Appendix A generator).
+**TASK-120 (P0) Labeled dataset.** `eval/dataset/` shall contain 30 RFQ cases with ground-truth labels (DM-13): 10 vi text, 5 en text, 5 vi scanned PDF, 3 en digital PDF, 5 xlsx (3 vi / 2 en), 2 adversarial (ambiguous specs, out-of-catalog). Fixtures are synthetic but realistic (Appendix A generator).
 - Dep: Appendix A.
 
-**FR-121 (P0) Metrics runner.** `python -m quotemind.eval.run --mode pipeline|baseline` shall compute per-case and aggregate: line-item extraction P/R/F1, SKU top-1 accuracy, price exactness, e2e task success (items ∧ price ∧ valid PDF ∧ no blocking critic fail), human-intervention-needed rate, p50/p95 latency, tokens, cost; output `eval/reports/{ts}_{mode}.json` + markdown summary.
-- Dep: FR-120.
+**TASK-121 (P0) Metrics runner.** `python -m quotemind.eval.run --mode pipeline|baseline` shall compute per-case and aggregate: line-item extraction P/R/F1, SKU top-1 accuracy, price exactness, e2e task success (items ∧ price ∧ valid PDF ∧ no blocking critic fail), human-intervention-needed rate, p50/p95 latency, tokens, cost; output `eval/reports/{ts}_{mode}.json` + markdown summary.
+- Dep: TASK-120.
 
-**FR-122 (P0) Single-agent baseline.** `baseline` mode shall run one monolithic ReActAgent (same models, same tools flattened, no planner/critic/memory injection) for a fair comparison; identical metrics collected.
+**TASK-122 (P0) Single-agent baseline.** `baseline` mode shall run one monolithic ReActAgent (same models, same tools flattened, no planner/critic/memory injection) for a fair comparison; identical metrics collected.
 - AC: Report renders a side-by-side table; pipeline − baseline success delta is printed as the headline number.
-- Dep: FR-121.
+- Dep: TASK-121.
 
-**FR-123 (P0) CI smoke eval.** CI shall run 5 designated cases with recorded/mocked model responses (vcr-style cassettes) asserting extraction and pricing metrics don't regress below thresholds.
-- Dep: FR-121, FR-007.
+**TASK-123 (P0) CI smoke eval.** CI shall run 5 designated cases with recorded/mocked model responses (vcr-style cassettes) asserting extraction and pricing metrics don't regress below thresholds.
+- Dep: TASK-121, TASK-007.
 
-**FR-124 (P1) Golden PDF snapshot test.** One approved fixture rendered and pixel-diffed (≤2%) against the checked-in golden PNG.
-- Dep: FR-090.
+**TASK-124 (P1) Golden PDF snapshot test.** One approved fixture rendered and pixel-diffed (≤2%) against the checked-in golden PNG.
+- Dep: TASK-090.
 
 ### EP-13 — Orchestration (Track-3 architecture)
 
-**FR-130 (P0) Pipeline orchestrator.** `src/quotemind/orchestrator.py` shall wire agents via AgentScope: sequential_pipeline for the main path, MsgHub for shared context between Drafter and Critic, DashScopeMultiAgentFormatter in multi-agent scopes, and a top-level `run_quote(quote_id)` entry both functions call.
+**TASK-130 (P0) Pipeline orchestrator.** `src/quotemind/orchestrator.py` shall wire agents via AgentScope: sequential_pipeline for the main path, MsgHub for shared context between Drafter and Critic, DashScopeMultiAgentFormatter in multi-agent scopes, and a top-level `run_quote(quote_id)` entry both functions call.
 - Dep: AGT-01..08.
 
-**FR-131 (P0) Planner with PlanNotebook.** The Orchestrator agent shall use PlanNotebook to decompose non-trivial quotes (multi-doc, >10 lines, or flags) into subtasks and record plan state in the trace; trivial quotes may take the fast path (plan skipped, logged).
-- Dep: FR-130.
+**TASK-131 (P0) Planner with PlanNotebook.** The Orchestrator agent shall use PlanNotebook to decompose non-trivial quotes (multi-doc, >10 lines, or flags) into subtasks and record plan state in the trace; trivial quotes may take the fast path (plan skipped, logged).
+- Dep: TASK-130.
 
-**FR-132 (P0) Tool registry.** All tools shall be registered on a single `Toolkit` per agent from `src/quotemind/tools/`: async functions returning `ToolResponse`, Google-style docstrings driving schemas; MCP-backed tools registered via `toolkit.register_mcp_client` (catalog-mcp, email-mcp; stdio).
+**TASK-132 (P0) Tool registry.** All tools shall be registered on a single `Toolkit` per agent from `src/quotemind/tools/`: async functions returning `ToolResponse`, Google-style docstrings driving schemas; MCP-backed tools registered via `toolkit.register_mcp_client` (catalog-mcp, email-mcp; stdio).
 - Dep: agents.
 
-**FR-133 (P0) Structured outputs everywhere.** Every LLM boundary that yields data shall use AgentScope `structured_model=` with the Pydantic models in DM; free-text outputs allowed only for notes/narratives.
+**TASK-133 (P0) Structured outputs everywhere.** Every LLM boundary that yields data shall use AgentScope `structured_model=` with the Pydantic models in DM; free-text outputs allowed only for notes/narratives.
 - Dep: DM.
 
-**FR-134 (P1) Interrupt hook.** Orchestrator shall expose `handle_interrupt` mapping to the HITL gate semantics so an in-flight run can be cancelled cleanly from the API (`POST /api/quotes/{id}/cancel`).
-- Dep: FR-080.
+**TASK-134 (P1) Interrupt hook.** Orchestrator shall expose `handle_interrupt` mapping to the HITL gate semantics so an in-flight run can be cancelled cleanly from the API (`POST /api/quotes/{id}/cancel`).
+- Dep: TASK-080.
 
 ### SUB — Hackathon submission compliance (technical prerequisites)
 
-**SUB-01 (P0).** Repo public, Apache-2.0 LICENSE detectable in GitHub About. (FR-001)
-**SUB-02 (P0).** README links `src/quotemind/cloud/alibaba_proof.py` under a heading "Proof of Alibaba Cloud Deployment" with the deployed endpoint URL. (FR-005)
+**SUB-01 (P0).** Repo public, Apache-2.0 LICENSE detectable in GitHub About. (TASK-001)
+**SUB-02 (P0).** README links `src/quotemind/cloud/alibaba_proof.py` under a heading "Proof of Alibaba Cloud Deployment" with the deployed endpoint URL. (TASK-005)
 **SUB-03 (P0).** `docs/architecture.md` + rendered `docs/architecture.png` (Mermaid source in repo) showing Qwen Cloud ↔ backend ↔ database ↔ frontend. (Artifact 2)
 **SUB-04 (P0).** `docs/demo-script.md` and the ~3-minute public video (YouTube, "Not made for kids") following the five demo beats in §2.4. (Artifact 5)
 **SUB-05 (P0).** Text description ≤ 500 words in `docs/submission-description.md` and pasted to the form. (Artifact 6)
@@ -767,7 +767,7 @@ Not an LLM reasoner. A code service invoked as a tool `price_quote(match_results
 | Model | `MODEL_DRAFTER` (qwen3-max, temp 0.3) |
 | Tools | `get_sop(topic)`, `get_episodic(customer_id, query)` (memory), `get_priced_quote(quote_id)` |
 | Output | `Quote` via structured_model (numbers pre-filled by code; LLM fills BilingualText fields) |
-| Guardrails | Numeric fields are injected read-only; drafter output failing numeric checksum is discarded and retried once, then DRAFT_FAIL. References at most the 3 provided episodic memories, cited by quote number. Tone per FR-065 |
+| Guardrails | Numeric fields are injected read-only; drafter output failing numeric checksum is discarded and retried once, then DRAFT_FAIL. References at most the 3 provided episodic memories, cited by quote number. Tone per TASK-065 |
 
 Prompt core:
 ```
@@ -786,7 +786,7 @@ If episodic memories are provided, reference relevant precedent naturally
 | Model | `MODEL_CRITIC` (qwen3-max, temp 0) + deterministic recompute in code |
 | Tools | `recompute_quote(quote_id)` (pure engine), `get_policy()` |
 | Output | `CriticReport` (pass/fail, flags[], bilingual note) |
-| Guardrails | Numeric verdicts come only from recompute tool output; LLM writes the narrative and checks qualitative policy (terms present, tone, bilingual parity list from FR-072 code check results). A pass requires: recompute exact, no blocking flags unresolved |
+| Guardrails | Numeric verdicts come only from recompute tool output; LLM writes the narrative and checks qualitative policy (terms present, tone, bilingual parity list from TASK-072 code check results). A pass requires: recompute exact, no blocking flags unresolved |
 
 ### AGT-08 DispatchAgent
 
@@ -810,7 +810,7 @@ Code-first with LLM only for the email body courtesy text (temp 0.2, 120-word ca
 
 All Pydantic models live in `src/quotemind/models/` (frozen module path). Money = `Decimal`; timestamps = timezone-aware UTC ISO-8601; ids = ULIDs unless stated.
 
-**DM-01 QuoteRecord** (Tablestore wide-column table `qm_quotes`, pk: `quote_id`): quote_number, status, channel, source_uri, customer_id?, language, created_at, updated_at, revision:int, flags:[str], totals_json, batch_id?, sha256_payload (idempotency, FR-024), actor_last. Secondary index on status.
+**DM-01 QuoteRecord** (Tablestore wide-column table `qm_quotes`, pk: `quote_id`): quote_number, status, channel, source_uri, customer_id?, language, created_at, updated_at, revision:int, flags:[str], totals_json, batch_id?, sha256_payload (idempotency, TASK-024), actor_last. Secondary index on status.
 
 **DM-02 IntakeResult**: language, doc_type, urgency, customer_match{customer_id?, method, confidence}, email_meta?.
 
@@ -844,23 +844,23 @@ Tablestore physical mapping: MemoryStore-managed tables for sessions/messages (S
 
 ## 8. API contracts
 
-Base: FC HTTP trigger URL, prefix `/api`, JSON UTF-8, Bearer auth (FR-010). Errors: `{"error":{"code","message","details?"}}` with proper status.
+Base: FC HTTP trigger URL, prefix `/api`, JSON UTF-8, Bearer auth (TASK-010). Errors: `{"error":{"code","message","details?"}}` with proper status.
 
 | ID | Method & path | Request | Response | Notes |
 |---|---|---|---|---|
-| API-01 | POST /api/rfq | multipart file+fields OR JSON{text, customer_hint?, email_meta?} | 202 {quote_id,status} | FR-020, idempotent by content hash |
+| API-01 | POST /api/rfq | multipart file+fields OR JSON{text, customer_hint?, email_meta?} | 202 {quote_id,status} | TASK-020, idempotent by content hash |
 | API-02 | GET /api/quotes?status=&limit=&cursor= | — | {items:[QuoteSummary], next_cursor?} | queue |
-| API-03 | GET /api/quotes/{id} | — | full review payload (FR-082) | |
+| API-03 | GET /api/quotes/{id} | — | full review payload (TASK-082) | |
 | API-04 | GET /api/quotes/{id}/audit | — | {events:[AuditEvent]} | |
 | API-05 | GET /api/quotes/{id}/trace | — | {steps:[TraceStep]} | |
-| API-06 | POST /api/quotes/{id}/approve | {comment?, waive_flags?, reason?} | 200 {status} / 409 flags | FR-083 |
+| API-06 | POST /api/quotes/{id}/approve | {comment?, waive_flags?, reason?} | 200 {status} / 409 flags | TASK-083 |
 | API-07 | POST /api/quotes/{id}/reject | {comment} | 200 {status} | |
-| API-08 | POST /api/quotes/{id}/revise | {instruction} | 202 {status:"revising"} | FR-084 |
-| API-09 | GET /api/quotes/{id}/pdf | — | 302 presigned URL | FR-091 |
-| API-10 | POST /api/quotes/{id}/cancel | — | 200 | FR-134 |
+| API-08 | POST /api/quotes/{id}/revise | {instruction} | 202 {status:"revising"} | TASK-084 |
+| API-09 | GET /api/quotes/{id}/pdf | — | 302 presigned URL | TASK-091 |
+| API-10 | POST /api/quotes/{id}/cancel | — | 200 | TASK-134 |
 | API-11 | GET /health | — | {status,version,models} | no auth |
 | API-12 | POST /api/demo/seed | {} | 200 seeding report | guarded by token; idempotent |
-| API-13 | GET /api/eval/latest | — | latest eval report json | FR-104 |
+| API-13 | GET /api/eval/latest | — | latest eval report json | TASK-104 |
 
 OpenAPI 3.1 file generated to `docs/openapi.json` in CI (P1).
 
@@ -871,10 +871,10 @@ OpenAPI 3.1 file generated to `docs/openapi.json` in CI (P1).
 **NFR-001 (P0) Latency.** p50 RFQ→pending_approval ≤ 90 s (text) / 150 s (scan); approve→email dispatched ≤ 30 s. Measured by EV runner.
 **NFR-002 (P0) Determinism of money.** Identical inputs yield byte-identical priced outputs (Decimal, no wall-clock in math besides quote date field).
 **NFR-003 (P0) Cost.** Typical text RFQ ≤ US$0.05 model cost; scan ≤ US$0.15 (trace-verified).
-**NFR-004 (P0) Resilience.** Transient model/tool failures retried per FR-113; a single page's vision failure degrades to partial extraction with flag, not run failure.
+**NFR-004 (P0) Resilience.** Transient model/tool failures retried per TASK-113; a single page's vision failure degrades to partial extraction with flag, not run failure.
 **NFR-005 (P0) Statelessness.** No pipeline state outside Tablestore/OSS; any FC instance can serve any request.
 **NFR-006 (P0) Security.** Secrets only via env; buckets private; presigned URLs ≤ 10 min; bearer token on all mutating routes; RAM user least-privilege (OSS rw two buckets, OTS rw one instance, DirectMail send).
-**NFR-007 (P0) Privacy/PDPL.** Customer personal data stored only in Tablestore/OSS (both in-region), trace excludes message bodies by default (FR-111); `docs/privacy.md` documents data categories, purpose, retention (90-day demo purge script) aligned with Vietnam PDPL (effective 2026-01-01).
+**NFR-007 (P0) Privacy/PDPL.** Customer personal data stored only in Tablestore/OSS (both in-region), trace excludes message bodies by default (TASK-111); `docs/privacy.md` documents data categories, purpose, retention (90-day demo purge script) aligned with Vietnam PDPL (effective 2026-01-01).
 **NFR-008 (P0) i18n correctness.** UTF-8 end-to-end; Vietnamese collation-safe search normalization (NFC); VND/date formats per locale (dd/mm/yyyy).
 **NFR-009 (P1) Accessibility.** Dashboard body text APCA Lc ≥ 75; keyboard-operable action bar.
 **NFR-010 (P1) Code quality.** ruff clean; mypy (basic) clean; pricing engine 100% branch coverage; overall unit coverage ≥ 70%.
@@ -887,8 +887,8 @@ OpenAPI 3.1 file generated to `docs/openapi.json` in CI (P1).
 
 **EV-01 (P0)** Unit: pricing (property-based), bằng chữ converter, state machine, formatters, audit hash chain.
 **EV-02 (P0)** Contract: Pydantic schema round-trips; API responses validate against OpenAPI.
-**EV-03 (P0)** Integration: pipeline over 5 cassette-mocked cases in CI (FR-123).
-**EV-04 (P0)** Full eval: 30-case runner, pipeline vs baseline (FR-121/122); thresholds = §3.1 targets; report committed to `eval/reports/`.
+**EV-03 (P0)** Integration: pipeline over 5 cassette-mocked cases in CI (TASK-123).
+**EV-04 (P0)** Full eval: 30-case runner, pipeline vs baseline (TASK-121/122); thresholds = §3.1 targets; report committed to `eval/reports/`.
 **EV-05 (P0)** Fault injection: 10 tampered drafts → critic catch rate 100% (AGT-07).
 **EV-06 (P1)** Language QA: 10 sampled quotes scored 1–5 by rubric (fluency, register, faithfulness) per language; ≥4 average. Scored by a separate qwen3-max judge prompt with the rubric embedded; human spot-check 3.
 **EV-07 (P1)** Load sanity: 5 concurrent RFQs complete without cross-talk (session isolation).
@@ -898,20 +898,20 @@ OpenAPI 3.1 file generated to `docs/openapi.json` in CI (P1).
 
 ## 11. Traceability matrix (condensed)
 
-| Need (rubric/user) | FRs | Eval |
+| Need (rubric/user) | tasks | Eval |
 |---|---|---|
-| Ambiguous input handling (Track 4) | FR-034, 042, 063, 071, UJ-03 | EV-04 adversarial cases |
-| External tool invocation (Track 4) | FR-132, MCP tools, FR-092 | EV-03 |
-| HITL checkpoints (Track 4) | FR-080..085, 102 | EV-04, EV-08 |
-| Production-readiness | D-03, FR-050..055, 070, 094, NFR-002/005/006 | EV-01, EV-05 |
-| Memory: storage/retrieval/forgetting (Track 1 fold-in) | FR-040..049 | EV-04 (UJ-04 case), unit gc tests |
-| Multi-agent measurable gain (Track 3 fold-in) | FR-130..133, 121/122 | EV-04 headline delta |
-| Qwen API sophistication | §4.6 routing, FR-032 vision, FR-041 embeddings, structured outputs FR-133 | trace/report |
-| Alibaba deployment proof | FR-003/004/005, SUB-02 | manual + health |
-| Bilingual value | FR-061, 055, 090, EV-06 | EV-06 |
-| Visible reasoning (Presentation) | FR-103, 110..112 | EV-08 |
+| Ambiguous input handling (Track 4) | TASK-034, 042, 063, 071, UJ-03 | EV-04 adversarial cases |
+| External tool invocation (Track 4) | TASK-132, MCP tools, TASK-092 | EV-03 |
+| HITL checkpoints (Track 4) | TASK-080..085, 102 | EV-04, EV-08 |
+| Production-readiness | D-03, TASK-050..055, 070, 094, NFR-002/005/006 | EV-01, EV-05 |
+| Memory: storage/retrieval/forgetting (Track 1 fold-in) | TASK-040..049 | EV-04 (UJ-04 case), unit gc tests |
+| Multi-agent measurable gain (Track 3 fold-in) | TASK-130..133, 121/122 | EV-04 headline delta |
+| Qwen API sophistication | §4.6 routing, TASK-032 vision, TASK-041 embeddings, structured outputs TASK-133 | trace/report |
+| Alibaba deployment proof | TASK-003/004/005, SUB-02 | manual + health |
+| Bilingual value | TASK-061, 055, 090, EV-06 | EV-06 |
+| Visible reasoning (Presentation) | TASK-103, 110..112 | EV-08 |
 
-Full FR→test mapping is maintained in `docs/traceability.csv` (generated, P1).
+Full task→test mapping is maintained in `docs/traceability.csv` (generated, P1).
 
 ---
 
@@ -925,7 +925,7 @@ Full FR→test mapping is maintained in `docs/traceability.csv` (generated, P1).
 6. OSS bucket names and key layouts: `quotemind-inbox/rfq/...`, `quotemind-artifacts/{quotes,outbox,pages,traces}/...`.
 7. Quote number format `QM-YYYY-NNNN`.
 8. Embedding dimension 1024.
-9. Status enum values of the state machine (FR-080).
+9. Status enum values of the state machine (TASK-080).
 10. Trace step schema DM-14.
 
 Any change requires bumping this spec to 1.1+ and updating `docs/verification-log.md`.
@@ -936,10 +936,10 @@ Any change requires bumping this spec to 1.1+ and updating `docs/verification-lo
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Model ID unavailable in Singapore at build time | Medium | High | FR-012 bootstrap check + frozen fallbacks |
+| Model ID unavailable in Singapore at build time | Medium | High | TASK-012 bootstrap check + frozen fallbacks |
 | `tablestore-for-agent-memory` signature drift vs docs | Medium | Medium | Appendix E verification step before EP-04 coding; thin adapter layer `src/quotemind/memory/store.py` isolates SDK |
 | WeasyPrint native libs on FC | Medium | Medium | Custom container image path in `deploy/Dockerfile.pdf` as fallback; render tested in CI container matching FC base |
-| DirectMail sender verification delay | High | Low | FR-093 stub transport is the demo default |
+| DirectMail sender verification delay | High | Low | TASK-093 stub transport is the demo default |
 | Vision extraction quality on worst scans | Medium | Medium | Demo uses vetted fixtures; adversarial cases scored but not demoed live |
 | AgentScope 1.x → 2.0 churn | Medium | Medium | Pin exact version; no agentscope-runtime dependency (D-02) |
 | Two-week clock | — | High | Critical path in §Document control note; P2s cut first; vertical slice by day 6 |
@@ -962,7 +962,7 @@ Seed generator `src/quotemind/seed/generate.py` produces deterministic fixtures 
 
 **A.4 SOP snippets (10).** payment (2: 100% trước giao hàng; 50/50), delivery (2), warranty (2), validity (2), substitution policy (2). Bilingual.
 
-**A.5 Eval RFQ fixtures (30 + 5 CI cassettes).** Composition per FR-120. Vietnamese text example fixture `eval/dataset/vi_text_003.txt`:
+**A.5 Eval RFQ fixtures (30 + 5 CI cassettes).** Composition per TASK-120. Vietnamese text example fixture `eval/dataset/vi_text_003.txt`:
 ```
 Kính gửi Quý công ty,
 Công ty TNHH Thành Công cần báo giá các mặt hàng sau:
@@ -976,14 +976,14 @@ Scanned fixtures are generated: HTML → PDF → raster → slight rotate/noise 
 
 **A.6 Demo seller identity (config, not code):** "CyberSkill Demo Distribution JSC" — address/MST/bank block clearly marked SAMPLE; do not use real CyberSkill MST in the public repo.
 
-## Appendix B — Vietnam VAT quick reference (2026, normative for FR-052)
+## Appendix B — Vietnam VAT quick reference (2026, normative for TASK-052)
 
 - Legal basis: Nghị quyết 204/2025/QH15; Nghị định 174/2025/NĐ-CP: 2% reduction (10→8%) effective 01/07/2025–31/12/2026 for goods/services otherwise at 10%, including IT goods/services, EXCLUDING: viễn thông (telecom), tài chính-ngân hàng-chứng khoán-bảo hiểm, bất động sản, kim loại & sản phẩm kim loại, khai khoáng (trừ than), hàng chịu thuế TTĐB.
 - QuoteMind mapping: catalog categories laptop/desktop/monitor/network/server/software_license/service/accessory → 8%; telecom_service → 10%; vat_rate stored per SKU; per-line override allowed at revise with audit.
 - Footer note template (vi): "Thuế GTGT áp dụng theo Nghị định 174/2025/NĐ-CP (thuế suất ưu đãi 8% đến 31/12/2026, trừ nhóm loại trừ)." (en): "VAT applied per Decree 174/2025/ND-CP (reduced 8% rate through 31 Dec 2026, excluded groups at 10%)."
 - Quotes are pre-contract documents; no e-invoice issuance in scope.
 
-## Appendix C — Quote PDF layout specification (normative for FR-090)
+## Appendix C — Quote PDF layout specification (normative for TASK-090)
 
 A4 portrait, margins 18 mm; Be Vietnam Pro (400/600/700), body 10.5 pt, VI text primary weight, EN italic secondary on the line below or right column per block.
 1. Header band: Umber #45210E background, seller logo left (SVG placeholder), white seller name; right-aligned "BÁO GIÁ / QUOTATION", quote number, date. Ochre #F4BA17 2 pt rule beneath.
@@ -1007,8 +1007,8 @@ quotemind/
 ├── Makefile                      # setup/dev/test/eval/demo/deploy targets
 ├── .env.example
 ├── deploy/
-│   ├── s.yaml                    # FC 3.0 (FR-003)
-│   ├── provision.py              # FR-004
+│   ├── s.yaml                    # FC 3.0 (TASK-003)
+│   ├── provision.py              # TASK-004
 │   └── Dockerfile.pdf            # WeasyPrint fallback image
 ├── src/quotemind/
 │   ├── config/{settings.py,models.py,model_prices.yaml}
@@ -1021,7 +1021,7 @@ quotemind/
 │   ├── memory/{store.py,gc.py}   # SDK adapter + forgetting
 │   ├── parsing/{text.py,vision.py,excel.py,raster.py}
 │   ├── quote/{assemble.py,render/ (templates, fonts/), numbering.py}
-│   ├── orchestrator.py           # FR-130/131
+│   ├── orchestrator.py           # TASK-130/131
 │   ├── api/app.py                # FastAPI-style web function
 │   ├── cloud/{alibaba_proof.py,oss.py,tablestore.py,mail.py}
 │   ├── obs/{otel.py,trace.py,cost.py}
@@ -1045,7 +1045,7 @@ print([m for m in dir(MemoryStore) if not m.startswith('_')])
 print([m for m in dir(KnowledgeStore) if not m.startswith('_')])
 ```
 ```python
-# E.2 model availability probe (also used by FR-012)
+# E.2 model availability probe (also used by TASK-012)
 from openai import OpenAI; import os
 c = OpenAI(api_key=os.environ["DASHSCOPE_API_KEY"], base_url=os.environ["DASHSCOPE_BASE_URL"])
 for m in ["qwen3-max","qwen-plus","qwen-vl-ocr","qwen3-vl-plus","text-embedding-v4"]:
@@ -1068,19 +1068,19 @@ class Ping(BaseModel): ok: bool
 
 ## Appendix F — Two-week implementation schedule (guidance, not requirements)
 
-| Days | Milestone | FRs |
+| Days | Milestone | tasks |
 |---|---|---|
-| 1 | Repo, config, provision, proof module, health | FR-001..005, 008..010, 012 |
-| 2 | Seed data + memory adapter verified (App. E) | FR-011, 040, 041, 047 |
-| 3–4 | Parsing all three input types | FR-030..034, 022, 020/021, 024 |
-| 5 | Matching + pricing engine + tests | FR-042/043, 050..056 |
-| 6 | Drafter + vertical slice UJ-01 local | FR-060..063, 130, 132/133 |
-| 7 | Critic + state machine + HITL API | FR-070..073, 080..084 |
-| 8 | PDF + dispatch + audit | FR-090..094, 062 |
-| 9 | Dashboard MVP | FR-100..103, 106 |
-| 10 | Observability + traces in UI | FR-110..113 |
-| 11 | Eval harness + baseline + reports | FR-120..123 |
-| 12 | Memory depth polish (gc, UJ-04), planner path | FR-045/046/049, 131 |
+| 1 | Repo, config, provision, proof module, health | TASK-001..005, 008..010, 012 |
+| 2 | Seed data + memory adapter verified (App. E) | TASK-011, 040, 041, 047 |
+| 3–4 | Parsing all three input types | TASK-030..034, 022, 020/021, 024 |
+| 5 | Matching + pricing engine + tests | TASK-042/043, 050..056 |
+| 6 | Drafter + vertical slice UJ-01 local | TASK-060..063, 130, 132/133 |
+| 7 | Critic + state machine + HITL API | TASK-070..073, 080..084 |
+| 8 | PDF + dispatch + audit | TASK-090..094, 062 |
+| 9 | Dashboard MVP | TASK-100..103, 106 |
+| 10 | Observability + traces in UI | TASK-110..113 |
+| 11 | Eval harness + baseline + reports | TASK-120..123 |
+| 12 | Memory depth polish (gc, UJ-04), planner path | TASK-045/046/049, 131 |
 | 13 | Deploy hardening, EV-08 rehearsal, docs, diagram, video shoot | SUB-01..07 |
 | 14 | Buffer, final eval numbers, submission | — |
 

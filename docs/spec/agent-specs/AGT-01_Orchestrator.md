@@ -1,6 +1,6 @@
 # AGT-01 — Orchestrator (Planner) — Agent Behavior Specification
 
-**Document ID:** QM-AGT-01 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-01), FR-130/131/134
+**Document ID:** QM-AGT-01 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-01), TASK-130/131/134
 **Implements in:** `src/quotemind/agents/orchestrator_agent.py` · **Prompt file:** `src/quotemind/prompts/orchestrator.md`
 
 ---
@@ -91,9 +91,9 @@ Rules, in priority order:
 - Fast path (skip PlanNotebook): single document AND ≤10 lines AND no flags → straight sequence.
 - Planned path: create plan with subtasks mirroring remaining stages plus one subtask per flagged line cluster; mark subtasks done as tools return; plan state lands in the trace (judges see planning happen).
 
-**Resume semantics (FR-081).** `run_quote(quote_id)` inspects current status and enters the sequence at the correct stage; the Orchestrator prompt receives a resume header (`Resuming at status=approved after human approval at {ts}`) built by the entry code, so an approval invocation only runs `run_dispatch`.
+**Resume semantics (TASK-081).** `run_quote(quote_id)` inspects current status and enters the sequence at the correct stage; the Orchestrator prompt receives a resume header (`Resuming at status=approved after human approval at {ts}`) built by the entry code, so an approval invocation only runs `run_dispatch`.
 
-**Interrupt (FR-134).** `handle_interrupt` override sets status via guarded transition to `needs_manual` with reason `cancelled_by_user` and returns a fixed message; API `/cancel` triggers `agent.interrupt()`.
+**Interrupt (TASK-134).** `handle_interrupt` override sets status via guarded transition to `needs_manual` with reason `cancelled_by_user` and returns a fixed message; API `/cancel` triggers `agent.interrupt()`.
 
 ## 6. Guardrails (hard, enforced in code around the agent)
 
@@ -107,7 +107,7 @@ Rules, in priority order:
 
 | Event | Action |
 |---|---|
-| Worker error ×1 | retry that tool once (FR-113 backoff handled inside tool) |
+| Worker error ×1 | retry that tool once (TASK-113 backoff handled inside tool) |
 | Worker error ×2 | `needs_manual` + reason, stop |
 | Illegal transition attempt | tool raises; Orchestrator must re-read state and reconcile; second illegal attempt → `needs_manual` |
 | PlanNotebook subtask stuck (no progress 3 iters) | abandon plan, continue fast path, log `plan_abandoned` |
@@ -122,7 +122,7 @@ Spans: `invoke_agent Orchestrator` (root per invocation), child `execute_tool ru
 |---|---|---|
 | Correct stage sequencing (never skips critic; never self-approves) | 100% | EV-04 trace assertions on all 30 cases |
 | Fast-path detection precision | ≥ 90% agree with rule oracle | trace vs oracle recompute |
-| Resume-after-approval correctness | 100% | EV-04 + FR-081 integration test |
+| Resume-after-approval correctness | 100% | EV-04 + TASK-081 integration test |
 | Iteration efficiency | median ≤ 8 iters simple, ≤ 12 planned | trace stats |
 
 ## 10. Explicit non-goals

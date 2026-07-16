@@ -1,4 +1,4 @@
-"""FR-090 bilingual quote rendering.
+"""TASK-090 bilingual quote rendering.
 
 ``render_html`` is deterministic (Jinja2 only, no I/O beyond the bundled template), so the layout is
 fully offline-testable. ``render_pdf`` is a thin WeasyPrint wrapper that needs the ``pdf`` extra
@@ -19,7 +19,7 @@ from ...pricing import format_usd, format_vnd
 
 _TEMPLATE_DIR = Path(__file__).parent
 _TEMPLATE_NAME = "quote.html.j2"
-# FR-124: the branded face, bundled. `quote.html.j2` resolves the @font-face URLs relative to the
+# TASK-124: the branded face, bundled. `quote.html.j2` resolves the @font-face URLs relative to the
 # template, so WeasyPrint finds them without a base_url and without a Dockerfile step.
 FONT_DIR = _TEMPLATE_DIR / "fonts"
 _ENV = Environment(
@@ -113,7 +113,7 @@ def render_html(
     prepared_by: str = "QuoteMind",
     reviewer: str = "",
 ) -> str:
-    """FR-090: deterministic bilingual HTML (Appendix C) for the quote."""
+    """TASK-090: deterministic bilingual HTML (Appendix C) for the quote."""
     context = build_context(
         quote,
         vat_policy_note=vat_policy_note,
@@ -132,7 +132,7 @@ def render_pdf(
     prepared_by: str = "QuoteMind",
     reviewer: str = "",
 ) -> bytes:
-    """FR-090 PDF via WeasyPrint. Requires the 'pdf' extra and bundled fonts (live path)."""
+    """TASK-090 PDF via WeasyPrint. Requires the 'pdf' extra and bundled fonts (live path)."""
     try:
         from weasyprint import HTML
     except ImportError as exc:  # pragma: no cover - only without the pdf extra

@@ -19,17 +19,17 @@ Hard rules, non-negotiable:
 2. Money is deterministic: pricing, VAT, totals, and amount-in-words are pure Decimal Python (pricing/ imports no network, agents, or LLM clients). The LLM never does arithmetic. The critic's Layer-1 recompute is authoritative and the LLM layer cannot override it.
 3. Guardrails are code-enforced (set-membership checks, checksums, middleware call caps), never prompt-only. Implement them exactly as the agent sheets specify.
 4. Stack is fixed: AgentScope 1.0.x (not agentscope-runtime), tablestore-for-agent-memory==1.1.3, DashScope international (Singapore) endpoint, Function Compute 3.0 python3.12 in ap-southeast-1, OSS, DirectMail with stub fallback, WeasyPrint==68 with bundled Be Vietnam Pro, Apache-2.0 license.
-5. Every PR maps to FR ids via branch naming (feat/FR-042-catalog-matcher) and updates traceability.csv, per the repo blueprint.
+5. Every PR maps to task ids via branch naming (feat/TASK-042-catalog-matcher) and updates traceability.csv, per the repo blueprint.
 6. Bilingual integrity: Vietnamese diacritics byte-exact everywhere; every customer-facing text field is BilingualText with both vi and en populated.
 
 Working method:
 - Start with PR-1 (scaffold) from the repo blueprint section on bootstrap order, and proceed PR-1 through PR-5, then continue epic by epic following Appendix F's 14-day schedule.
-- For each feature: read the FR text in QM-SPEC-001, the relevant agent sheet if it touches an agent, and the module contract in QM-REPO-001. Write tests to the acceptance criteria stated in the FR before or alongside the implementation.
+- For each feature: read the task text in QM-SPEC-001, the relevant agent sheet if it touches an agent, and the module contract in QM-REPO-001. Write tests to the acceptance criteria stated in the task before or alongside the implementation.
 - Verification snippets in QM-SPEC-001 Appendix E must be run early (PR-4 memory-verify, PR-5 proof + deploy) because several SDK signatures were flagged as needing wheel verification; if a real API differs from the spec's assumption, report the difference and adapt the thin wrapper layer only, keeping contracts intact.
-- Maintain a running BUILD_LOG.md: date, PR, FRs covered, deviations (if any) with justification, and open questions.
+- Maintain a running BUILD_LOG.md: date, PR, tasks covered, deviations (if any) with justification, and open questions.
 - Ask before deviating; small ambiguities you may resolve yourself if you log them.
 
-Definition of done for the hackathon: all P0 FRs implemented and tested, EV-01..05 green with EV-04 report generated (fills {X}/{Y}), deployed to Alibaba Cloud with alibaba_proof.py output in the README, seed and demo Make targets working so the demo script's five beats run on the deployed stack, repo public under Apache-2.0.
+Definition of done for the hackathon: all P0 tasks implemented and tested, EV-01..05 green with EV-04 report generated (fills {X}/{Y}), deployed to Alibaba Cloud with alibaba_proof.py output in the README, seed and demo Make targets working so the demo script's five beats run on the deployed stack, repo public under Apache-2.0.
 
 Begin by unzipping the pack, reading QM-SPEC-001 sections 1-4 and the repo blueprint in full, then present your PR-1 plan.
 

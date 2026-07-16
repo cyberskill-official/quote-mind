@@ -37,7 +37,7 @@ def _tokens(usage: Any, *names: str) -> int:
 
 
 class _UsageCapturingModel(DashScopeChatModel):
-    """Reports the model's own token counts to a sink (FR-110/112) - never an estimate."""
+    """Reports the model's own token counts to a sink (TASK-110/112) - never an estimate."""
 
     def __init__(self, *, sink: UsageSink, **kwargs: Any) -> None:
         super().__init__(**kwargs)

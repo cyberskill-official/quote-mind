@@ -1,4 +1,4 @@
-"""OpenTelemetry GenAI spans (FR-110).
+"""OpenTelemetry GenAI spans (TASK-110).
 
 Span names and attributes follow the GenAI semantic conventions: `chat qwen3-max`,
 `execute_tool vector_search`, `invoke_agent CatalogMatcher`. The OTel SDK is optional - without it

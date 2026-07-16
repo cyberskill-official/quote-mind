@@ -1,6 +1,6 @@
 # AGT-02 — IntakeClassifier — Agent Behavior Specification
 
-**Document ID:** QM-AGT-02 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-02), FR-022/023/043
+**Document ID:** QM-AGT-02 · **Version:** 1.0.0 · **Parent:** QM-SPEC-001 v1.0.0 §6 (AGT-02), TASK-022/023/043
 **Implements in:** `src/quotemind/agents/intake.py` · **Prompt file:** `src/quotemind/prompts/intake.md`
 
 ---
@@ -36,7 +36,7 @@ Generation params: temperature 0.0. Output is obtained with `structured_model=In
 The agent receives one `Msg(role="user")` assembled by code containing:
 - For text channel: the raw email text (truncated to 6,000 chars; remainder noted as `[truncated N chars]`).
 - For file channels: filename, size, magic-sniffed mime, first-page thumbnail description is NOT provided (classification of pdf_digital vs pdf_scan is done in code by text-layer probe: pypdfium2 extractable-text ratio ≥ 0.2 ⇒ digital). The agent classifies language/urgency from filename + any body text; doc_type arrives pre-filled and the agent must echo it unchanged.
-- `email_meta` (from, subject, date) when present (FR-023).
+- `email_meta` (from, subject, date) when present (TASK-023).
 
 ## 4. Tools available
 
@@ -90,7 +90,7 @@ class IntakeResult(BaseModel):
 1. `max_iters=4`; the run is expected to complete in ≤3 (reason → tool → answer).
 2. Code-side validation rejects any doc_type differing from the pre-filled value (echo check) → error PARSE routing bug, not agent retry.
 3. `lookup_customer` call count enforced ≤2 by tool middleware; a third call returns an error instructing the agent to answer.
-4. `not_rfq` note does NOT stop the pipeline by itself; FR-034's empty-extraction gate is the authoritative stop. (Keeps false negatives cheap.)
+4. `not_rfq` note does NOT stop the pipeline by itself; TASK-034's empty-extraction gate is the authoritative stop. (Keeps false negatives cheap.)
 5. PII: the agent sees sender email; it must copy only the domain into narration, never the full address (full address lives in the stored email_meta only).
 
 ## 8. Failure handling
@@ -99,7 +99,7 @@ class IntakeResult(BaseModel):
 |---|---|
 | structured_model validation fails | one retry with validation errors appended; then FAILED_INTAKE |
 | lookup tool error | proceed with customer_id null, method "none", confidence 0 |
-| Empty input text and no file | FAILED_INTAKE, reason `EMPTY_PAYLOAD` (FR-025) |
+| Empty input text and no file | FAILED_INTAKE, reason `EMPTY_PAYLOAD` (TASK-025) |
 
 ## 9. Observability
 
@@ -113,6 +113,6 @@ Spans: `invoke_agent IntakeClassifier`, `chat qwen-plus`, `execute_tool lookup_c
 | doc_type echo integrity | 100% | trace assertion |
 | Urgency keyword recall | 100% on seeded urgent cases (3 in set) | EV-04 |
 | Customer resolution accuracy | ≥ 95% on labeled cases; zero invented customers | EV-04 |
-| Cost | ≤ $0.002 per classification | FR-112 accounting |
+| Cost | ≤ $0.002 per classification | TASK-112 accounting |
 
 *End QM-AGT-02 v1.0.0.*

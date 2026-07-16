@@ -1,4 +1,4 @@
-"""Bilingual quote dispatch (FR-092, FR-093).
+"""Bilingual quote dispatch (TASK-092, TASK-093).
 
 Two transports behind one interface. `smtp` sends through DirectMail over SSL 465. `stub` - the demo
 default - builds the identical MIME message and writes it to oss://quotemind-artifacts/outbox/, so a
@@ -20,13 +20,13 @@ from .cloud import ArtifactStore
 from .config.settings import Settings
 from .models import Quote
 
-MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024  # FR-092: attach the PDF only when <= 3 MB
+MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024  # TASK-092: attach the PDF only when <= 3 MB
 SMTP_PORT_SSL = 465
 
 
 @dataclass(frozen=True)
 class DispatchResult:
-    """What actually happened, for the audit trail (FR-094)."""
+    """What actually happened, for the audit trail (TASK-094)."""
 
     transport: str  # "smtp" | "stub"
     message_id: str
@@ -36,7 +36,7 @@ class DispatchResult:
 
 
 def subject_for(quote: Quote, seller_name: str) -> str:
-    """FR-092 frozen subject line."""
+    """TASK-092 frozen subject line."""
     return f"Báo giá / Quotation {quote.quote_number} — {seller_name}"
 
 
@@ -116,7 +116,7 @@ def send_quote(
     contact: str | None = None,
     pdf: bytes | None = None,
 ) -> DispatchResult:
-    """FR-092 / FR-093: send over DirectMail, or write the same message to the OSS outbox."""
+    """TASK-092 / TASK-093: send over DirectMail, or write the same message to the OSS outbox."""
     message, attached = build_message(
         quote,
         settings=settings,
@@ -128,7 +128,7 @@ def send_quote(
     )
     message_id = str(message["Message-ID"])
 
-    if settings.mail_transport == "stub":  # FR-093
+    if settings.mail_transport == "stub":  # TASK-093
         key = artifacts.put_eml(quote.quote_number, message.as_bytes())
         return DispatchResult(
             transport="stub",

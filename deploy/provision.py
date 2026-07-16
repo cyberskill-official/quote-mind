@@ -1,11 +1,11 @@
-"""FR-004 provisioning: idempotently create OSS buckets and Tablestore tables/indexes.
+"""TASK-004 provisioning: idempotently create OSS buckets and Tablestore tables/indexes.
 
 Run with real Alibaba Cloud credentials in the environment:
 
     python deploy/provision.py
 
 Creating a bucket that already exists and is owned by the caller is treated as success, so a
-second run reports "already exists" for every resource and exits 0 (FR-004 AC). This script
+second run reports "already exists" for every resource and exits 0 (TASK-004 AC). This script
 performs live cloud calls and is not exercised by the offline test suite.
 """
 
