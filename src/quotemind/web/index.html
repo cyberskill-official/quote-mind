@@ -244,6 +244,44 @@ html[lang="en"] .vi { display: none !important; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+<style>
+  /* Custom styles for driver.js to match CyberSkill theme */
+  .driver-popover {
+    background-color: var(--cs-color-surface-panel) !important;
+    color: var(--cs-color-text-primary) !important;
+    border: 1px solid var(--cs-color-border-default) !important;
+    border-radius: var(--cs-radius-md) !important;
+    font-family: var(--cs-font-family-ui) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  }
+  .driver-popover-title {
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    color: var(--cs-color-brand-umber) !important;
+  }
+  .driver-popover-description {
+    font-size: 14px !important;
+    color: var(--cs-color-text-muted) !important;
+  }
+  .driver-popover-footer button {
+    background-color: var(--cs-color-surface-sunken) !important;
+    color: var(--cs-color-text-primary) !important;
+    border: 1px solid var(--cs-color-border-default) !important;
+    text-shadow: none !important;
+    border-radius: var(--cs-radius-sm) !important;
+  }
+  .driver-popover-footer button:hover {
+    background-color: var(--cs-color-surface-panel) !important;
+  }
+  .driver-popover-footer .driver-popover-next-btn {
+    background-color: var(--cs-color-accent-ochre) !important;
+    color: #fff !important;
+    border-color: var(--cs-color-accent-ochre) !important;
+  }
+</style>
 </head>
 <body>
 <a class="skip-link" href="#detailPanel"><span class="vi">Bỏ qua tới nội dung</span><span class="en">Skip to content</span></a>
@@ -283,7 +321,12 @@ html[lang="en"] .vi { display: none !important; }
     </div>
   </span>
 
-  <button class="icon-btn" id="langBtn" aria-label="Ngôn ngữ / Language">VI</button>
+  
+      <button class="icon-btn" id="tourBtn" title="Hướng dẫn sử dụng / Tour" onclick="startTour()">
+        <span class="vi">Hướng dẫn</span><span class="en">Tour</span>
+      </button>
+
+      <button class="icon-btn" id="langBtn" aria-label="Ngôn ngữ / Language">VI</button>
   <button class="icon-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối / Toggle light or dark">◐</button>
   <button class="icon-btn" id="helpBtn" aria-label="Phím tắt / Keyboard shortcuts">⌘</button>
 </header>
@@ -1067,6 +1110,75 @@ async function submitAction(kind) {
       toast(exc.message);
     }
   }
+}
+
+
+// ---- Onboarding Tour (driver.js) ----
+function startTour() {
+  const driver = window.driver.js.driver;
+  
+  const isVi = document.documentElement.lang === "vi";
+  
+  const steps = [
+    {
+      element: '#queue',
+      popover: {
+        title: isVi ? 'Hàng đợi báo giá' : 'Quote Queue',
+        description: isVi ? 'Đây là nơi các yêu cầu báo giá (RFQ) mới xuất hiện. Bạn có thể chọn một báo giá để xem chi tiết.' : 'This is where incoming Request For Quotes (RFQs) land. Select a quote to view details.',
+        side: "right", align: 'start'
+      }
+    },
+    {
+      element: '#detail',
+      popover: {
+        title: isVi ? 'Chi tiết báo giá' : 'Quote Details',
+        description: isVi ? 'Bảng này hiển thị thông tin chi tiết của báo giá, bao gồm các dòng sản phẩm, giá cả và thuế.' : 'This panel shows the detailed quote information, including line items, prices, and tax.',
+        side: "left", align: 'start'
+      }
+    },
+    {
+      element: '.section',
+      popover: {
+        title: isVi ? 'Bộ kiểm tra (Critic)' : 'Critic Panel',
+        description: isVi ? 'Hệ thống tự động kiểm tra tính hợp lệ của giá cả và hiển thị nhận xét tại đây. Nhận xét của AI chỉ mang tính tham khảo.' : 'The system automatically verifies pricing validity and displays remarks here. The AI narrative is for reference only.',
+        side: "left", align: 'start'
+      }
+    },
+    {
+      element: '.cs-ai-disclosure__badge',
+      popover: {
+        title: isVi ? 'Minh bạch AI' : 'AI Transparency',
+        description: isVi ? 'Biểu tượng này cho biết phần nào của trang sử dụng AI sinh tạo. Giá cả luôn được tính toán chính xác bằng công thức.' : 'This badge indicates which parts of the page use generative AI. Pricing is always computed deterministically.',
+        side: "bottom", align: 'start'
+      }
+    },
+    {
+      element: '#bApprove',
+      popover: {
+        title: isVi ? 'Hành động duyệt' : 'Review Actions',
+        description: isVi ? 'Cuối cùng, bạn có thể Duyệt, Từ chối, hoặc Yêu cầu sửa báo giá tại đây.' : 'Finally, you can Approve, Reject, or Request Revision for the quote here.',
+        side: "top", align: 'start'
+      }
+    }
+  ];
+
+  const driverObj = driver({
+    showProgress: true,
+    steps: steps,
+    nextBtnText: isVi ? 'Tiếp' : 'Next',
+    prevBtnText: isVi ? 'Quay lại' : 'Prev',
+    doneBtnText: isVi ? 'Hoàn thành' : 'Done',
+  });
+  
+  driverObj.drive();
+}
+
+// Auto-start on first visit
+if (!localStorage.getItem('qm_tour_seen')) {
+  setTimeout(() => {
+    startTour();
+    localStorage.setItem('qm_tour_seen', 'true');
+  }, 1000);
 }
 
 // ---- keyboard. A review queue is a keyboard tool, or it is a chore. ----
