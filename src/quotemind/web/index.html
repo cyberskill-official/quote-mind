@@ -508,6 +508,7 @@ document.getElementById("langBtn").onclick = () => {
   localStorage.setItem("qm_lang", next);
   updateLangBtn();
   // Trigger re-renders
+  signature = ""; // Clear signature to force queue re-render
   if (window.renderFilters) renderFilters();
   if (window.loadQueue) loadQueue();
   if (window.loadDetail) loadDetail();
@@ -666,7 +667,7 @@ async function loadDetail() {
         <b style="font-size:17px">${esc(review.record.quote_number)}</b>
         <span class="chip ${STATUS_CHIP[review.status] || ""}">${esc(t("STATUS", review.status))}</span>
         ${(review.flags || []).map((f) =>
-          `<span class="chip ${blocking.includes(f) ? "bad" : "warn"}">${esc(f)}</span>`).join("")}
+          `<span class="chip ${blocking.includes(f) ? "bad" : "warn"}">${esc(t("FLAGS", f, f))}</span>`).join("")}
         <span style="flex:1"></span>
         ${quote ? `<button class="chip info" id="bPdf" style="cursor:pointer">PDF ↗</button>` : ""}
       </div>
@@ -868,7 +869,7 @@ function reviewGate(review, canAct) {
         <span class="en">This quote has not been sent. Nothing leaves this system until you approve it.</span>
       </div>
       ${blocking.length ? `<div class="chip bad" style="justify-self:start">
-        <span class="vi">Cần miễn trừ có kiểm toán:</span><span class="en">Needs an audited waiver:</span> ${blocking.map(esc).join(", ")}</div>` : ""}
+        <span class="vi">Cần miễn trừ có kiểm toán:</span><span class="en">Needs an audited waiver:</span> ${blocking.map(f => esc(t("FLAGS", f, f))).join(", ")}</div>` : ""}
       <div class="cs-review-gate__actions">
         <button class="cs-button" id="bApprove"><span class="vi">Duyệt</span><span class="en">Approve</span></button>
         <button class="cs-button cs-button--danger" id="bReject"><span class="vi">Từ chối</span><span class="en">Reject</span></button>
@@ -1054,7 +1055,7 @@ function openDialog(kind, prefill) {
   // verbatim on the hash-chained audit trail against the approver.
   $("dlgGate").innerHTML = (kind === "approve" && blocking.length)
     ? `<div class="cs-review-gate" style="margin:0 0 12px">
-         <div class="cs-review-gate__risk">Cờ chặn / blocking: ${blocking.map(esc).join(", ")}</div>
+         <div class="cs-review-gate__risk">Cờ chặn / blocking: ${blocking.map(f => esc(t("FLAGS", f, f))).join(", ")}</div>
          <p style="margin:0;font-size:13px">Duyệt sẽ ghi một miễn trừ có kiểm toán, kèm lý do của bạn.<br>
             Approving records an audited waiver, with your reason.</p>
        </div>`
