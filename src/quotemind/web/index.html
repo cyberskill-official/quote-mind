@@ -376,6 +376,41 @@ const I18N = {
     failed_price: { vi: "lỗi tính giá", en: "failed price" },
     failed_draft: { vi: "lỗi soạn", en: "failed draft" }
   },
+
+  CUSTOMERS: {
+    cust_thanhcong: { vi: "Công ty Thành Công", en: "Thanh Cong Co." },
+    cust_anphat: { vi: "An Phát", en: "An Phat" },
+    cust_minhlong: { vi: "Minh Long", en: "Minh Long" },
+    cust_hoabinh: { vi: "Tập đoàn Hoà Bình", en: "Hoa Binh Group" },
+    cust_daiviet: { vi: "Đại Việt", en: "Dai Viet" },
+    cust_sunrise: { vi: "Bình Minh", en: "Sunrise" },
+    cust_vietsoft: { vi: "Việt Soft", en: "Viet Soft" },
+    cust_fpt_project: { vi: "Dự án FPT", en: "FPT Project" }
+  },
+  DOC_TYPES: {
+    email_text: { vi: "Văn bản/Email", en: "Email/Text" },
+    pdf_scan: { vi: "Bản scan PDF", en: "PDF Scan" },
+    pdf_digital: { vi: "PDF gốc", en: "PDF Digital" },
+    excel: { vi: "Bảng tính Excel", en: "Excel" },
+    image: { vi: "Hình ảnh", en: "Image" }
+  },
+  OUTCOMES: {
+    approved: { vi: "đã duyệt", en: "approved" },
+    rejected: { vi: "từ chối", en: "rejected" },
+    edited: { vi: "đã sửa", en: "edited" },
+    cancelled: { vi: "đã huỷ", en: "cancelled" }
+  },
+  PLAN_STATES: {
+    todo: { vi: "chờ xử lý", en: "todo" },
+    in_progress: { vi: "đang chạy", en: "in progress" },
+    done: { vi: "hoàn thành", en: "done" }
+  },
+  TRACE_ACTIONS: {
+    classify: { vi: "phân loại", en: "classify" },
+    extract: { vi: "trích xuất", en: "extract" },
+    criticize: { vi: "đánh giá", en: "criticize" },
+    lookup: { vi: "tra cứu", en: "lookup" }
+  }
   FLAGS: {
     LEAD_TIME: { vi: "Giao hàng lâu", en: "Long lead time" },
     UNKNOWN_CUSTOMER: { vi: "Khách lạ", en: "Unknown customer" },
@@ -395,6 +430,29 @@ const t = (type, key, default_val) => {
 // Initialize language
 const savedLang = localStorage.getItem("qm_lang") || "vi";
 document.documentElement.lang = savedLang;
+
+function formatCustomer(id) {
+  if (!id) return document.documentElement.lang === "vi" ? "khách mới" : "new customer";
+  if (I18N.CUSTOMERS[id]) return t("CUSTOMERS", id);
+  if (id.startsWith("cust_")) {
+    const parts = id.substring(5).split('_');
+    return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+  }
+  return id;
+}
+
+function formatTrace(text) {
+  if (!text) return "";
+  let res = text;
+  Object.keys(I18N.DOC_TYPES).forEach(k => {
+    res = res.replace(new RegExp(`\\b${k}\\b`, 'g'), t("DOC_TYPES", k));
+  });
+  Object.keys(I18N.TRACE_ACTIONS).forEach(k => {
+    res = res.replace(new RegExp(`\\b${k}\\b`, 'g'), t("TRACE_ACTIONS", k));
+  });
+  return res;
+}
+
 const updateLangBtn = () => {
   document.getElementById("langBtn").textContent = document.documentElement.lang.toUpperCase();
 };
@@ -515,7 +573,7 @@ async function loadQueue() {
         ${/* TASK-085. The failure mode an approval gate *creates*: the system did its job, stopped,
               and asked - and nobody heard it. A quote waiting hours is not idle, it is unanswered. */
           q.stale ? `<span class="chip warn" title="Đang chờ quá lâu / Waiting too long">⏳ <span class="vi">quá hạn</span><span class="en">waiting</span></span>` : ""}
-        <span>${esc(q.customer_id || (document.documentElement.lang === "vi" ? "khách mới" : "new customer"))}</span>
+        <span>${esc(formatCustomer(q.customer_id))}</span>
         <span>${vnd(q.totals?.total_vnd)}</span>
         ${(q.flags || []).map((f) => `<span class="chip bad">${esc(t("FLAGS", f, f))}</span>`).join("")}
       </div>
@@ -570,7 +628,7 @@ async function loadDetail() {
         ${quote ? `<button class="chip info" id="bPdf" style="cursor:pointer">PDF ↗</button>` : ""}
       </div>
       <div style="color:var(--cs-color-text-muted);font-size:13px;margin:4px 0 14px">
-        ${esc(quote?.customer_block?.name || review.record.customer_id || "")}</div>
+        ${esc(quote?.customer_block?.name || formatCustomer(review.record.customer_id) || "")}</div>
       ${quote ? quoteBody(quote) : stalled(review)}
     </div>
     ${reviewGate(review, canAct)}
@@ -833,7 +891,7 @@ function planSection(plan) {
   const rows = (plan.subtasks || []).map((t) => {
     const cls = t.state === "done" ? "ok" : t.state === "in_progress" ? "info" : "warn";
     return `<div class="step">
-      <div><span class="chip ${cls}">${esc(t.state)}</span></div>
+      <div><span class="chip ${cls}">${esc(t("PLAN_STATES", t.state, t.state))}</span></div>
       <div>
         <div class="what"><b>${esc(t.name)}</b></div>
         <div class="sub">${esc(t.outcome || t.expected_outcome)}</div>
@@ -861,7 +919,7 @@ function memorySection(memories) {
   const rows = memories.recalls.map((m) => {
     const cls = m.outcome === "rejected" ? "bad" : m.outcome === "edited" ? "warn" : "ok";
     return `<div class="step">
-      <div><span class="chip ${cls}">${esc(m.outcome)}</span></div>
+      <div><span class="chip ${cls}">${esc(t("OUTCOMES", m.outcome, m.outcome))}</span></div>
       <div>
         <div class="what"><b>${esc(m.quote_number)}</b>
           <span class="sub">· ${days(m.age_days)} <span class="vi">ngày trước</span><span class="en">days ago</span></span></div>
@@ -897,10 +955,10 @@ function traceSection(trace) {
     <div class="step">
       <div class="diag">#${s.seq}</div>
       <div>
-        <div class="what"><b>${esc(s.agent)}</b> · ${esc(s.action)}
+        <div class="what"><b>${esc(s.agent)}</b> · ${esc(t("TRACE_ACTIONS", s.action, s.action))}
           ${s.tool ? `<span class="chip">${esc(s.tool)}</span>` : ""}
           ${s.model ? `<span class="chip info">${esc(s.model)}</span>` : ""}</div>
-        <div class="sub">${esc(s.summary)}</div>
+        <div class="sub">${esc(formatTrace(s.summary))}</div>
       </div>
       <div class="nums">${s.duration_ms} ms
         ${s.tokens_in || s.tokens_out ? `<br>${s.tokens_in}&rarr;${s.tokens_out} tok` : ""}

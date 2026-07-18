@@ -171,11 +171,13 @@ def render_report_html() -> str:
 body {{ margin:0; padding:48px 24px; font-family: var(--cs-font-sans, system-ui, sans-serif);
         background: var(--cs-color-surface, #17100c); color: var(--cs-color-text, #f5efe8); }}
 .wrap {{ max-width: 900px; margin: 0 auto; }}
+svg {{ max-width: 140px; height: auto; display: block; margin-bottom: 24px; }}
 h1 {{ font-size: 28px; margin: 16px 0 4px; }}
 .muted {{ color: var(--cs-color-text-muted, #b7a99b); font-size: 14px; }}
 table {{ width:100%; border-collapse: collapse; margin: 28px 0; }}
 th, td {{ text-align:left; padding: 12px 10px;
-          border-bottom: 1px solid var(--cs-color-border, #3a2b20); }}
+          border-bottom: 1px solid var(--cs-color-border, #3a2b20); transition: background-color 0.2s ease; }}
+tr:hover td {{ background-color: rgba(255, 255, 255, 0.03); }}
 th {{ font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
      color: var(--cs-color-text-muted, #b7a99b); }}
 td.num {{ text-align:right; font-variant-numeric: tabular-nums; font-weight:600; }}
