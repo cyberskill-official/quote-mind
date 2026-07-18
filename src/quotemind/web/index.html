@@ -739,8 +739,7 @@ function quoteBody(quote) {
   return `
     <div class="cs-table-wrap">
       <table class="cs-table">
-        <caption>Mã hàng do AI khớp; số tiền tính bằng Decimal chính xác /
-                 SKUs matched by AI; money computed in exact Decimal</caption>
+        <caption><span class="vi">Mã hàng do AI khớp; số tiền tính bằng Decimal chính xác</span><span class="en">SKUs matched by AI; money computed in exact Decimal</span></caption>
         <thead><tr>
           <th class="num">STT</th><th><span class="vi">Mô tả</span><span class="en">Description</span></th><th>SKU</th>
           <th class="num">SL</th><th class="num"><span class="vi">Đơn giá</span><span class="en">Unit Price</span></th><th class="num"><span class="vi">Thành tiền</span><span class="en">Total</span></th>
@@ -779,7 +778,7 @@ function quoteBody(quote) {
 //
 // So: what they asked for, what we nearly matched it to, and why that was not good enough.
 function stalled(review) {
-  const reasons = (review.record.flags || []).join(", ");
+  const reasons = (review.record.flags || []).map(f => t("FLAGS", f, f)).join(", ");
   const lines = review.extraction?.lines || [];
   const matches = review.matches || [];
 
@@ -796,12 +795,12 @@ function stalled(review) {
           ${m?.sku
             ? `<span class="chip">${esc(m.sku)}</span>`
             : `<span class="chip bad"><span class="vi">không khớp</span><span class="en">no match</span></span>`}
-          ${alts.length ? `<div class="en" style="margin-top:5px"><span class="vi">Gần nhất:</span><span class="en">Closest:</span>
+          ${alts.length ? `<div style="margin-top:5px;font-size:12px;color:var(--cs-color-text-muted)"><span class="vi">Gần nhất:</span><span class="en">Closest:</span>
               ${alts.map((a) => esc(a.sku)).join(", ")}</div>` : ""}
         </td>
         <td>
           ${m?.reason
-            ? `${esc(m.reason.vi)}<div class="en">${esc(m.reason.en)}</div>`
+            ? `<div class="vi">${esc(m.reason.vi)}</div><div class="en">${esc(m.reason.en)}</div>`
             : `<span class="en">—</span>`}
         </td>
       </tr>`;
@@ -823,8 +822,7 @@ function stalled(review) {
     ${lines.length ? `
     <div class="cs-table-wrap">
       <table class="cs-table">
-        <caption>Do AI đọc và đối chiếu; hệ thống từ chối đoán / Read and matched by AI;
-                 the system declined to guess</caption>
+        <caption><span class="vi">Do AI đọc và đối chiếu; hệ thống từ chối đoán</span><span class="en">Read and matched by AI; the system declined to guess</span></caption>
         <thead><tr>
           <th><span class="vi">Khách yêu cầu</span><span class="en">Requested</span></th>
           <th><span class="vi">Khớp</span><span class="en">Match</span></th>
@@ -903,8 +901,8 @@ function criticNote(critic) {
       <div style="display:flex;gap:8px;align-items:baseline">
         <span class="chip ok" style="font-size:10px">KHÔNG DO AI / NOT AI</span>
         <div>
-          <p style="margin:0;font-size:13px">${esc(critic.note.vi)}</p>
-          <p style="margin:4px 0 0;font-size:12.5px;color:var(--cs-color-text-muted);font-style:italic">${esc(critic.note.en)}</p>
+          <p class="vi" style="margin:0;font-size:13px">${esc(critic.note.vi)}</p>
+          <p class="en" style="margin:0;font-size:13px">${esc(critic.note.en)}</p>
         </div>
       </div>
       ${narrative ? `
@@ -912,8 +910,8 @@ function criticNote(critic) {
                   padding-top:12px;border-top:1px solid var(--cs-color-border-subtle)">
         <span class="cs-ai-disclosure__badge" style="font-size:10px;padding:1px 7px">AI</span>
         <div>
-          <p style="margin:0;font-size:13px">${esc(narrative.vi)}</p>
-          <p style="margin:4px 0 0;font-size:12.5px;color:var(--cs-color-text-muted);font-style:italic">${esc(narrative.en)}</p>
+          <p class="vi" style="margin:0;font-size:13px">${esc(narrative.vi)}</p>
+          <p class="en" style="margin:0;font-size:13px">${esc(narrative.en)}</p>
           <p style="margin:6px 0 0;font-size:11.5px;color:var(--cs-color-text-muted)">
             <span class="vi">Nhận xét do AI viết <b>sau khi</b> hệ thống đã kết luận. Nó không thể thay đổi kết luận đó.</span>
             <span class="en">Written by a model <b>after</b> the verdict above, from it. It cannot change it.</span></p>
@@ -979,15 +977,14 @@ function memorySection(memories) {
   }).join("");
 
   return `<details class="section">
-    <summary>Lần trước với khách này / Prior decisions
+    <summary><span class="vi">Lần trước với khách này</span><span class="en">Prior decisions</span>
       <span class="chip info">${memories.recalls.length}</span>
-      ${memories.truncated ? `<span class="chip warn">cắt bớt / truncated</span>` : ""}
+      ${memories.truncated ? `<span class="chip warn"><span class="vi">cắt bớt</span><span class="en">truncated</span></span>` : ""}
       <span class="cs-ai-disclosure__badge" style="font-size:11px;padding:1px 7px">AI</span>
     </summary>
     <div class="body">
       <p class="diag" style="margin:0 0 8px">
-        Chỉ để bạn cân nhắc. Trí nhớ không chạm vào giá. /
-        For your judgement only. Memory never touches the price.
+        <span class="vi">Chỉ để bạn cân nhắc. Trí nhớ không chạm vào giá.</span><span class="en">For your judgement only. Memory never touches the price.</span>
       </p>
       ${rows}
     </div>
