@@ -1,0 +1,32 @@
+QuoteMind - Proof of Alibaba Cloud deployment (captured evidence)
+Captured: 2026-07-18 08:28:09Z
+Command:  make proof   (python -m quotemind.cloud.alibaba_proof)
+Region:   ap-southeast-1 (Singapore)
+Repo SHA: eb32e58b1ec207e9eab92d2e2c7f6cb6b08ee2ee
+
+=== make proof: live round-trips against real Alibaba Cloud services ===
+Native C++ encoder not available, using Python implementation
+Native C++ decoder not available, using Python implementation
+QuoteMind - proof of Alibaba Cloud usage (TASK-005 / SUB-02)
+  region        ap-southeast-1
+  DashScope     https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+  OSS           https://oss-ap-southeast-1.aliyuncs.com
+  Tablestore    https://quotemind-demo.ap-southeast-1.ots.aliyuncs.com
+  instance      quotemind-demo
+
+[PASS] DashScope    chat qwen3-max: 'OK' in 1472 ms (15 -> 1 tokens)
+[PASS] DashScope    embed text-embedding-v4: 1024 dims (index requires 1024)
+[PASS] OSS          put oss://quotemind-artifacts/proof/alibaba_proof.txt (56 B)
+[PASS] OSS          presigned GET -> HTTP 200, 56 B, bytes match: True
+[PASS] OSS          delete -> object_exists=False
+[PASS] Tablestore   table qm_proof: already exists
+[PASS] Tablestore   put + get row proof-1784363236: note round-tripped byte-exact: True
+[PASS] Tablestore   delete row -> row is None: True
+
+all 8 Alibaba Cloud checks PASSED
+
+=== live deployment: GET https://quotemind.cyberskill.world/health ===
+{"status":"ok","version":"0.1.0","git_sha":"981049958e7442ce1d3d41d858a82d67e1940683","models":{"planner":"qwen3-max","classifier":"qwen-plus","parser_text":"qwen-plus","parser_vision":"qwen-vl-ocr","drafter":"qwen3-max","critic":"qwen3-max","embed":"text-embedding-v4"},"substitutions":{},"unverified":[]}
+
+=== auth gate: GET /api/quotes with no bearer token (expect 401) ===
+HTTP 401

@@ -49,6 +49,21 @@ Each check asserts on the *content* that came back, not merely on the absence of
 embedding check that only asserted "no error" would happily accept a wrong-width vector and corrupt
 retrieval silently.
 
+### Captured proof, and a live resource inventory
+
+Two committed artifacts let a judge see the evidence without running anything, and one `make`
+target regenerates each against the live account:
+
+- **[`docs/deploy/alibaba-proof.txt`](docs/deploy/alibaba-proof.txt)** - a captured run of `make
+  proof`: all eight service round-trips PASS, followed by the deployed `/health` body and the `401`
+  a token-less API call gets. Regenerate: `make proof`.
+- **[`docs/deploy/alibaba-resources.txt`](docs/deploy/alibaba-resources.txt)** - the running
+  resources read back live through the Alibaba Cloud OpenAPI: the two Function Compute functions
+  (`quotemind-api` on an HTTP trigger, `quotemind-ingest` on an OSS object-created trigger), the two
+  OSS buckets holding real quote PDFs and RFQ inputs, and the seven Tablestore tables on the
+  `quotemind-demo` instance. It is the console Workbench view, rendered as text. Regenerate:
+  `make resources` ([`deploy/list_resources.py`](deploy/list_resources.py)).
+
 ### It is deployed, and you can check it yourself
 
 **https://quotemind.cyberskill.world** — live on Function Compute 3.0 in `ap-southeast-1`

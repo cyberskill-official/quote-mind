@@ -1,4 +1,4 @@
-.PHONY: setup setup-all dev test lint type verify eval eval-smoke eval-baseline seed demo gc diagrams deploy deploy-frontend proof
+.PHONY: setup setup-all dev test lint type verify eval eval-smoke eval-baseline seed demo gc diagrams deploy deploy-frontend proof resources
 
 ## setup: install the package + offline-gate deps (needs pango/cairo for WeasyPrint)
 setup:
@@ -66,6 +66,9 @@ deploy-frontend:
 ## proof: exercise DashScope + OSS + Tablestore for real (TASK-005 / SUB-02).
 proof:
 	python -m quotemind.cloud.alibaba_proof
+## resources: enumerate the live Alibaba Cloud resources - FC, OSS, Tablestore (SUB-02).
+resources:
+	python deploy/list_resources.py
 
 
 smoke:  ## live end-to-end check against the deployment (DEMO_API_TOKEN required)

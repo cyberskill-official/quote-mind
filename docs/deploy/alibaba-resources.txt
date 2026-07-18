@@ -1,0 +1,135 @@
+QuoteMind - live Alibaba Cloud resource inventory (captured evidence)
+Captured: 2026-07-18 08:40:42Z
+Command:  make resources   (python deploy/list_resources.py)
+Note:     every resource below was read back live from the account via the
+          Alibaba Cloud OpenAPI - STS, Function Compute 3.0, OSS, Tablestore.
+
+QuoteMind - live Alibaba Cloud resource inventory
+  region        ap-southeast-1
+  OSS endpoint  https://oss-ap-southeast-1.aliyuncs.com
+  TS endpoint   https://quotemind-demo.ap-southeast-1.ots.aliyuncs.com
+
+=== Account (STS GetCallerIdentity) ===
+  account id    5492870817983957
+  arn           acs:ram::5492870817983957:root
+  identity type Account
+
+=== Function Compute 3.0 - 2 function(s) in ap-southeast-1 ===
+
+  function      quotemind-api
+  runtime       python3.12
+  handler       index.handler
+  memory        1024 MB
+  last modified 2026-07-11T21:26:15Z
+  arn           acs:fc:ap-southeast-1:5492870817983957:functions/quotemind-api
+  trigger       http [http]
+
+  function      quotemind-ingest
+  runtime       python3.12
+  handler       index_ingest.handler
+  memory        1024 MB
+  last modified 2026-07-11T21:26:57Z
+  arn           acs:fc:ap-southeast-1:5492870817983957:functions/quotemind-ingest
+  trigger       oss-rfq-drop [oss]
+
+=== OSS - 2 bucket(s) matching 'quotemind' in ap-southeast-1 ===
+
+  bucket        quotemind-artifacts
+  location      oss-ap-southeast-1
+  created       2026-07-11 02:57:50Z
+  storage       Standard
+  sample keys   ['acme/JX9tjIYyVFPYuWgxOQfAgCGq9XFIK686pi0SDpfLnc8', 'acme/tR79062hhO_E0EHqUFH1pAln3r1Otgk26scHwqxHDyA', 'outbox/QM-2026-0002.eml', 'outbox/QM-2026-0003.eml', 'quotes/QM-2026-0001.pdf', 'quotes/QM-2026-0002.pdf', 'quotes/QM-2026-0003.pdf', 'quotes/QM-2026-0006.pdf']
+
+  bucket        quotemind-inbox
+  location      oss-ap-southeast-1
+  created       2026-07-11 02:57:49Z
+  storage       Standard
+  sample keys   ['rfq/audit-1783803878.txt', 'rfq/autopilot-1783757819.xlsx', 'rfq/autopilot-v2-1783758461.xlsx', 'rfq/rfq-fpt-switch.txt']
+
+=== Tablestore - instance 'quotemind-demo', 7 table(s) ===
+  table         knowledge
+  table         message
+  table         qm_audit
+  table         qm_counters
+  table         qm_proof
+  table         qm_quotes
+  table         session
+
+=== Raw inventory (JSON) ===
+{
+  "region": "ap-southeast-1",
+  "accountId": "5492870817983957",
+  "functionCompute": [
+    {
+      "function": {
+        "functionName": "quotemind-api",
+        "runtime": "python3.12",
+        "handler": "index.handler",
+        "memorySize": 1024,
+        "lastModifiedTime": "2026-07-11T21:26:15Z",
+        "functionArn": "acs:fc:ap-southeast-1:5492870817983957:functions/quotemind-api"
+      },
+      "triggers": [
+        {
+          "triggerName": "http",
+          "triggerType": "http",
+          "qualifier": "LATEST"
+        }
+      ]
+    },
+    {
+      "function": {
+        "functionName": "quotemind-ingest",
+        "runtime": "python3.12",
+        "handler": "index_ingest.handler",
+        "memorySize": 1024,
+        "lastModifiedTime": "2026-07-11T21:26:57Z",
+        "functionArn": "acs:fc:ap-southeast-1:5492870817983957:functions/quotemind-ingest"
+      },
+      "triggers": [
+        {
+          "triggerName": "oss-rfq-drop",
+          "triggerType": "oss",
+          "qualifier": "LATEST"
+        }
+      ]
+    }
+  ],
+  "oss": [
+    {
+      "name": "quotemind-artifacts",
+      "location": "oss-ap-southeast-1",
+      "storageClass": "Standard",
+      "sampleKeys": [
+        "acme/JX9tjIYyVFPYuWgxOQfAgCGq9XFIK686pi0SDpfLnc8",
+        "acme/tR79062hhO_E0EHqUFH1pAln3r1Otgk26scHwqxHDyA",
+        "outbox/QM-2026-0002.eml",
+        "outbox/QM-2026-0003.eml",
+        "quotes/QM-2026-0001.pdf",
+        "quotes/QM-2026-0002.pdf",
+        "quotes/QM-2026-0003.pdf",
+        "quotes/QM-2026-0006.pdf"
+      ]
+    },
+    {
+      "name": "quotemind-inbox",
+      "location": "oss-ap-southeast-1",
+      "storageClass": "Standard",
+      "sampleKeys": [
+        "rfq/audit-1783803878.txt",
+        "rfq/autopilot-1783757819.xlsx",
+        "rfq/autopilot-v2-1783758461.xlsx",
+        "rfq/rfq-fpt-switch.txt"
+      ]
+    }
+  ],
+  "tablestore": [
+    "knowledge",
+    "message",
+    "qm_audit",
+    "qm_counters",
+    "qm_proof",
+    "qm_quotes",
+    "session"
+  ]
+}
